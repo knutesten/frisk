@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import no.mesan.lunsjtavle.actors.routes.{ApiRoute, UserRoute}
 import no.mesan.lunsjtavle.db.UserDao
-import no.mesan.lunsjtavle.model.User
+import no.mesan.lunsjtavle.model.user.User
 import spray.can.Http
 
 
@@ -13,10 +13,10 @@ import spray.can.Http
  */
 object Boot extends App {
   UserDao.create()
-  UserDao.insert(User("Knut"))
-  UserDao.insert(User("Anders"))
-  UserDao.insert(User("Simen"))
-  UserDao.insert(User("Mikkel"))
+  UserDao.insert(User("Knut", "Knuffern", "passord", "knuffern"))
+  UserDao.insert(User("Anders", "Playboy", "passord", "playboy"))
+  UserDao.insert(User("Simen", "Drusern", "passord", "drusern"))
+  UserDao.insert(User("Mikkel", "Mikkelback", "passord", "mikkelback"))
 
   implicit val system = ActorSystem("lunsjtavle-actor-system")
 

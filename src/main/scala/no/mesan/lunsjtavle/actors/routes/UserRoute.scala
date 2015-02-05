@@ -2,7 +2,7 @@ package no.mesan.lunsjtavle.actors.routes
 
 import akka.actor.{Actor, Props}
 import no.mesan.lunsjtavle.db.UserDao
-import no.mesan.lunsjtavle.model.User
+import no.mesan.lunsjtavle.model.user.{UserJsonProtocol, User}
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpService
 
@@ -22,7 +22,7 @@ class UserRoute extends Actor with UserRouteTrait {
 }
 
 trait UserRouteTrait extends HttpService with SprayJsonSupport {
-  import no.mesan.lunsjtavle.model.UserJsonProtocol._
+  import UserJsonProtocol._
 
   val user = {
     get {
@@ -30,8 +30,8 @@ trait UserRouteTrait extends HttpService with SprayJsonSupport {
         complete(UserDao.all)
       } ~ path(IntNumber) { id =>
         complete(UserDao.findById(id))
-      } ~ path(Segment) { name =>
-        complete(UserDao.findByName(name))
+      } ~ path(Segment) { firstname =>
+        complete(UserDao.findByName(firstname))
       }
     } ~
     post {

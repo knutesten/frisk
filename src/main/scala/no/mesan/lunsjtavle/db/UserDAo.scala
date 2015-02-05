@@ -1,6 +1,6 @@
 package no.mesan.lunsjtavle.db
 
-import no.mesan.lunsjtavle.model.{User, Users}
+import no.mesan.lunsjtavle.model.user.{User, Users}
 
 import scala.slick.driver.H2Driver.simple._
 
@@ -24,8 +24,8 @@ object UserDao {
     byId(id).list.headOption
   }
 
-  def findByName(name: String): Option[User] = H2.database.withSession { implicit session =>
-    val byName = users.filter(_.name === name)
+  def findByName(firstname: String): Option[User] = H2.database.withSession { implicit session =>
+    val byName = users.filter(_.firstname === firstname)
     byName.list.headOption
   }
 
