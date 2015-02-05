@@ -24,6 +24,11 @@ object UserDao {
     byId(id).list.headOption
   }
 
+  def findByName(name: String): Option[User] = H2.database.withSession { implicit session =>
+    val byName = users.filter(_.name === name)
+    byName.list.headOption
+  }
+
   def all : List[User] = H2.database.withSession { implicit session =>
     users.list
   }

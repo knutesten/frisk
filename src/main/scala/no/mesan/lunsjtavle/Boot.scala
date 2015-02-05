@@ -3,11 +3,9 @@ package no.mesan.lunsjtavle
 import akka.actor.ActorSystem
 import akka.io.IO
 import no.mesan.lunsjtavle.actors.routes.{ApiRoute, UserRoute}
-import no.mesan.lunsjtavle.db.{UserDao, H2}
-import no.mesan.lunsjtavle.model.{User, Users}
+import no.mesan.lunsjtavle.db.UserDao
+import no.mesan.lunsjtavle.model.User
 import spray.can.Http
-
-import scala.slick.driver.H2Driver.simple._
 
 
 /**
