@@ -1,6 +1,6 @@
 package no.mesan.lunsjtavle.actors.routes
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, Props, ActorRef}
 import spray.routing.HttpService
 
 /**
@@ -8,15 +8,17 @@ import spray.routing.HttpService
  */
 
 object ApiRoute {
-  def props(userRoute: ActorRef) = Props(new ApiRoute(userRoute))
+  def props(userRoute: ActorRef,
+            flavourRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute))
 }
 
-class ApiRoute(userRoute: ActorRef) extends Actor with HttpService {
+class ApiRoute(userRoute: ActorRef, flavourRoute: ActorRef) extends Actor with HttpService {
   def actorRefFactory = context
 
   def receive = runRoute {
     pathPrefix("api") {
-      pathPrefix("user") { cxt => userRoute ! cxt }
+      pathPrefix("user") { cxt => userRoute ! cxt } ~
+      pathPrefix("flavour") { cxt => flavourRoute ! cxt }
     }
   }
 }

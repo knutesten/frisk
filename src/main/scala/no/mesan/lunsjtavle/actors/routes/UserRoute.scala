@@ -10,7 +10,6 @@ import spray.routing.HttpService
  * @author Knut Esten Melandsø Nekså
  */
 
-
 object UserRoute {
   def props = Props(new UserRoute)
 }
@@ -30,17 +29,15 @@ trait UserRouteTrait extends HttpService with SprayJsonSupport {
         complete(UserDao.all)
       } ~ path(IntNumber) { id =>
         complete(UserDao.findById(id))
-      } ~ path(Segment) { firstname =>
-        complete(UserDao.findByName(firstname))
+      } ~ path(Segment) { firstName =>
+        complete(UserDao.findByName(firstName))
       }
     } ~
     post {
-//      decompressRequest() {
-        entity(as[User]) { user =>
-          UserDao.insert(user)
-          complete("REG")
-        }
-//      }
+      entity(as[User]) { user =>
+        UserDao.insert(user)
+        complete("REG")
+      }
     }
   }
 }

@@ -2,8 +2,8 @@ package no.mesan.lunsjtavle.model.user
 
 import spray.json.DefaultJsonProtocol
 
+import scala.slick.driver.H2Driver
 import scala.slick.driver.H2Driver.simple._
-
 
 /**
  * @author Knut Esten Melandsø Nekså
@@ -18,11 +18,11 @@ object UserJsonProtocol extends DefaultJsonProtocol {
 class Users(tag: Tag) extends Table[User](tag, "users") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
 
-  def firstname = column[String]("firstname", O.NotNull)
-  def lastname = column[String]("lastname", O.NotNull)
-  def password = column[String]("passord", O.NotNull)
+  def firstName: H2Driver.simple.Column[String] = column[String]("first_name", O.NotNull)
+  def lastName: H2Driver.simple.Column[String] = column[String]("last_name", O.NotNull)
+  def password = column[String]("password", O.NotNull)
   def username = column[String]("username", O.NotNull)
 
 
-  def * = (firstname, lastname, password, username, id.?) <> (User.tupled, User.unapply)
+  def * = (firstName, lastName, password, username, id.?) <> (User.tupled, User.unapply)
 }

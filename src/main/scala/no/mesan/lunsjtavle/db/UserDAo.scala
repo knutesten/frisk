@@ -12,7 +12,9 @@ object UserDao {
   val users = TableQuery[Users]
 
   def create() = H2.database.withSession { implicit session =>
-    users.ddl.create
+//    if(MTable.getTables("users").list.isEmpty) {
+      users.ddl.create
+//    }
   }
 
   def insert(user: User) = H2.database.withSession { implicit session =>
@@ -24,8 +26,8 @@ object UserDao {
     byId(id).list.headOption
   }
 
-  def findByName(firstname: String): Option[User] = H2.database.withSession { implicit session =>
-    val byName = users.filter(_.firstname === firstname)
+  def findByName(firstName: String): Option[User] = H2.database.withSession { implicit session =>
+    val byName = users.filter(_.firstName === firstName)
     byName.list.headOption
   }
 
