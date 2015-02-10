@@ -2,8 +2,8 @@ package no.mesan.lunsjtavle.model.frisk.project
 
 import java.sql.Timestamp
 
-import no.mesan.lunsjtavle.db.DateUtils
 import no.mesan.lunsjtavle.model.user.Users
+import no.mesan.lunsjtavle.model.util.TimestampFormat
 import spray.json.DefaultJsonProtocol
 
 import scala.slick.driver.H2Driver.simple._
@@ -18,7 +18,7 @@ case class Project(id: Option[Int] = None,
                    endTime: Timestamp,
                    description: String)
 
-object ProjectJsonProtocol extends DefaultJsonProtocol with DateUtils{
+object ProjectJsonProtocol extends DefaultJsonProtocol with TimestampFormat{
   implicit val projectFormat = jsonFormat6(Project)
 }
 

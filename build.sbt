@@ -14,10 +14,6 @@ libraryDependencies += "com.typesafe.slick" %% "slick" % "2.1.0"
 
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.5"
 
-libraryDependencies += "joda-time" % "joda-time" % "2.7"
-
-libraryDependencies += "org.joda" % "joda-convert" % "1.6"
-
 //libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.+"
 
 libraryDependencies ++= {

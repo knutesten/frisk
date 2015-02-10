@@ -6,6 +6,7 @@ package no.mesan.lunsjtavle.db
 
 
 import org.apache.commons.dbcp2.BasicDataSource
+import org.h2.tools.Server
 
 import scala.slick.driver.H2Driver.simple._
 
@@ -22,4 +23,7 @@ object Db {
 //    dataSource.setPassword("root")
     Database.forDataSource(dataSource)
   }
+
+  Server.createTcpServer().start()
+  Server.createWebServer().start()
 }

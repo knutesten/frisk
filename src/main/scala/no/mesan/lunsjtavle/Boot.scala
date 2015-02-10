@@ -4,7 +4,9 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import no.mesan.lunsjtavle.actors.routes.{ApiRoute, FlavourRoute, UserRoute}
 import no.mesan.lunsjtavle.config.Configuration
-import no.mesan.lunsjtavle.db.UserDao
+import no.mesan.lunsjtavle.db.{ConsumeTypeDao, FlavourDao, UserDao}
+import no.mesan.lunsjtavle.model.frisk.consumeType.ConsumeType
+import no.mesan.lunsjtavle.model.frisk.flavour.Flavour
 import no.mesan.lunsjtavle.model.user.User
 import spray.can.Http
 
@@ -18,7 +20,11 @@ object Boot extends App with Configuration{
   UserDao.insert(User(null, "Simen", "Drusern", "passord", "drusern"))
   UserDao.insert(User(null, "Mikkel", "Mikkelback", "passord", "mikkelback"))
 
-//  FlavourDao.create();
+  FlavourDao.create();
+  FlavourDao.insert(Flavour(null, "EXTRA STRONG", "Insanely strong frisk"))
+  
+  ConsumeTypeDao.create();
+  ConsumeTypeDao.insert(ConsumeType(null, "Bonusfrisk", 1))
 
   implicit val system = ActorSystem("lunsjtavle-actor-system")
 
