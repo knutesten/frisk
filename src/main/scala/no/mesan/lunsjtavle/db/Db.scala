@@ -10,11 +10,16 @@ import org.apache.commons.dbcp2.BasicDataSource
 import scala.slick.driver.H2Driver.simple._
 
 
-object H2 {
+object Db {
+
   val database: Database = {
     val dataSource = new BasicDataSource
-    dataSource.setUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
+    dataSource.setUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE")
     dataSource.setDriverClassName("org.h2.Driver")
+//    dataSource.setUrl("jdbc:mysql://localhost:3306/frisk")
+//    dataSource.setDriverClassName("com.mysql.jdbc.Driver")
+//    dataSource.setUsername("root")
+//    dataSource.setPassword("root")
     Database.forDataSource(dataSource)
   }
 }

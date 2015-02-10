@@ -1,6 +1,6 @@
 package no.mesan.lunsjtavle.actors.routes
 
-import akka.actor.{Actor, Props, ActorRef}
+import akka.actor.{Actor, ActorRef, Props}
 import spray.routing.HttpService
 
 /**

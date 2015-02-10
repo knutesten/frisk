@@ -11,27 +11,27 @@ import scala.slick.driver.H2Driver.simple._
 object UserDao {
   val users = TableQuery[Users]
 
-  def create() = H2.database.withSession { implicit session =>
+  def create() = Db.database.withSession { implicit session =>
 //    if(MTable.getTables("users").list.isEmpty) {
       users.ddl.create
 //    }
   }
 
-  def insert(user: User) = H2.database.withSession { implicit session =>
+  def insert(user: User) = Db.database.withSession { implicit session =>
     users += user
   }
 
-  def findById(id: Int): Option[User] = H2.database.withSession { implicit session =>
+  def findById(id: Int): Option[User] = Db.database.withSession { implicit session =>
     val byId = users.findBy(_.id)
     byId(id).list.headOption
   }
 
-  def findByName(firstName: String): Option[User] = H2.database.withSession { implicit session =>
+  def findByName(firstName: String): Option[User] = Db.database.withSession { implicit session =>
     val byName = users.filter(_.firstName === firstName)
     byName.list.headOption
   }
 
-  def all : List[User] = H2.database.withSession { implicit session =>
+  def all : List[User] = Db.database.withSession { implicit session =>
     users.list
   }
 }

@@ -2,7 +2,7 @@ package no.mesan.lunsjtavle.actors.routes
 
 import akka.actor.{Actor, Props}
 import no.mesan.lunsjtavle.db.FlavourDao
-import no.mesan.lunsjtavle.model.flavour.{Flavour, FlavourJsonProtocol}
+import no.mesan.lunsjtavle.model.frisk.flavour.{Flavour, FlavourJsonProtocol}
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpService
 
@@ -21,7 +21,7 @@ class FlavourRoute extends Actor with FlavourRouteTrait {
 }
 
 trait FlavourRouteTrait extends HttpService with SprayJsonSupport {
-  import FlavourJsonProtocol._
+  import no.mesan.lunsjtavle.model.frisk.flavour.FlavourJsonProtocol._
 
   val flavour = {
     get {
