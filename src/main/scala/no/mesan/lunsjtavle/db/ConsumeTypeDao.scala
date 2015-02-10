@@ -20,6 +20,9 @@ object ConsumeTypeDao {
     consumeTypes += consumeType
   }
   
-  def findById(consumeType: ConsumeType, id: Int)(implicit session: Session) = consumeType.copy(id = Some(id))
+//  def findById(id: Int)(implicit session: Session) = (id = Some(id))
 
+  def all : List[ConsumeType] = Db.database.withSession { implicit session => 
+    consumeTypes.list
+  }
 }

@@ -2,7 +2,7 @@ package no.mesan.lunsjtavle.actors.routes
 
 import akka.actor.{Actor, Props}
 import no.mesan.lunsjtavle.db.UserDao
-import no.mesan.lunsjtavle.model.user.{User, UserJsonProtocol}
+import no.mesan.lunsjtavle.model.user.User
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpService
 

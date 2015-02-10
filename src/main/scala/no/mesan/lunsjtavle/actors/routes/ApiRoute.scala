@@ -9,16 +9,20 @@ import spray.routing.HttpService
 
 object ApiRoute {
   def props(userRoute: ActorRef,
-            flavourRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute))
+            flavourRoute: ActorRef, 
+            consumeTypeRoute: ActorRef,
+            logRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute, consumeTypeRoute, logRoute))
 }
 
-class ApiRoute(userRoute: ActorRef, flavourRoute: ActorRef) extends Actor with HttpService {
+class ApiRoute(userRoute: ActorRef, flavourRoute: ActorRef, consumeTypeRoute: ActorRef, logRoute: ActorRef) extends Actor with HttpService {
   def actorRefFactory = context
 
   def receive = runRoute {
     pathPrefix("api") {
-      pathPrefix("user") { cxt => userRoute ! cxt } ~
-      pathPrefix("flavour") { cxt => flavourRoute ! cxt }
+      pathPrefix("user") { ctx => userRoute ! ctx } ~
+      pathPrefix("flavour") { ctx => flavourRoute ! ctx } ~
+      pathPrefix("consume-type") { ctx => consumeTypeRoute ! ctx } ~
+      pathPrefix("log") { ctx => logRoute ! ctx }
     }
   }
 }
