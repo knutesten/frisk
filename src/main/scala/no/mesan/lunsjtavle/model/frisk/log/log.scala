@@ -15,7 +15,7 @@ import scala.slick.driver.H2Driver.simple._
  * @author Simen Wold Anderson
  */
 case class Log(id: Option[Int],
-               date: Timestamp, 
+               var date: Option[Timestamp],
                userId: Int, 
                flavourId: Int, 
                consumeTypeId: Int,
@@ -38,6 +38,6 @@ class Logs(tag: Tag) extends Table[Log](tag, "consume_log") {
   def consumeType = foreignKey("consume_type_id_fk", consumeTypeId, TableQuery[ConsumeTypes])(_.id)
 //  def project = foreignKey("project_id_fk", projectId, TableQuery[Projects])(_.id)
 
-  def * = (id.?, date, userId, flavourId, consumeTypeId, projectId) <> (Log.tupled, Log.unapply)
+  def * = (id.?, date.?, userId, flavourId, consumeTypeId, projectId) <> (Log.tupled, Log.unapply)
 }
 

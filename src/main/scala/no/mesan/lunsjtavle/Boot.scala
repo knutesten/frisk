@@ -15,24 +15,25 @@ import spray.can.Http
 
 /**
  * @author Knut Esten Melandsø Nekså
+ * @author Simen Wold Anderson
  */
 object Boot extends App with Configuration {
   UserDao.create()
-  UserDao.insert(User(null, "Knut", "Knuffern", "passord", "knuffern"))
-  UserDao.insert(User(null, "Anders", "Playboy", "passord", "playboy"))
-  UserDao.insert(User(null, "Simen", "Drusern", "passord", "drusern"))
-  UserDao.insert(User(null, "Mikkel", "Mikkelback", "passord", "mikkelback"))
+  UserDao.insert(User(None, "Knut", "Knuffern", "passord", "knuffern"))
+  UserDao.insert(User(None, "Anders", "Playboy", "passord", "playboy"))
+  UserDao.insert(User(None, "Simen", "Drusern", "passord", "drusern"))
+  UserDao.insert(User(None, "Mikkel", "Mikkelback", "passord", "mikkelback"))
 
   FlavourDao.create()
-  FlavourDao.insert(Flavour(null, "EXTRA STRONG", "Insanely strong frisk"))
+  FlavourDao.insert(Flavour(None, "EXTRA STRONG", "Insanely strong frisk"))
   
   ConsumeTypeDao.create()
-  ConsumeTypeDao.insert(ConsumeType(null, "Bonusfrisk", 1))
+  ConsumeTypeDao.insert(ConsumeType(None, "Bonusfrisk", 1))
   
   LogDao.create()
-  LogDao.insert(Log(null, new Timestamp(System.currentTimeMillis()), 1, 1, 1, 1))
+  LogDao.insert(Log(None, None, 1, 1, 1, 1))
 
-  implicit val system = ActorSystem("lunsjtavle-actor-system")
+  implicit val system = ActorSystem("frisk-actor-system")
 
   val flavourRoute = system.actorOf(FlavourRoute.props, "flavour-route")
   val userRoute = system.actorOf(UserRoute.props, "user-route")

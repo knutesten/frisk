@@ -28,12 +28,12 @@ trait LogRouteTrait extends HttpService with SprayJsonSupport {
         complete(LogDao.all)
       }
     } ~
-      post {
-        entity(as[Log]) { log => 
-          LogDao.insert(log)
-          complete("REG", log)
-        }
+    (post & pathEnd) {
+      entity(as[Log]) { log =>
+        LogDao.insert(log)
+        complete("REG", log)
       }
+    }
   }
 }
 
