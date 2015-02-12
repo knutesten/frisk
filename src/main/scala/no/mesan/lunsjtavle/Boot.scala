@@ -16,7 +16,7 @@ import spray.can.Http
 /**
  * @author Knut Esten Melandsø Nekså
  */
-object Boot extends App with Configuration{
+object Boot extends App with Configuration {
   UserDao.create()
   UserDao.insert(User(null, "Knut", "Knuffern", "passord", "knuffern"))
   UserDao.insert(User(null, "Anders", "Playboy", "passord", "playboy"))

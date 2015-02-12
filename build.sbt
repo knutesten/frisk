@@ -1,4 +1,4 @@
-name := "lunsjtavle-scala"
+name := "frisk-app"
 
 version := "1.0"
 

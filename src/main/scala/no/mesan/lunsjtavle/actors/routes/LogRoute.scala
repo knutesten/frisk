@@ -2,6 +2,7 @@ package no.mesan.lunsjtavle.actors.routes
 
 import akka.actor.{Actor, Props}
 import no.mesan.lunsjtavle.db.LogDao
+import no.mesan.lunsjtavle.model.frisk.log.Log
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpService
 
@@ -28,7 +29,10 @@ trait LogRouteTrait extends HttpService with SprayJsonSupport {
       }
     } ~
       post {
-        complete("post")
+        entity(as[Log]) { log => 
+          LogDao.insert(log)
+          complete("REG", log)
+        }
       }
   }
 }
