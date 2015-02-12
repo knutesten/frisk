@@ -19,3 +19,6 @@ project/plugins/project/
 # IDEA
 .idea/
 project/target/
+
+#app
+app/node_modules/
