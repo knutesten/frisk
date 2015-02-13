@@ -73,8 +73,8 @@
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
-		module.hot.accept("!!C:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!C:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\style.css", function() {
-			var newContent = require("!!C:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!C:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\style.css");
+		module.hot.accept("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\style.css", function() {
+			var newContent = require("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});

@@ -32,6 +32,7 @@ gulp.task("webpack-dev-server", function(callback) {
       gutil.log("[webpack-dev-server]", "http://localhost:8085/webpack-dev-server/index.html");
 
       // keep the server alive or continue?
-      callback();
+      //callback();
     });
 });
+

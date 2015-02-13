@@ -22,3 +22,5 @@ project/target/
 
 #app
 app/node_modules/
+app/bower_components/
+app/vendor/
