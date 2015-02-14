@@ -44,6 +44,6 @@ object Boot extends App with Configuration {
 
 //  val restService = system.actorOf(Props[ApiRoute])
 
-  IO(Http) ! Http.Bind(apiRoute, serviceHost, servicePort)
+  IO(Http) ! Http.Bind(apiRoute, interface = "0.0.0.0", servicePort)
 
 }
