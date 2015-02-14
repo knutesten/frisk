@@ -1,3 +1,7 @@
+import NativePackagerKeys._
+
+packageArchetype.java_application
+
 name := "frisk-app"
 
 version := "1.0"
@@ -28,3 +32,4 @@ libraryDependencies ++= {
 }
 
 Revolver.settings
+
