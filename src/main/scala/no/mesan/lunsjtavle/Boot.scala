@@ -1,7 +1,5 @@
 package no.mesan.lunsjtavle
 
-import java.sql.Timestamp
-
 import akka.actor.ActorSystem
 import akka.io.IO
 import no.mesan.lunsjtavle.actors.routes._
@@ -26,10 +24,10 @@ object Boot extends App with Configuration {
 
   FlavourDao.create()
   FlavourDao.insert(Flavour(None, "EXTRA STRONG", "Insanely strong frisk"))
-  
+
   ConsumeTypeDao.create()
   ConsumeTypeDao.insert(ConsumeType(None, "Bonusfrisk", 1))
-  
+
   LogDao.create()
   LogDao.insert(Log(None, None, 1, 1, 1, 1))
 
@@ -42,8 +40,7 @@ object Boot extends App with Configuration {
 
   val apiRoute = system.actorOf(ApiRoute.props(userRoute, flavourRoute, consumeTypeRoute, logRoute), "api-route")
 
-//  val restService = system.actorOf(Props[ApiRoute])
+  //  val restService = system.actorOf(Props[ApiRoute])
 
-  IO(Http) ! Http.Bind(apiRoute, interface = "0.0.0.0", servicePort)
-
+  IO(Http) ! Http.Bind(apiRoute, serviceHost, servicePort)
 }

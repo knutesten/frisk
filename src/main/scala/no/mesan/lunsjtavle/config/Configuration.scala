@@ -13,8 +13,7 @@ trait Configuration {
 
   /** Port to start service on. */
   lazy val servicePort = Try(config.getInt("service.port")).getOrElse(8080)
-  lazy val serviceHost = Try(config.getString("service.host")).getOrElse("0.0.0.0")
-  println(s"Port: $servicePort")
+  lazy val serviceHost = Try(config.getString("service.host")).getOrElse("localhost")
 
   /** User name used to access database. */
   lazy val dbUser = Try(config.getString("db.user")).toOption.orNull
