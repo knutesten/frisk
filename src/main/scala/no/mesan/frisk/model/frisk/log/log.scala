@@ -28,15 +28,15 @@ object LogJsonProtocol extends DefaultJsonProtocol with TimestampFormat{
 class Logs(tag: Tag) extends Table[Log](tag, "consume_log") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def date = column[Timestamp]("date")
-  def userId = column[Int]("user_id_pk", O.NotNull)
-  def flavourId = column[Int]("flavour_id_pk")
-  def consumeTypeId = column[Int]("consume_type_id_pk", O.NotNull)
-  def projectId = column[Int]("project_id_pk")
+  def userId = column[Int]("user_id", O.NotNull)
+  def flavourId = column[Int]("flavour_id")
+  def consumeTypeId = column[Int]("consume_type_id", O.NotNull)
+  def projectId = column[Int]("project_id")
 
-  def user = foreignKey("user_id_fk", userId, TableQuery[Users])(_.id)
-  def flavour = foreignKey("flavour_id_fk", flavourId, TableQuery[Flavours])(_.id)
-  def consumeType = foreignKey("consume_type_id_fk", consumeTypeId, TableQuery[ConsumeTypes])(_.id)
-//  def project = foreignKey("project_id_fk", projectId, TableQuery[Projects])(_.id)
+  def userFk = foreignKey("user_id_fk", userId, TableQuery[Users])(_.id)
+  def flavourFk = foreignKey("flavour_id_fk", flavourId, TableQuery[Flavours])(_.id)
+  def consumeTypeFk = foreignKey("consume_type_id_fk", consumeTypeId, TableQuery[ConsumeTypes])(_.id)
+  def projectFk = foreignKey("project_id_fk", projectId, TableQuery[Projects])(_.id)
 
   def * = (id.?, date.?, userId, flavourId, consumeTypeId, projectId) <> (Log.tupled, Log.unapply)
 }

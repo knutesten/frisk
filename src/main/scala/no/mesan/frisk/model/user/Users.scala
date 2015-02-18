@@ -8,7 +8,11 @@ import scala.slick.driver.PostgresDriver.simple._
  * @author Knut Esten Melandsø Nekså
  */
 
-case class User(id: Option[Int] = None, firstname: String, lastname: String, password: String, username: String)
+case class User(id: Option[Int] = None, 
+                firstname: String, 
+                lastname: String, 
+                password: String, 
+                username: String)
 
 object UserJsonProtocol extends DefaultJsonProtocol {
   implicit val userFormat = jsonFormat5(User)

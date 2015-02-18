@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import no.mesan.frisk.actors.routes._
 import no.mesan.frisk.config.Configuration
-import no.mesan.frisk.db.{ConsumeTypeDao, FlavourDao, LogDao, UserDao}
+import no.mesan.frisk.db._
 import spray.can.Http
 
 /**
@@ -12,12 +12,14 @@ import spray.can.Http
  * @author Simen Wold Anderson
  */
 object Boot extends App with Configuration {
-  // TODO: Check if tables already exist before creation.
   UserDao.create()
+  ProjectDao.create()
   FlavourDao.create()
   ConsumeTypeDao.create()
   LogDao.create()
+  UserProjectDao.create()
 
+  
   implicit val system = ActorSystem("frisk-actor-system")
 
   val flavourRoute = system.actorOf(FlavourRoute.props, "flavour-route")
