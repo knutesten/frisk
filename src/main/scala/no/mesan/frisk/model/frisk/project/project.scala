@@ -6,7 +6,7 @@ import no.mesan.frisk.model.user.Users
 import no.mesan.frisk.model.util.TimestampFormat
 import spray.json.DefaultJsonProtocol
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 /**
  * @author Simen Wold Anderson
  */

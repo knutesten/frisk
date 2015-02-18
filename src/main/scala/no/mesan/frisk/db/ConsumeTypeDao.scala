@@ -3,6 +3,7 @@ package no.mesan.frisk.db
 import no.mesan.frisk.model.frisk.consumeType.{ConsumeType, ConsumeTypes}
 
 import scala.slick.driver.PostgresDriver.simple._
+import scala.slick.jdbc.meta.MTable
 
 /**
  * @author Simen Wold Anderson
@@ -10,10 +11,10 @@ import scala.slick.driver.PostgresDriver.simple._
 object ConsumeTypeDao {
   val consumeTypes = TableQuery[ConsumeTypes]
   
-//  val db = Db.database.withSession(implicitly)
-  
   def create() = Db.database.withSession { implicit session =>
-    consumeTypes.ddl.create
+    if(MTable.getTables("frisk_consume_type").list.isEmpty) {
+      consumeTypes.ddl.create
+    }
   }
   
   def insert(consumeType: ConsumeType) = Db.database.withSession { implicit session =>

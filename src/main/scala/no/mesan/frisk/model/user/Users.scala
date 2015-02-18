@@ -2,7 +2,7 @@ package no.mesan.frisk.model.user
 
 import spray.json.DefaultJsonProtocol
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 
 /**
  * @author Knut Esten Melandsø Nekså
@@ -14,7 +14,7 @@ object UserJsonProtocol extends DefaultJsonProtocol {
   implicit val userFormat = jsonFormat5(User)
 }
 
-class Users(tag: Tag) extends Table[User](tag, "users") {
+class Users(tag: Tag) extends Table[User](tag, "user") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
 
   def firstName = column[String]("first_name", O.NotNull)

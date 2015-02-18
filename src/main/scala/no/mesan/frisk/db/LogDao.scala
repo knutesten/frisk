@@ -4,7 +4,8 @@ import java.sql.Timestamp
 
 import no.mesan.frisk.model.frisk.log.{Log, Logs}
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
+import scala.slick.jdbc.meta.MTable
 
 /**
  * @author Simen Wold Anderson
@@ -14,15 +15,13 @@ object LogDao {
   val logs = TableQuery[Logs]
 
   def create() = Db.database.withSession { implicit session =>
-    logs.ddl.create
+    if(MTable.getTables("consume_log").list.isEmpty) {
+      logs.ddl.create
+    }
   }
 
   def insert(log: Log) = Db.database.withSession { implicit session =>
-    println("\n\nyooooooooooooo\n\n")
-    println("\n\n" + log.date + "\n\n")
-
     if (log.date == None) {
-      println("\n\nhellooooooooooooo\n\n")
       val currentTime: Timestamp = new Timestamp(System.currentTimeMillis())
       val newLogEntry = log.copy(date = Option(currentTime))
       logs += newLogEntry

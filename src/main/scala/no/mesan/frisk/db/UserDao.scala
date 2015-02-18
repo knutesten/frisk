@@ -2,7 +2,8 @@ package no.mesan.frisk.db
 
 import no.mesan.frisk.model.user.{User, Users}
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
+import scala.slick.jdbc.meta.MTable
 
 
 /**
@@ -12,9 +13,9 @@ object UserDao {
   val users = TableQuery[Users]
 
   def create() = Db.database.withSession { implicit session =>
-//    if(MTable.getTables("users").list.isEmpty) {
+    if(MTable.getTables("user").list.isEmpty) {
       users.ddl.create
-//    }
+    }
   }
 
   def insert(user: User) = Db.database.withSession { implicit session =>

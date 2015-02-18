@@ -13,7 +13,7 @@ object ConsumeTypeJsonProtocol extends DefaultJsonProtocol {
   implicit val friskConsumeTypeFormat = jsonFormat3(ConsumeType)
 }
 
-class ConsumeTypes(tag: Tag) extends Table[ConsumeType](tag, "frisk_consume_types") {
+class ConsumeTypes(tag: Tag) extends Table[ConsumeType](tag, "frisk_consume_type") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def name = column[String]("name")
   def amount = column[Int]("amount")
