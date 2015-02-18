@@ -14,9 +14,9 @@ import spray.can.Http
 object Boot extends App with Configuration {
   // TODO: Check if tables already exist before creation.
   UserDao.create()
-  FlavourDao.create()
-  ConsumeTypeDao.create()
-  LogDao.create()
+//  FlavourDao.create()
+//  ConsumeTypeDao.create()
+//  LogDao.create()
 
   implicit val system = ActorSystem("frisk-actor-system")
 

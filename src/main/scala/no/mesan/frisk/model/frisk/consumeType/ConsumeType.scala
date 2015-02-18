@@ -2,7 +2,7 @@ package no.mesan.frisk.model.frisk.consumeType
 
 import spray.json.DefaultJsonProtocol
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 
 /**
  * @author Simen Wold Anderson

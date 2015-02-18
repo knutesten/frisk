@@ -1,5 +1,7 @@
 package no.mesan.frisk.config
 
+import java.net.URI
+
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Try
@@ -21,13 +23,13 @@ trait Configuration {
   lazy val dbPort = Try(config.getString("db.port"))
   lazy val dbHost = Try(config.getString("db.host"))
   lazy val dbName = Try(config.getString("db.name"))
-  val dbUri = new URI(System.getenv("DATABASE_URL"))
-
-
-  val dbUrl = "jdbc:postgresql://" + dbUri.getHost + dbUri.getPath
-  val connectionPool = new BasicDataSource()
-  connectionPool.setDriverClassName("org.postgresql.Driver")
-  connectionPool.setUrl(dbUrl)
-  connectionPool.setUsername(dbUri.getUserInfo.split(":")(0))
-  connectionPool.setPassword(dbUri.getUserInfo.split(":")(1))
+//  val dbUri = new URI(System.getenv("DATABASE_URL"))
+//
+//
+//  val dbUrl = "jdbc:postgresql://" + dbUri.getHost + dbUri.getPath
+//  val connectionPool = new BasicDataSource()
+//  connectionPool.setDriverClassName("org.postgresql.Driver")
+//  connectionPool.setUrl(dbUrl)
+//  connectionPool.setUsername(dbUri.getUserinfo().split(":")(0))
+//  connectionPool.setPassword(dbUri.getUserinfo().split(":")(1))
 }

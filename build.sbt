@@ -16,6 +16,8 @@ libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.5"
 
 //libraryDependencies += "mysql" % "mysql-connector-java" % "5.1.+"
 
+libraryDependencies += "org.postgresql" % "postgresql" % "9.4-1200-jdbc41"
+
 libraryDependencies ++= {
   val akkaV = "2.3.6"
   val sprayV = "1.3.2"

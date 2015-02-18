@@ -2,7 +2,7 @@ package no.mesan.frisk.db
 
 import no.mesan.frisk.model.frisk.consumeType.{ConsumeType, ConsumeTypes}
 
-import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 
 /**
  * @author Simen Wold Anderson
