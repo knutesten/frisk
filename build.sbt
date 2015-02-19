@@ -33,3 +33,7 @@ libraryDependencies ++= {
 
 Revolver.settings
 
+unmanagedResourceDirectories in Compile <+= (baseDirectory)
+
+excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*"
+

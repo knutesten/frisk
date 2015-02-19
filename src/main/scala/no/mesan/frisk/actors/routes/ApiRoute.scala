@@ -19,10 +19,11 @@ class ApiRoute(userRoute: ActorRef, flavourRoute: ActorRef, consumeTypeRoute: Ac
 
   def receive = runRoute {
     pathPrefix("api") {
-      pathPrefix("user") { ctx => userRoute ! ctx } ~
-      pathPrefix("flavour") { ctx => flavourRoute ! ctx } ~
-      pathPrefix("consume-type") { ctx => consumeTypeRoute ! ctx } ~
-      pathPrefix("log") { ctx => logRoute ! ctx }
-    }
+      pathPrefix("user") { ctx => userRoute ! ctx} ~
+        pathPrefix("flavour") { ctx => flavourRoute ! ctx} ~
+        pathPrefix("consume-type") { ctx => consumeTypeRoute ! ctx} ~
+        pathPrefix("log") { ctx => logRoute ! ctx}
+    } ~
+      getFromResourceDirectory("app")
   }
 }
