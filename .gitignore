@@ -24,4 +24,3 @@ project/target/
 app/node_modules/
 app/bower_components/
 app/vendor/
-app/dist/
