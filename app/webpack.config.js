@@ -3,6 +3,7 @@
  */
 var webpack = require("webpack");
 var path = require("path");
+var BowerWebpackPlugin = require('bower-webpack-plugin');
   
 module.exports = {
   context: __dirname,
@@ -14,13 +15,22 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.css$/, loader: "style!css" }
+      { test: /\.css$/, loader: "style!css" },
+      { test: /\.jpg$/, loader: "file" },
+      { test: /\.less$/, loader: "style!css!less"},
+      {test: /\.(woff|svg|ttf|eot)([\?]?.*)$/, loader: "file-loader?name=[name].[ext]"}
     ]
   },
   plugins: [
+    new BowerWebpackPlugin({
+      excludes: /.*\.less/
+    }),
     new webpack.ProvidePlugin({
-      jQuery: "jquery",
-      $: "jquery"
-    })
+      $:      "jquery",
+      jQuery: "jquery"
+    }),
+    new webpack.ResolverPlugin(
+      new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin("bower.json", ["main"])
+    )
   ]
 };

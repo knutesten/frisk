@@ -2,7 +2,7 @@ package no.mesan.frisk.actors.routes
 
 import akka.actor.{Actor, Props}
 import no.mesan.frisk.db.FlavourDao
-import no.mesan.frisk.model.frisk.flavour.{Flavour, FlavourJsonProtocol}
+import no.mesan.frisk.model.frisk.flavour.Flavour
 import spray.httpx.SprayJsonSupport
 import spray.routing.HttpService
 

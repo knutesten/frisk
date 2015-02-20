@@ -1,15 +1,2 @@
-body {
-    background-image: url("images/frisk.jpg");
-    background-repeat: no-repeat;
-    background-size: 100%;
-}
 
-#input-box input{
-    display: block;
-}
 
-#registration {
-    position: relative;
-    
-    
-}

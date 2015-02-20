@@ -2,4 +2,12 @@
  * Created by simena on 12.02.2015.
  */
 require("./style.css");
-document.write(require("./content.js"));
+require("./style.less");
+//document.write(require("./content.js"));
+require("jquery");
+require("bootstrap");
+require("sammy");
+
+
+require("./app.js");
+  

@@ -1,9 +1,6 @@
 package no.mesan.frisk.config
 
-import java.net.URI
-
 import com.typesafe.config.ConfigFactory
-import org.apache.commons.dbcp2.BasicDataSource
 
 import scala.util.Try
 

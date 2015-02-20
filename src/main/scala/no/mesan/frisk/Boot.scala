@@ -19,15 +19,15 @@ object Boot extends App with Configuration {
   LogDao.create()
   UserProjectDao.create()
 
-  
   implicit val system = ActorSystem("frisk-actor-system")
 
   val flavourRoute = system.actorOf(FlavourRoute.props, "flavour-route")
   val userRoute = system.actorOf(UserRoute.props, "user-route")
   val consumeTypeRoute = system.actorOf(ConsumeTypeRoute.props, "consume-type-route")
   val logRoute = system.actorOf(LogRoute.props, "log-route")
+  val projectRoute = system.actorOf(ProjectRoute.props, "project-route")
 
-  val apiRoute = system.actorOf(ApiRoute.props(userRoute, flavourRoute, consumeTypeRoute, logRoute), "api-route")
+  val apiRoute = system.actorOf(ApiRoute.props(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute), "api-route")
 
   IO(Http) ! Http.Bind(apiRoute, serviceHost, servicePort)
 }
