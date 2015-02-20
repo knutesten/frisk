@@ -12,7 +12,8 @@ object ApiRoute {
   def props(userRoute: ActorRef, 
             flavourRoute: ActorRef, 
             consumeTypeRoute: ActorRef,
-            logRoute: ActorRef, projectRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute))
+            logRoute: ActorRef,
+            projectRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute))
 }
 
 class ApiRoute(userRoute: ActorRef, 
