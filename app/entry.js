@@ -8,6 +8,6 @@ require("jquery");
 require("bootstrap");
 require("sammy");
 
+require("./src/api/rest.js");
+require("./src/app.js");
 
-require("./app.js");
-  
