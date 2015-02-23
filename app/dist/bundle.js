@@ -51,8 +51,8 @@
 	__webpack_require__(7);
 	//document.write(require("./content.js"));
 	__webpack_require__(2);
-	__webpack_require__(3);
 	__webpack_require__(4);
+	__webpack_require__(3);
 
 
 	__webpack_require__(1);
@@ -69,6 +69,8 @@
 	$(document).ready(function() {
 
 	  var localUrl = 'http://localhost:8080/api';
+	  
+	  console.log(window.location.host);
 
 	 var get = function httpGet(theUrl) {
 	    var jsonHTTP = new XMLHttpRequest();
@@ -118,18 +120,18 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = __webpack_require__(11);
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
 	__webpack_require__(14);
 	module.exports = __webpack_require__(12);
 	__webpack_require__(16);
 	__webpack_require__(17);
 	__webpack_require__(18);
 	__webpack_require__(19);
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(11);
 
 /***/ },
 /* 5 */

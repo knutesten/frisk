@@ -4,6 +4,8 @@
 $(document).ready(function() {
 
   var localUrl = 'http://localhost:8080/api';
+  
+  console.log(window.location.host);
 
  var get = function httpGet(theUrl) {
     var jsonHTTP = new XMLHttpRequest();
