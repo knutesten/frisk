@@ -23,7 +23,7 @@ object Db extends Configuration{
       val dbUri = new URI(System.getenv("DATABASE_URL"))
       val dbUrl = "jdbc:postgresql://" + dbUri.getHost + dbUri.getPath
       dataSource.setDriverClassName("org.postgresql.Driver")
-
+      
       dataSource.setUrl(dbUrl)
       dataSource.setUsername(dbUri.getUserInfo().split(":")(0))
       dataSource.setPassword(dbUri.getUserInfo().split(":")(1))
@@ -32,8 +32,9 @@ object Db extends Configuration{
       case e: NullPointerException =>
         dataSource.setUrl("jdbc:postgresql://localhost:5432/test");
         dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUsername(dbUser);
-        dataSource.setPassword(dbPassword);
+        dataSource.setUsername("postgres");
+        dataSource.setPassword("password");
+
     }
     Database.forDataSource(dataSource)
   }
@@ -41,8 +42,3 @@ object Db extends Configuration{
   Server.createTcpServer().start()
   Server.createWebServer().start()
 }
-
-
-//object Datasource {
-//
-//}

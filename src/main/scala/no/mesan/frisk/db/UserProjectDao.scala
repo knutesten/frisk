@@ -1,6 +1,6 @@
 package no.mesan.frisk.db
 
-import no.mesan.frisk.model.frisk.project.UserProjects
+import no.mesan.frisk.model.frisk.project.{UserProject, UserProjects}
 
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.meta.MTable
@@ -17,5 +17,9 @@ object UserProjectDao {
     if(MTable.getTables("user_project").list.isEmpty) {
       userProjects.ddl.create
     }
+  }
+  
+  def insert(userProject: UserProject) = Db.database.withSession { implicit session =>
+    userProjects += userProject
   }
 }

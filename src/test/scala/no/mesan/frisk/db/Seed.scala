@@ -4,7 +4,7 @@ import java.sql.Timestamp
 
 import no.mesan.frisk.model.frisk.consumeType.ConsumeType
 import no.mesan.frisk.model.frisk.flavour.Flavour
-import no.mesan.frisk.model.frisk.project.Project
+import no.mesan.frisk.model.frisk.project.{UserProject, Project}
 import no.mesan.frisk.model.user.User
 
 /**
@@ -28,4 +28,9 @@ object Seed {
   ConsumeTypeDao.insert(ConsumeType(None, "Singel bonusfrisk", 1))
 
 //  LogDao.insert(Log(None, None, 1, 1, 1, 1))
+  
+  UserProjectDao.insert(new UserProject(1, 2))
+  UserProjectDao.insert(new UserProject(2, 2))
+  UserProjectDao.insert(new UserProject(3, 2))
+  UserProjectDao.insert(new UserProject(4, 2))
 }

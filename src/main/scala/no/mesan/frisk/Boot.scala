@@ -5,6 +5,7 @@ import akka.io.IO
 import no.mesan.frisk.actors.routes._
 import no.mesan.frisk.config.Configuration
 import no.mesan.frisk.db._
+import no.mesan.frisk.model.frisk.project.UserProject
 import spray.can.Http
 
 /**
@@ -18,7 +19,7 @@ object Boot extends App with Configuration {
   ConsumeTypeDao.create()
   LogDao.create()
   UserProjectDao.create()
-
+  
   implicit val system = ActorSystem("frisk-actor-system")
 
   val flavourRoute = system.actorOf(FlavourRoute.props, "flavour-route")
