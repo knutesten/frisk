@@ -44,19 +44,21 @@ $(document).ready(function() {
   $("#logForm").submit(function(e) {
     var log = {
       id: null,
-      date: new Date(),
-      userId: logForm.elements['friskUser'].value,
-      flavourId: logForm.elements['friskFlavour'].value,
-      consumeTypeId: logForm.elements['friskType'].value,
-      projectId: logForm.elements['friskProject'].value
+      date: new Date().getTime(),
+      userId: parseInt(logForm.elements['friskUser'].value),
+      flavourId: parseInt(logForm.elements['friskFlavour'].value),
+      consumeTypeId: parseInt(logForm.elements['friskType'].value),
+      projectId: parseInt(logForm.elements['friskProject'].value)
     };
     
-    api.httpPost(localUrl + '/log', "hello").success(function(data, code) {
-      console.log(code);
+    api.httpPost(localUrl + '/log', JSON.stringify(log))
+      .success(function(data, code) {
+        console.log(code);
+        console.log(data);
     }).error(function(data, code) {
-      console.log();
+        console.log(code);
+        console.log(data);
     });
-  
     e.preventDefault();
   });
 });

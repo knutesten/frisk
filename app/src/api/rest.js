@@ -16,10 +16,9 @@ module.exports = {
     return $.ajax({
       type: "POST",
       headers: {
-        'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      dataType: 'json',
+      dataType: "json",
       url: theUrl,
       data: data
     });

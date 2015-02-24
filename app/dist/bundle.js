@@ -81,10 +81,9 @@
 	    return $.ajax({
 	      type: "POST",
 	      headers: {
-	        'Accept': 'application/json',
 	        'Content-Type': 'application/json'
 	      },
-	      dataType: 'json',
+	      dataType: "json",
 	      url: theUrl,
 	      data: data
 	    });
@@ -142,19 +141,21 @@
 	  $("#logForm").submit(function(e) {
 	    var log = {
 	      id: null,
-	      date: new Date(),
-	      userId: logForm.elements['friskUser'].value,
-	      flavourId: logForm.elements['friskFlavour'].value,
-	      consumeTypeId: logForm.elements['friskType'].value,
-	      projectId: logForm.elements['friskProject'].value
+	      date: new Date().getTime(),
+	      userId: parseInt(logForm.elements['friskUser'].value),
+	      flavourId: parseInt(logForm.elements['friskFlavour'].value),
+	      consumeTypeId: parseInt(logForm.elements['friskType'].value),
+	      projectId: parseInt(logForm.elements['friskProject'].value)
 	    };
 	    
-	    api.httpPost(localUrl + '/log', "hello").success(function(data, code) {
-	      console.log(code);
+	    api.httpPost(localUrl + '/log', JSON.stringify(log))
+	      .success(function(data, code) {
+	        console.log(code);
+	        console.log(data);
 	    }).error(function(data, code) {
-	      console.log();
+	        console.log(code);
+	        console.log(data);
 	    });
-	  
 	    e.preventDefault();
 	  });
 	});
@@ -241,7 +242,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(14)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(21)+") no-repeat center fixed;\n  opacity: 0.2;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(21)+") no-repeat center;\n  opacity: 0.2;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n", ""]);
 
 /***/ },
 /* 10 */

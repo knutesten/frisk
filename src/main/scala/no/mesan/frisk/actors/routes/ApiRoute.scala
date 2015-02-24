@@ -1,7 +1,7 @@
 package no.mesan.frisk.actors.routes
 
 import akka.actor.{Actor, ActorRef, Props}
-import no.mesan.frisk.util.com.agilogy.spray.cors.CORSSupport
+import no.mesan.frisk.util.CORSSupport
 import spray.routing.HttpService
 
 /**

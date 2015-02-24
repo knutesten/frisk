@@ -1,12 +1,11 @@
 package no.mesan.frisk.util
 
-package com.agilogy.spray.cors
-
 import spray.http.{HttpMethods, HttpMethod, HttpResponse, AllOrigins}
 import spray.http.HttpHeaders._
 import spray.http.HttpMethods._
 import spray.routing._
 
+// see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 trait CORSSupport {
   this: HttpService =>
 
@@ -17,15 +16,30 @@ trait CORSSupport {
 
   def cors[T]: Directive0 = mapRequestContext { ctx => ctx.withRouteResponseHandling({
     //It is an option requeset for a resource that responds to some other method
-    case Rejected(x) if (ctx.request.method.equals(HttpMethods.OPTIONS) && x.exists(_.isInstanceOf[MethodRejection])) => {
-      val allowedMethods: List[HttpMethod] = x.collect { case rejection: MethodRejection => rejection.supported }
+    case Rejected(x) if (ctx.request.method.equals(HttpMethods.OPTIONS) && !x.filter(_.isInstanceOf[MethodRejection]).isEmpty) => {
+      val allowedMethods: List[HttpMethod] = x.filter(_.isInstanceOf[MethodRejection]).map(rejection=> {
+        rejection.asInstanceOf[MethodRejection].supported
+      })
       ctx.complete(HttpResponse().withHeaders(
-        `Access-Control-Allow-Methods`(OPTIONS, allowedMethods: _*) :: allowOriginHeader ::
+        `Access-Control-Allow-Methods`(OPTIONS, allowedMethods :_*) ::  allowOriginHeader ::
           optionsCorsHeaders
       ))
     }
   }).withHttpResponseHeadersMapped { headers =>
     allowOriginHeader :: headers
+
   }
   }
+//  def fcross(origin: String) = respondWithHeaders(
+  //    RawHeader("Access-Control-Allow-Origin", origin),
+  //    RawHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+  //    RawHeader("Access-Control-Allow-Headers", "X-Requested-With, Cache-Control, Pragma, Origin, Authorization, Content-Type"),
+  //    RawHeader("Access-Control-Max-Age", "86400"),
+  //    RawHeader("Content-Type", "application/json")
+  //
+  //  )
+  //  def crossDomain = fcross("*")
+
 }
+
+
