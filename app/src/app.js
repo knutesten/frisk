@@ -19,7 +19,7 @@ $(document).ready(function() {
 
     function fillTableWithLogData(data) {
       var row;
-      for(var i = 0; i < 13; i++) {
+      for(var i = 0; i < data.length; i++) {
         row = table.insertRow(i);
         row.insertCell(0).innerHTML = data[i].id;
         row.insertCell(1).innerHTML = data[i].userId;
