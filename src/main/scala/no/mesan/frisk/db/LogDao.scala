@@ -3,6 +3,8 @@ package no.mesan.frisk.db
 import java.sql.Timestamp
 
 import no.mesan.frisk.model.frisk.log.{Log, Logs}
+import no.mesan.frisk.model.frisk.project.Projects
+import no.mesan.frisk.model.user.Users
 
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.meta.MTable
@@ -30,11 +32,9 @@ object LogDao {
     }
   }
 
-  def all : List[Log] = Db.database.withSession { implicit session =>
+  def all: List[Log] = Db.database.withSession { implicit session =>
 //    val logOut = (l:Logs, u:Users) => l.userId === u.id
-//    
 ////    val log = Query(Logs).filter(_.id === 1)
-    
     logs.list
   }
 }

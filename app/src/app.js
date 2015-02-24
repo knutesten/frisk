@@ -8,7 +8,29 @@ $(document).ready(function() {
   //var localUrl = 'http://localhost:8080/api';
   var host = window.location.host;
   var localUrl = 'http://' + host + '/api';
+  
+  var fetchFriskLog = function() {
+    var table = document.getElementById('friskTableBody');
+    $("#friskTableBody > tr").remove();
+    api.httpGet(localUrl + '/log')
+      .success(function(data) {
+        fillTableWithLogData(data);
+      });
 
+    function fillTableWithLogData(data) {
+      var row;
+      for(var i = 0; i < 13; i++) {
+        row = table.insertRow(i);
+        row.insertCell(0).innerHTML = data[i].id;
+        row.insertCell(1).innerHTML = data[i].userId;
+        row.insertCell(2).innerHTML = data[i].projectId;
+        row.insertCell(3).innerHTML = data[i].consumeTypeId;
+      }
+    }
+  };
+
+  fetchFriskLog();
+  
   var populateSelect = function(element, list, prop) {
     var opt;
     for(var i = 0; i < list.length; i++) {
@@ -53,12 +75,18 @@ $(document).ready(function() {
     
     api.httpPost(localUrl + '/log', JSON.stringify(log))
       .success(function(data, code) {
-        console.log(code);
-        console.log(data);
+        fetchFriskLog();
+        document.getElementById('msg').innerHTML+="Success";
+        logForm.reset();
     }).error(function(data, code) {
+        document.getElementById('msg').innerHTML+="Error";
         console.log(code);
         console.log(data);
     });
     e.preventDefault();
   });
+  
+  
+  
+  
 });
