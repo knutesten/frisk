@@ -5,9 +5,9 @@
 var api = require("./api/rest.js");
 
 $(document).ready(function() {
-  var localUrl = 'http://localhost:8080/api';
-  //var host = window.location.host;
-  //var localUrl = 'http://' + host + '/api';
+  //var localUrl = 'http://localhost:8080/api';
+  var host = window.location.host;
+  var localUrl = 'http://' + host + '/api';
 
   var populateSelect = function(element, list, prop) {
     var opt;
