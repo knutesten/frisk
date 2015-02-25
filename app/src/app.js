@@ -3,6 +3,8 @@
  */
 
 var api = require("./api/rest.js");
+var moment = require("moment");
+
 
 $(document).ready(function() {
   //var localUrl = 'http://localhost:8080/api';
@@ -26,7 +28,7 @@ $(document).ready(function() {
         row.insertCell(2).innerHTML = data[i][2];
         row.insertCell(3).innerHTML = data[i][3];
         row.insertCell(4).innerHTML = data[i][4];
-        row.insertCell(5).innerHTML = Date(data[i][5]);
+        row.insertCell(5).innerHTML = moment(data[i][5]).format('MMMM Do YYYY, HH:mm:ss');
       }
     }
   };
