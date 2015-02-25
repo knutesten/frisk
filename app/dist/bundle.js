@@ -103,9 +103,9 @@
 	var api = __webpack_require__(1);
 
 	$(document).ready(function() {
-	  var localUrl = 'http://localhost:8080/api';
-	  //var host = window.location.host;
-	  //var localUrl = 'http://' + host + '/api';
+	  //var localUrl = 'http://localhost:8080/api';
+	  var host = window.location.host;
+	  var localUrl = 'http://' + host + '/api';
 	  
 	  var fetchFriskLog = function() {
 	    var table = document.getElementById('friskTableBody');
