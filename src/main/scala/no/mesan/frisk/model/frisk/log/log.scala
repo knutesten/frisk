@@ -15,9 +15,9 @@ import scala.slick.driver.PostgresDriver.simple._
  * @author Simen Wold Anderson
  */
 case class Log(id: Option[Int],
-               var date: Option[Timestamp],
-               userId: Int, 
-               flavourId: Int, 
+               date: Option[Timestamp],
+               userId: Int,
+               flavourId: Int,
                consumeTypeId: Int,
                projectId: Int)
 

@@ -102,15 +102,16 @@
 	var api = __webpack_require__(1);
 
 	$(document).ready(function() {
-	  //var localUrl = 'http://localhost:8080/api';
-	  var host = window.location.host;
-	  var localUrl = 'http://' + host + '/api';
+	  var localUrl = 'http://localhost:8080/api';
+	  //var host = window.location.host;
+	  //var localUrl = 'http://' + host + '/api';
 	  
 	  var fetchFriskLog = function() {
 	    var table = document.getElementById('friskTableBody');
 	    $("#friskTableBody > tr").remove();
 	    api.httpGet(localUrl + '/log')
 	      .success(function(data) {
+	        console.log(data);
 	        fillTableWithLogData(data);
 	      });
 
@@ -118,10 +119,12 @@
 	      var row;
 	      for(var i = 0; i < data.length; i++) {
 	        row = table.insertRow(i);
-	        row.insertCell(0).innerHTML = data[i].id;
-	        row.insertCell(1).innerHTML = data[i].userId;
-	        row.insertCell(2).innerHTML = data[i].projectId;
-	        row.insertCell(3).innerHTML = data[i].consumeTypeId;
+	        row.insertCell(0).innerHTML = data[i][0];
+	        row.insertCell(1).innerHTML = data[i][1];
+	        row.insertCell(2).innerHTML = data[i][2];
+	        row.insertCell(3).innerHTML = data[i][3];
+	        row.insertCell(4).innerHTML = data[i][4];
+	        row.insertCell(5).innerHTML = Date(data[i][5]);
 	      }
 	    }
 	  };
@@ -270,7 +273,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(14)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(21)+") no-repeat center;\n  opacity: 0.2;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(21)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n", ""]);
 
 /***/ },
 /* 10 */
