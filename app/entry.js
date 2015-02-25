@@ -5,6 +5,7 @@ require("./style.css");
 require("./style.less");
 //document.write(require("./content.js"));
 require("jquery");
+require("jquery-cookie");
 require("bootstrap");
 require("sammy");
 

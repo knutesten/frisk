@@ -14,7 +14,6 @@ $(document).ready(function() {
     $("#friskTableBody > tr").remove();
     api.httpGet(localUrl + '/log')
       .success(function(data) {
-        console.log(data);
         fillTableWithLogData(data);
       });
 
@@ -49,21 +48,37 @@ $(document).ready(function() {
   var userSelect = logForm.elements['friskUser'];
   api.httpGet(localUrl + '/user').success(function(data) {
     populateSelect(userSelect, data, "username");
+    var cookieValue = $.cookie("userId");
+    if(cookieValue) {
+      userSelect.value = cookieValue;
+    }
   });
   
   var flavourSelect = logForm.elements['friskFlavour'];
   api.httpGet(localUrl + '/flavour').success(function(data) {
     populateSelect(flavourSelect, data, "flavour");
+    var cookieValue = $.cookie("flavourId");
+    if(cookieValue) {
+      flavourSelect.value = cookieValue;
+    }
   });
   
   var typeSelect = logForm.elements['friskType'];
   api.httpGet(localUrl + '/consume-type').success(function(data) {
     populateSelect(typeSelect, data, "name");
+    var cookieValue = $.cookie("consumeTypeId");
+    if(cookieValue) {
+      typeSelect.value = cookieValue;
+    }
   });
 
   var projectSelect = logForm.elements['friskProject'];
   api.httpGet(localUrl + '/project').success(function(data) {
     populateSelect(projectSelect, data, "name");
+    var cookieValue = $.cookie("projectId");
+    if(cookieValue) {
+      projectSelect.value = cookieValue;
+    }
   });
   
   $("#logForm").submit(function(e) {
@@ -75,7 +90,13 @@ $(document).ready(function() {
       consumeTypeId: parseInt(logForm.elements['friskType'].value),
       projectId: parseInt(logForm.elements['friskProject'].value)
     };
-    
+
+    $.cookie("userId", log.userId);
+    $.cookie("flavourId", log.flavourId);
+    $.cookie("consumeTypeId", log.consumeTypeId);
+    $.cookie("projectId", log.projectId);
+
+
     api.httpPost(localUrl + '/log', JSON.stringify(log))
       .success(function(data, code) {
         fetchFriskLog();
@@ -83,8 +104,6 @@ $(document).ready(function() {
         logForm.reset();
     }).error(function(data, code) {
         document.getElementById('msg').innerHTML+="Error";
-        console.log(code);
-        console.log(data);
     });
     e.preventDefault();
   });

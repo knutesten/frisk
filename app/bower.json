@@ -6,5 +6,7 @@
     "jquery": "2.1.3",
     "bootstrap": "v3.3.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "jquery-cookie": "~1.4.1"
+  }
 }
