@@ -11,7 +11,7 @@
 
     <div class="container">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-12">
                 <label id="stockName"></label>
                 <label id="stockValue"></label>
             </div>
@@ -63,7 +63,12 @@
                 <div id="msg"></div>
             </div>
             <div class="col-md-4">
-                <div class="ct-chart ct-perfect-fourth"></div>
+                <label>Show count for:</label>
+                <select id="projectFriskCountSelect" class="form-control">
+                    <option> -- Project -- </option>
+                </select>
+                <div id="friskCount"></div>
+                <!--<div class="ct-chart ct-perfect-fourth"></div>-->
             </div>
         </div>
         <div class="row">
@@ -83,8 +88,6 @@
             </div>
         </div>
     </div>
-
-
 
 </body>
 </html>

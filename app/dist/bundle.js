@@ -112,6 +112,10 @@
 	var Chartist = __webpack_require__(6);
 	var stock = __webpack_require__(14);
 
+	window.localUrl = 'http://localhost:8080/api';
+	//var host = window.location.host;
+	//var localUrl = 'http://' + host + '/api';
+
 	function deleteLogEntry(id) {
 	  api.httpDelete(localUrl + "/log" + "/"  + id)
 	    .success(function() {
@@ -119,10 +123,17 @@
 	    });
 	}
 
+	function fetchTotalFriskCount() {
+	  api.httpGet(localUrl + "/log/count/" + 2)
+	    .success(function(data) {
+	      document.getElementById("friskCount").innerHTML = data[1];
+	    });
+	}
+
 	function fetchFriskLog() {
 	  var table = document.getElementById('friskTableBody');
 	  $("#friskTableBody > tr").remove();
-	  api.httpGet(localUrl + '/log')
+	  api.httpGet(localUrl + '/log/formatted')
 	    .success(function(data) {
 	      fillTableWithLogData(data);
 	    });
@@ -143,6 +154,7 @@
 	      button.onclick = function(num) {
 	        return function() {
 	          deleteLogEntry(data[num][0]);
+	          fetchTotalFriskCount();
 	        }
 	      }(i);
 	      row.insertCell(6).appendChild(button);
@@ -161,13 +173,27 @@
 	  }
 	}
 
+	function fillProjectSelect(element) {
+	  api.httpGet(localUrl + '/project').success(function(data) {
+	    populateSelect(element, data, "name");
+	    var cookieValue = $.cookie("projectId");
+	    if(cookieValue) {
+	      element.value = cookieValue;
+	    }
+	  });
+	}
+
 	$(document).ready(function() {
-	  window.localUrl = 'http://localhost:8080/api';
-	  //var host = window.location.host;
-	  //var localUrl = 'http://' + host + '/api';
-	  
 	  stock.getStock();
 	  fetchFriskLog();
+	  
+	  fetchTotalFriskCount();
+
+	  var friskCountSelect = document.getElementById('projectFriskCountSelect');
+	  //  .onchange(function () {
+	  //    
+	  //});
+	  fillProjectSelect(friskCountSelect);
 
 	  var logForm = document.forms['logForm'];
 	  var userSelect = logForm.elements['friskUser'];
@@ -198,15 +224,9 @@
 	  });
 
 	  var projectSelect = logForm.elements['friskProject'];
-	  api.httpGet(localUrl + '/project').success(function(data) {
-	    populateSelect(projectSelect, data, "name");
-	    var cookieValue = $.cookie("projectId");
-	    if(cookieValue) {
-	      projectSelect.value = cookieValue;
-	    }
-	  });
+	  fillProjectSelect(projectSelect);
 
-	  $("#logForm").submit(function(e) {
+	  $("#submitLog").click(function() {
 	    var log = {
 	      id: null,
 	      date: new Date().getTime(),
@@ -221,15 +241,15 @@
 	    $.cookie("consumeTypeId", log.consumeTypeId);
 	    $.cookie("projectId", log.projectId);
 	    
+	    console.log(log.projectId);
 	    api.httpPost(localUrl + '/log', JSON.stringify(log))
-	      .success(function(data, code) {
+	      .success(function() {
 	        fetchFriskLog();
-	        document.getElementById('msg').innerHTML+="Success";
+	        document.getElementById('msg').innerHTML="Success";
 	        logForm.reset();
-	    }).error(function(data, code) {
-	        document.getElementById('msg').innerHTML+="Error";
+	    }).error(function() {
+	        document.getElementById('msg').innerHTML="Error";
 	    });
-	    e.preventDefault();
 	  });
 
 	  var pie = new Chartist.Pie('.ct-chart', {
@@ -306,7 +326,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(21)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(27)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(27)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  font-size: 8em;\n  text-align: center;\n  margin-top: 60px;\n}\n", ""]);
 
 /***/ },
 /* 10 */

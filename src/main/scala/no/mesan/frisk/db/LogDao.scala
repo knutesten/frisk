@@ -38,7 +38,9 @@ object LogDao {
     logs.filter(_.id === logId).delete
   }
 
-  case class LogU(id:Int, date:Timestamp, user:String, flavour:Int, consumeType:Int)
+  def all: List[Log] = Db.database.withSession { implicit session => 
+    logs.list
+  }
 
   def getFormatedList: List[(Int, String, String, String, String, Timestamp)] = Db.database.withSession { implicit session =>
     val users = TableQuery[Users]
@@ -57,9 +59,7 @@ object LogDao {
     q.list.reverse.take(5)
   }
   
-  def getFriskCountForUsers(projectId: Int): List[(Int)] = Db.database.withSession { implicit session =>
-    
-    var userProjects = TableQuery[UserProjects]
+  def getFriskCountForUsers(projectId: Int): Int = Db.database.withSession { implicit session =>
     val consumeTypes = TableQuery[ConsumeTypes]
 
     val q = for {
@@ -67,7 +67,7 @@ object LogDao {
           c <- consumeTypes if l.consumeTypeId === c.id
         } yield (c.amount)
 
-        q.list
+        q.list.fold(0) { (sum, i) => sum + i}
   }
   
 }

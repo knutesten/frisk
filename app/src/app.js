@@ -7,6 +7,10 @@ var moment = require("moment");
 var Chartist = require("chartist");
 var stock = require("./stock/stock.js");
 
+window.localUrl = 'http://localhost:8080/api';
+//var host = window.location.host;
+//var localUrl = 'http://' + host + '/api';
+
 function deleteLogEntry(id) {
   api.httpDelete(localUrl + "/log" + "/"  + id)
     .success(function() {
@@ -14,10 +18,17 @@ function deleteLogEntry(id) {
     });
 }
 
+function fetchTotalFriskCount() {
+  api.httpGet(localUrl + "/log/count/" + 2)
+    .success(function(data) {
+      document.getElementById("friskCount").innerHTML = data[1];
+    });
+}
+
 function fetchFriskLog() {
   var table = document.getElementById('friskTableBody');
   $("#friskTableBody > tr").remove();
-  api.httpGet(localUrl + '/log')
+  api.httpGet(localUrl + '/log/formatted')
     .success(function(data) {
       fillTableWithLogData(data);
     });
@@ -38,6 +49,7 @@ function fetchFriskLog() {
       button.onclick = function(num) {
         return function() {
           deleteLogEntry(data[num][0]);
+          fetchTotalFriskCount();
         }
       }(i);
       row.insertCell(6).appendChild(button);
@@ -56,13 +68,27 @@ function populateSelect(element, list, prop) {
   }
 }
 
+function fillProjectSelect(element) {
+  api.httpGet(localUrl + '/project').success(function(data) {
+    populateSelect(element, data, "name");
+    var cookieValue = $.cookie("projectId");
+    if(cookieValue) {
+      element.value = cookieValue;
+    }
+  });
+}
+
 $(document).ready(function() {
-  window.localUrl = 'http://localhost:8080/api';
-  //var host = window.location.host;
-  //var localUrl = 'http://' + host + '/api';
-  
   stock.getStock();
   fetchFriskLog();
+  
+  fetchTotalFriskCount();
+
+  var friskCountSelect = document.getElementById('projectFriskCountSelect');
+  //  .onchange(function () {
+  //    
+  //});
+  fillProjectSelect(friskCountSelect);
 
   var logForm = document.forms['logForm'];
   var userSelect = logForm.elements['friskUser'];
@@ -93,15 +119,9 @@ $(document).ready(function() {
   });
 
   var projectSelect = logForm.elements['friskProject'];
-  api.httpGet(localUrl + '/project').success(function(data) {
-    populateSelect(projectSelect, data, "name");
-    var cookieValue = $.cookie("projectId");
-    if(cookieValue) {
-      projectSelect.value = cookieValue;
-    }
-  });
+  fillProjectSelect(projectSelect);
 
-  $("#logForm").submit(function(e) {
+  $("#submitLog").click(function() {
     var log = {
       id: null,
       date: new Date().getTime(),
@@ -116,15 +136,15 @@ $(document).ready(function() {
     $.cookie("consumeTypeId", log.consumeTypeId);
     $.cookie("projectId", log.projectId);
     
+    console.log(log.projectId);
     api.httpPost(localUrl + '/log', JSON.stringify(log))
-      .success(function(data, code) {
+      .success(function() {
         fetchFriskLog();
-        document.getElementById('msg').innerHTML+="Success";
+        document.getElementById('msg').innerHTML="Success";
         logForm.reset();
-    }).error(function(data, code) {
-        document.getElementById('msg').innerHTML+="Error";
+    }).error(function() {
+        document.getElementById('msg').innerHTML="Error";
     });
-    e.preventDefault();
   });
 
   var pie = new Chartist.Pie('.ct-chart', {
