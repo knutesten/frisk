@@ -22,5 +22,13 @@ module.exports = {
       url: theUrl,
       data: data
     });
+  },
+  
+  httpDelete: function (theUrl) {
+    return $.ajax({
+      type: "DELETE",
+      dataType: "json",
+      url: theUrl
+    });
   }
 };

@@ -2,6 +2,7 @@ package no.mesan.frisk.actors.routes
 
 import akka.actor.{Actor, ActorRef, Props}
 import no.mesan.frisk.util.CORSSupport
+import spray.http._
 import spray.routing.HttpService
 
 /**
@@ -31,8 +32,11 @@ class ApiRoute(userRoute: ActorRef,
           pathPrefix("consume-type") { ctx => consumeTypeRoute ! ctx} ~
           pathPrefix("log") { ctx => logRoute ! ctx} ~
           pathPrefix("project") { ctx => projectRoute ! ctx}
-      } ~
-        getFromResourceDirectory("app")
+      } ~ 
+      getFromResourceDirectory("app") ~
+      pathSingleSlash {
+        redirect("/index.html", StatusCodes.Found)
+      }
     }
   }
 }

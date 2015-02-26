@@ -16,7 +16,6 @@ object UserRoute {
 
 class UserRoute extends Actor with UserRouteTrait {
   def actorRefFactory = context
-
   def receive = runRoute(user)
 }
 

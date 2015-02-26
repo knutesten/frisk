@@ -18,8 +18,12 @@ module.exports = {
       { test: /\.css$/, loader: "style!css" },
       { test: /\.jpg$/, loader: "file" },
       { test: /\.less$/, loader: "style!css!less"},
-      {test: /\.(woff|svg|ttf|eot)([\?]?.*)$/, loader: "file-loader?name=[name].[ext]"}
+      { test: /\.(woff|svg|ttf|eot)([\?]?.*)$/, loader: "file-loader?name=[name].[ext]"}
+      //{ test: /\.js$/, loader: 'script!javascript' }
     ]
+  },
+  resolve: {
+    modulesDirectories: ['node_modules', 'bower_components']
   },
   plugins: [
     new BowerWebpackPlugin({
@@ -28,9 +32,6 @@ module.exports = {
     new webpack.ProvidePlugin({
       $:      "jquery",
       jQuery: "jquery"
-    }),
-    new webpack.ResolverPlugin(
-      new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin("bower.json", ["main"])
-    )
+    })
   ]
 };

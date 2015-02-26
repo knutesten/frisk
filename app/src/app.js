@@ -2,50 +2,68 @@
  * Created by simena on 20.02.2015.
  */
 
-var api = require("./api/rest.js");
+var api = require("./rest/rest.js");
 var moment = require("moment");
+var Chartist = require("chartist");
+var stock = require("./stock/stock.js");
 
+function deleteLogEntry(id) {
+  api.httpDelete(localUrl + "/log" + "/"  + id)
+    .success(function() {
+      fetchFriskLog();
+    });
+}
+
+function fetchFriskLog() {
+  var table = document.getElementById('friskTableBody');
+  $("#friskTableBody > tr").remove();
+  api.httpGet(localUrl + '/log')
+    .success(function(data) {
+      fillTableWithLogData(data);
+    });
+
+  function fillTableWithLogData(data) {
+    var row;
+    var button;
+    for(var i = 0; i < data.length; i++) {
+      row = table.insertRow(i);
+      row.insertCell(0).innerHTML = data[i][0];
+      row.insertCell(1).innerHTML = data[i][1];
+      row.insertCell(2).innerHTML = data[i][2];
+      row.insertCell(3).innerHTML = data[i][3];
+      row.insertCell(4).innerHTML = data[i][4];
+      row.insertCell(5).innerHTML = moment(data[i][5]).format('MMMM Do YYYY, HH:mm:ss');
+      button = document.createElement("button");
+      button.innerHTML = "Delete";
+      button.onclick = function(num) {
+        return function() {
+          deleteLogEntry(data[num][0]);
+        }
+      }(i);
+      row.insertCell(6).appendChild(button);
+    }
+  }
+}
+
+function populateSelect(element, list, prop) {
+  var opt;
+  for(var i = 0; i < list.length; i++) {
+    opt = document.createElement("option");
+    opt.value = list[i].id;
+    opt.innerHTML = list[i][prop];
+
+    element.appendChild(opt);
+  }
+}
 
 $(document).ready(function() {
-  //var localUrl = 'http://localhost:8080/api';
-  var host = window.location.host;
-  var localUrl = 'http://' + host + '/api';
+  window.localUrl = 'http://localhost:8080/api';
+  //var host = window.location.host;
+  //var localUrl = 'http://' + host + '/api';
   
-  var fetchFriskLog = function() {
-    var table = document.getElementById('friskTableBody');
-    $("#friskTableBody > tr").remove();
-    api.httpGet(localUrl + '/log')
-      .success(function(data) {
-        fillTableWithLogData(data);
-      });
-
-    function fillTableWithLogData(data) {
-      var row;
-      for(var i = 0; i < data.length; i++) {
-        row = table.insertRow(i);
-        row.insertCell(0).innerHTML = data[i][0];
-        row.insertCell(1).innerHTML = data[i][1];
-        row.insertCell(2).innerHTML = data[i][2];
-        row.insertCell(3).innerHTML = data[i][3];
-        row.insertCell(4).innerHTML = data[i][4];
-        row.insertCell(5).innerHTML = moment(data[i][5]).format('MMMM Do YYYY, HH:mm:ss');
-      }
-    }
-  };
-
+  stock.getStock();
   fetchFriskLog();
-  
-  var populateSelect = function(element, list, prop) {
-    var opt;
-    for(var i = 0; i < list.length; i++) {
-      opt = document.createElement("option");
-      opt.value = list[i].id;
-      opt.innerHTML = list[i][prop];
 
-      element.appendChild(opt);
-    }
-  };
-  
   var logForm = document.forms['logForm'];
   var userSelect = logForm.elements['friskUser'];
   api.httpGet(localUrl + '/user').success(function(data) {
@@ -55,7 +73,7 @@ $(document).ready(function() {
       userSelect.value = cookieValue;
     }
   });
-  
+
   var flavourSelect = logForm.elements['friskFlavour'];
   api.httpGet(localUrl + '/flavour').success(function(data) {
     populateSelect(flavourSelect, data, "flavour");
@@ -64,7 +82,7 @@ $(document).ready(function() {
       flavourSelect.value = cookieValue;
     }
   });
-  
+
   var typeSelect = logForm.elements['friskType'];
   api.httpGet(localUrl + '/consume-type').success(function(data) {
     populateSelect(typeSelect, data, "name");
@@ -82,7 +100,7 @@ $(document).ready(function() {
       projectSelect.value = cookieValue;
     }
   });
-  
+
   $("#logForm").submit(function(e) {
     var log = {
       id: null,
@@ -97,8 +115,7 @@ $(document).ready(function() {
     $.cookie("flavourId", log.flavourId);
     $.cookie("consumeTypeId", log.consumeTypeId);
     $.cookie("projectId", log.projectId);
-
-
+    
     api.httpPost(localUrl + '/log', JSON.stringify(log))
       .success(function(data, code) {
         fetchFriskLog();
@@ -109,8 +126,12 @@ $(document).ready(function() {
     });
     e.preventDefault();
   });
-  
-  
-  
+
+  var pie = new Chartist.Pie('.ct-chart', {
+    series: [10, 2, 4, 3]
+  }, {
+    donut: true
+  });
+
   
 });

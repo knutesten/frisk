@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import no.mesan.frisk.model.frisk.consumeType.ConsumeTypes
 import no.mesan.frisk.model.frisk.flavour.Flavours
 import no.mesan.frisk.model.frisk.log.{Log, Logs}
-import no.mesan.frisk.model.frisk.project.Projects
+import no.mesan.frisk.model.frisk.project.{UserProjects, Projects}
 import no.mesan.frisk.model.user.Users
 
 import scala.slick.driver.PostgresDriver.simple._
@@ -33,13 +33,14 @@ object LogDao {
       logs += log
     }
   }
+  
+  def deleteById(logId: Int) = Db.database.withSession { implicit session =>
+    logs.filter(_.id === logId).delete
+  }
 
   case class LogU(id:Int, date:Timestamp, user:String, flavour:Int, consumeType:Int)
 
-  def all: List[(Int, String, String, String, String, Timestamp)] = Db.database.withSession { implicit session =>
-//    val logOut = (l:Logs, u:Users) => l.userId === u.id
-//(Int, Timestamp, String, Int, Int, String)
-//    val log = Query(Logs).filter(_.id === 1)
+  def getFormatedList: List[(Int, String, String, String, String, Timestamp)] = Db.database.withSession { implicit session =>
     val users = TableQuery[Users]
     val projects = TableQuery[Projects]
     val flavour = TableQuery[Flavours]
@@ -53,8 +54,20 @@ object LogDao {
       c <- consumeType if l.consumeTypeId === c.id
     } yield (l.id, u.username, f.flavour, c.name, p.name, l.date)
 
-    q.list
+    q.list.reverse.take(5)
+  }
+  
+  def getFriskCountForUsers(projectId: Int): List[(Int)] = Db.database.withSession { implicit session =>
+    
+    var userProjects = TableQuery[UserProjects]
+    val consumeTypes = TableQuery[ConsumeTypes]
 
+    val q = for {
+      l <- logs if l.projectId === projectId
+          c <- consumeTypes if l.consumeTypeId === c.id
+        } yield (c.amount)
+
+        q.list
   }
   
 }

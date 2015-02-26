@@ -15,7 +15,6 @@ object LogRoute {
 
 class LogRoute extends Actor with LogRouteTrait {
   def actorRefFactory = context
-
   def receive = runRoute(log)
 }
 
@@ -24,8 +23,13 @@ trait LogRouteTrait extends HttpService with SprayJsonSupport {
   
   val log = {
     get {
+      pathPrefix("count") {
+        path(IntNumber) { id =>
+          complete(LogDao.getFriskCountForUsers(id))
+        }
+      } ~
       pathEnd {
-        complete(LogDao.all)
+        complete(LogDao.getFormatedList)
       }
     } ~
     post {
@@ -34,6 +38,12 @@ trait LogRouteTrait extends HttpService with SprayJsonSupport {
           LogDao.insert(log)
           complete("INSERTED: ", log)
         }
+      }
+    } ~
+    delete {
+      path(IntNumber) { id =>
+        LogDao.deleteById(id)
+        complete("DELETED: ", id)
       }
     }
   }
