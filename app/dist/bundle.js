@@ -48,14 +48,14 @@
 	 * Created by simena on 12.02.2015.
 	 */
 	__webpack_require__(8);
-	__webpack_require__(4);
 	__webpack_require__(3);
-	__webpack_require__(5);
+	__webpack_require__(4);
 	__webpack_require__(7);
+	__webpack_require__(6);
 
 	__webpack_require__(1);
 	__webpack_require__(2);
-	__webpack_require__(6);
+	__webpack_require__(5);
 
 
 
@@ -97,7 +97,7 @@
 	    });
 	  }
 	};
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
 /* 2 */
@@ -109,12 +109,12 @@
 
 	var api = __webpack_require__(1);
 	var moment = __webpack_require__(22);
-	var Chartist = __webpack_require__(6);
+	var Chartist = __webpack_require__(5);
 	var stock = __webpack_require__(14);
 
-	window.localUrl = 'http://localhost:8080/api';
-	//var host = window.location.host;
-	//var localUrl = 'http://' + host + '/api';
+	//window.localUrl = 'http://localhost:8080/api';
+	var host = window.location.host;
+	var localUrl = 'http://' + host + '/api';
 
 	function deleteLogEntry(id) {
 	  api.httpDelete(localUrl + "/log" + "/"  + id)
@@ -260,7 +260,7 @@
 
 	  
 	});
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
 /* 3 */
@@ -278,25 +278,25 @@
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(19);
-	module.exports = __webpack_require__(15);
-	__webpack_require__(23);
-	__webpack_require__(24);
-	__webpack_require__(25);
-	__webpack_require__(26);
+	module.exports = __webpack_require__(12);
+	__webpack_require__(15);
 
 /***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(12);
-	__webpack_require__(16);
+	module.exports = __webpack_require__(13);
 
 /***/ },
 /* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(13);
+	__webpack_require__(19);
+	module.exports = __webpack_require__(17);
+	__webpack_require__(23);
+	__webpack_require__(24);
+	__webpack_require__(25);
+	__webpack_require__(26);
 
 /***/ },
 /* 8 */
@@ -330,129 +330,6 @@
 
 /***/ },
 /* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * jQuery Cookie Plugin v1.4.1
-	 * https://github.com/carhartl/jquery-cookie
-	 *
-	 * Copyright 2013 Klaus Hartl
-	 * Released under the MIT license
-	 */
-	(function (factory) {
-		if (true) {
-			// AMD
-			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else if (typeof exports === 'object') {
-			// CommonJS
-			factory(require('jquery'));
-		} else {
-			// Browser globals
-			factory(jQuery);
-		}
-	}(function ($) {
-
-		var pluses = /\+/g;
-
-		function encode(s) {
-			return config.raw ? s : encodeURIComponent(s);
-		}
-
-		function decode(s) {
-			return config.raw ? s : decodeURIComponent(s);
-		}
-
-		function stringifyCookieValue(value) {
-			return encode(config.json ? JSON.stringify(value) : String(value));
-		}
-
-		function parseCookieValue(s) {
-			if (s.indexOf('"') === 0) {
-				// This is a quoted cookie as according to RFC2068, unescape...
-				s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-			}
-
-			try {
-				// Replace server-side written pluses with spaces.
-				// If we can't decode the cookie, ignore it, it's unusable.
-				// If we can't parse the cookie, ignore it, it's unusable.
-				s = decodeURIComponent(s.replace(pluses, ' '));
-				return config.json ? JSON.parse(s) : s;
-			} catch(e) {}
-		}
-
-		function read(s, converter) {
-			var value = config.raw ? s : parseCookieValue(s);
-			return $.isFunction(converter) ? converter(value) : value;
-		}
-
-		var config = $.cookie = function (key, value, options) {
-
-			// Write
-
-			if (value !== undefined && !$.isFunction(value)) {
-				options = $.extend({}, config.defaults, options);
-
-				if (typeof options.expires === 'number') {
-					var days = options.expires, t = options.expires = new Date();
-					t.setTime(+t + days * 864e+5);
-				}
-
-				return (document.cookie = [
-					encode(key), '=', stringifyCookieValue(value),
-					options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
-					options.path    ? '; path=' + options.path : '',
-					options.domain  ? '; domain=' + options.domain : '',
-					options.secure  ? '; secure' : ''
-				].join(''));
-			}
-
-			// Read
-
-			var result = key ? undefined : {};
-
-			// To prevent the for loop in the first place assign an empty array
-			// in case there are no cookies at all. Also prevents odd result when
-			// calling $.cookie().
-			var cookies = document.cookie ? document.cookie.split('; ') : [];
-
-			for (var i = 0, l = cookies.length; i < l; i++) {
-				var parts = cookies[i].split('=');
-				var name = decode(parts.shift());
-				var cookie = parts.join('=');
-
-				if (key && key === name) {
-					// If second argument (value) is a function it's a converter...
-					result = read(cookie, value);
-					break;
-				}
-
-				// Prevent storing a cookie that we couldn't decode.
-				if (!key && (cookie = read(cookie)) !== undefined) {
-					result[name] = cookie;
-				}
-			}
-
-			return result;
-		};
-
-		config.defaults = {};
-
-		$.removeCookie = function (key, options) {
-			if ($.cookie(key) === undefined) {
-				return false;
-			}
-
-			// Must not alter options, thus extending a fresh object...
-			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
-			return !$.cookie(key);
-		};
-
-	}));
-
-
-/***/ },
-/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -9663,6 +9540,129 @@
 
 
 /***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	 * jQuery Cookie Plugin v1.4.1
+	 * https://github.com/carhartl/jquery-cookie
+	 *
+	 * Copyright 2013 Klaus Hartl
+	 * Released under the MIT license
+	 */
+	(function (factory) {
+		if (true) {
+			// AMD
+			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(3)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof exports === 'object') {
+			// CommonJS
+			factory(require('jquery'));
+		} else {
+			// Browser globals
+			factory(jQuery);
+		}
+	}(function ($) {
+
+		var pluses = /\+/g;
+
+		function encode(s) {
+			return config.raw ? s : encodeURIComponent(s);
+		}
+
+		function decode(s) {
+			return config.raw ? s : decodeURIComponent(s);
+		}
+
+		function stringifyCookieValue(value) {
+			return encode(config.json ? JSON.stringify(value) : String(value));
+		}
+
+		function parseCookieValue(s) {
+			if (s.indexOf('"') === 0) {
+				// This is a quoted cookie as according to RFC2068, unescape...
+				s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+			}
+
+			try {
+				// Replace server-side written pluses with spaces.
+				// If we can't decode the cookie, ignore it, it's unusable.
+				// If we can't parse the cookie, ignore it, it's unusable.
+				s = decodeURIComponent(s.replace(pluses, ' '));
+				return config.json ? JSON.parse(s) : s;
+			} catch(e) {}
+		}
+
+		function read(s, converter) {
+			var value = config.raw ? s : parseCookieValue(s);
+			return $.isFunction(converter) ? converter(value) : value;
+		}
+
+		var config = $.cookie = function (key, value, options) {
+
+			// Write
+
+			if (value !== undefined && !$.isFunction(value)) {
+				options = $.extend({}, config.defaults, options);
+
+				if (typeof options.expires === 'number') {
+					var days = options.expires, t = options.expires = new Date();
+					t.setTime(+t + days * 864e+5);
+				}
+
+				return (document.cookie = [
+					encode(key), '=', stringifyCookieValue(value),
+					options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+					options.path    ? '; path=' + options.path : '',
+					options.domain  ? '; domain=' + options.domain : '',
+					options.secure  ? '; secure' : ''
+				].join(''));
+			}
+
+			// Read
+
+			var result = key ? undefined : {};
+
+			// To prevent the for loop in the first place assign an empty array
+			// in case there are no cookies at all. Also prevents odd result when
+			// calling $.cookie().
+			var cookies = document.cookie ? document.cookie.split('; ') : [];
+
+			for (var i = 0, l = cookies.length; i < l; i++) {
+				var parts = cookies[i].split('=');
+				var name = decode(parts.shift());
+				var cookie = parts.join('=');
+
+				if (key && key === name) {
+					// If second argument (value) is a function it's a converter...
+					result = read(cookie, value);
+					break;
+				}
+
+				// Prevent storing a cookie that we couldn't decode.
+				if (!key && (cookie = read(cookie)) !== undefined) {
+					result[name] = cookie;
+				}
+			}
+
+			return result;
+		};
+
+		config.defaults = {};
+
+		$.removeCookie = function (key, options) {
+			if ($.cookie(key) === undefined) {
+				return false;
+			}
+
+			// Must not alter options, thus extending a fresh object...
+			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
+			return !$.cookie(key);
+		};
+
+	}));
+
+
+/***/ },
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -9688,7 +9688,7 @@
 	  // Support module loading scenarios
 	  if (true){
 	    // AMD Anonymous Module
-	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(3)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	  } else {
 	    // No module loader (plain <script> tag) - put directly in global namespace
 	    jQuery.sammy = window.Sammy = factory(jQuery);
@@ -11856,10 +11856,40 @@
 	      });
 	  }
 	};
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
 /* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(16);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(18)(content, {});
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		module.hot.accept("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\bower_components\\chartist\\dist\\chartist.min.css", function() {
+			var newContent = require("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\bower_components\\chartist\\dist\\chartist.min.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(21)();
+	exports.push([module.id, "/* Chartist.js 0.7.2\n * Copyright © 2015 Gion Kunz\n * Free to use under the WTFPL license.\n * http://www.wtfpl.net/\n */\n\n.ct-chart .ct-label,.ct-chart .ct-label.ct-horizontal{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:left}.ct-chart .ct-label.ct-vertical{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:right}.ct-chart .ct-grid{stroke:rgba(0,0,0,.2);stroke-width:1px;stroke-dasharray:2px}.ct-chart .ct-point{stroke-width:10px;stroke-linecap:round}.ct-chart .ct-line{fill:none;stroke-width:4px}.ct-chart .ct-area{stroke:none;fill-opacity:.1}.ct-chart .ct-bar{fill:none;stroke-width:10px}.ct-chart .ct-slice.ct-donut{fill:none;stroke-width:60px}.ct-chart .ct-series.ct-series-a .ct-bar,.ct-chart .ct-series.ct-series-a .ct-line,.ct-chart .ct-series.ct-series-a .ct-point,.ct-chart .ct-series.ct-series-a .ct-slice.ct-donut{stroke:#d70206}.ct-chart .ct-series.ct-series-a .ct-area,.ct-chart .ct-series.ct-series-a .ct-slice:not(.ct-donut){fill:#d70206}.ct-chart .ct-series.ct-series-b .ct-bar,.ct-chart .ct-series.ct-series-b .ct-line,.ct-chart .ct-series.ct-series-b .ct-point,.ct-chart .ct-series.ct-series-b .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-b .ct-area,.ct-chart .ct-series.ct-series-b .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-c .ct-bar,.ct-chart .ct-series.ct-series-c .ct-line,.ct-chart .ct-series.ct-series-c .ct-point,.ct-chart .ct-series.ct-series-c .ct-slice.ct-donut{stroke:#f4c63d}.ct-chart .ct-series.ct-series-c .ct-area,.ct-chart .ct-series.ct-series-c .ct-slice:not(.ct-donut){fill:#f4c63d}.ct-chart .ct-series.ct-series-d .ct-bar,.ct-chart .ct-series.ct-series-d .ct-line,.ct-chart .ct-series.ct-series-d .ct-point,.ct-chart .ct-series.ct-series-d .ct-slice.ct-donut{stroke:#d17905}.ct-chart .ct-series.ct-series-d .ct-area,.ct-chart .ct-series.ct-series-d .ct-slice:not(.ct-donut){fill:#d17905}.ct-chart .ct-series.ct-series-e .ct-bar,.ct-chart .ct-series.ct-series-e .ct-line,.ct-chart .ct-series.ct-series-e .ct-point,.ct-chart .ct-series.ct-series-e .ct-slice.ct-donut{stroke:#453d3f}.ct-chart .ct-series.ct-series-e .ct-area,.ct-chart .ct-series.ct-series-e .ct-slice:not(.ct-donut){fill:#453d3f}.ct-chart .ct-series.ct-series-f .ct-bar,.ct-chart .ct-series.ct-series-f .ct-line,.ct-chart .ct-series.ct-series-f .ct-point,.ct-chart .ct-series.ct-series-f .ct-slice.ct-donut{stroke:#59922b}.ct-chart .ct-series.ct-series-f .ct-area,.ct-chart .ct-series.ct-series-f .ct-slice:not(.ct-donut){fill:#59922b}.ct-chart .ct-series.ct-series-g .ct-bar,.ct-chart .ct-series.ct-series-g .ct-line,.ct-chart .ct-series.ct-series-g .ct-point,.ct-chart .ct-series.ct-series-g .ct-slice.ct-donut{stroke:#0544d3}.ct-chart .ct-series.ct-series-g .ct-area,.ct-chart .ct-series.ct-series-g .ct-slice:not(.ct-donut){fill:#0544d3}.ct-chart .ct-series.ct-series-h .ct-bar,.ct-chart .ct-series.ct-series-h .ct-line,.ct-chart .ct-series.ct-series-h .ct-point,.ct-chart .ct-series.ct-series-h .ct-slice.ct-donut{stroke:#6b0392}.ct-chart .ct-series.ct-series-h .ct-area,.ct-chart .ct-series.ct-series-h .ct-slice:not(.ct-donut){fill:#6b0392}.ct-chart .ct-series.ct-series-i .ct-bar,.ct-chart .ct-series.ct-series-i .ct-line,.ct-chart .ct-series.ct-series-i .ct-point,.ct-chart .ct-series.ct-series-i .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-i .ct-area,.ct-chart .ct-series.ct-series-i .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-j .ct-bar,.ct-chart .ct-series.ct-series-j .ct-line,.ct-chart .ct-series.ct-series-j .ct-point,.ct-chart .ct-series.ct-series-j .ct-slice.ct-donut{stroke:#dda458}.ct-chart .ct-series.ct-series-j .ct-area,.ct-chart .ct-series.ct-series-j .ct-slice:not(.ct-donut){fill:#dda458}.ct-chart .ct-series.ct-series-k .ct-bar,.ct-chart .ct-series.ct-series-k .ct-line,.ct-chart .ct-series.ct-series-k .ct-point,.ct-chart .ct-series.ct-series-k .ct-slice.ct-donut{stroke:#eacf7d}.ct-chart .ct-series.ct-series-k .ct-area,.ct-chart .ct-series.ct-series-k .ct-slice:not(.ct-donut){fill:#eacf7d}.ct-chart .ct-series.ct-series-l .ct-bar,.ct-chart .ct-series.ct-series-l .ct-line,.ct-chart .ct-series.ct-series-l .ct-point,.ct-chart .ct-series.ct-series-l .ct-slice.ct-donut{stroke:#86797d}.ct-chart .ct-series.ct-series-l .ct-area,.ct-chart .ct-series.ct-series-l .ct-slice:not(.ct-donut){fill:#86797d}.ct-chart .ct-series.ct-series-m .ct-bar,.ct-chart .ct-series.ct-series-m .ct-line,.ct-chart .ct-series.ct-series-m .ct-point,.ct-chart .ct-series.ct-series-m .ct-slice.ct-donut{stroke:#b2c326}.ct-chart .ct-series.ct-series-m .ct-area,.ct-chart .ct-series.ct-series-m .ct-slice:not(.ct-donut){fill:#b2c326}.ct-chart .ct-series.ct-series-n .ct-bar,.ct-chart .ct-series.ct-series-n .ct-line,.ct-chart .ct-series.ct-series-n .ct-point,.ct-chart .ct-series.ct-series-n .ct-slice.ct-donut{stroke:#6188e2}.ct-chart .ct-series.ct-series-n .ct-area,.ct-chart .ct-series.ct-series-n .ct-slice:not(.ct-donut){fill:#6188e2}.ct-chart .ct-series.ct-series-o .ct-bar,.ct-chart .ct-series.ct-series-o .ct-line,.ct-chart .ct-series.ct-series-o .ct-point,.ct-chart .ct-series.ct-series-o .ct-slice.ct-donut{stroke:#a748ca}.ct-chart .ct-series.ct-series-o .ct-area,.ct-chart .ct-series.ct-series-o .ct-slice:not(.ct-donut){fill:#a748ca}.ct-chart.ct-square{display:block;position:relative;width:100%}.ct-chart.ct-square:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:100%}.ct-chart.ct-square:after{content:\"\";display:table;clear:both}.ct-chart.ct-square>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-second{display:block;position:relative;width:100%}.ct-chart.ct-minor-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:93.75%}.ct-chart.ct-minor-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-second{display:block;position:relative;width:100%}.ct-chart.ct-major-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:88.8888888889%}.ct-chart.ct-major-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-third{display:block;position:relative;width:100%}.ct-chart.ct-minor-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:83.3333333333%}.ct-chart.ct-minor-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-third{display:block;position:relative;width:100%}.ct-chart.ct-major-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:80%}.ct-chart.ct-major-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fourth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fourth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:75%}.ct-chart.ct-perfect-fourth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fourth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fifth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fifth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:66.6666666667%}.ct-chart.ct-perfect-fifth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fifth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-sixth{display:block;position:relative;width:100%}.ct-chart.ct-minor-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:62.5%}.ct-chart.ct-minor-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-golden-section{display:block;position:relative;width:100%}.ct-chart.ct-golden-section:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:61.804697157%}.ct-chart.ct-golden-section:after{content:\"\";display:table;clear:both}.ct-chart.ct-golden-section>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-sixth{display:block;position:relative;width:100%}.ct-chart.ct-major-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:60%}.ct-chart.ct-major-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-seventh{display:block;position:relative;width:100%}.ct-chart.ct-minor-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:56.25%}.ct-chart.ct-minor-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-seventh{display:block;position:relative;width:100%}.ct-chart.ct-major-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:53.3333333333%}.ct-chart.ct-major-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-octave{display:block;position:relative;width:100%}.ct-chart.ct-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:50%}.ct-chart.ct-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-octave>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-tenth{display:block;position:relative;width:100%}.ct-chart.ct-major-tenth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:40%}.ct-chart.ct-major-tenth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-tenth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-eleventh{display:block;position:relative;width:100%}.ct-chart.ct-major-eleventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:37.5%}.ct-chart.ct-major-eleventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-eleventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-twelfth{display:block;position:relative;width:100%}.ct-chart.ct-major-twelfth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:33.3333333333%}.ct-chart.ct-major-twelfth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-twelfth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-double-octave{display:block;position:relative;width:100%}.ct-chart.ct-double-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:25%}.ct-chart.ct-double-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-double-octave>svg{display:block;position:absolute;top:0;left:0}", ""]);
+
+/***/ },
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(jQuery) {/*!
@@ -14169,37 +14199,7 @@
 
 	}(jQuery);
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
-
-/***/ },
-/* 16 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(17);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(18)(content, {});
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		module.hot.accept("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\bower_components\\chartist\\dist\\chartist.min.css", function() {
-			var newContent = require("!!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\node_modules\\css-loader\\index.js!c:\\Users\\simena\\Documents\\MineProsjekter\\frisk\\app\\bower_components\\chartist\\dist\\chartist.min.css");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(21)();
-	exports.push([module.id, "/* Chartist.js 0.7.2\n * Copyright © 2015 Gion Kunz\n * Free to use under the WTFPL license.\n * http://www.wtfpl.net/\n */\n\n.ct-chart .ct-label,.ct-chart .ct-label.ct-horizontal{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:left}.ct-chart .ct-label.ct-vertical{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:right}.ct-chart .ct-grid{stroke:rgba(0,0,0,.2);stroke-width:1px;stroke-dasharray:2px}.ct-chart .ct-point{stroke-width:10px;stroke-linecap:round}.ct-chart .ct-line{fill:none;stroke-width:4px}.ct-chart .ct-area{stroke:none;fill-opacity:.1}.ct-chart .ct-bar{fill:none;stroke-width:10px}.ct-chart .ct-slice.ct-donut{fill:none;stroke-width:60px}.ct-chart .ct-series.ct-series-a .ct-bar,.ct-chart .ct-series.ct-series-a .ct-line,.ct-chart .ct-series.ct-series-a .ct-point,.ct-chart .ct-series.ct-series-a .ct-slice.ct-donut{stroke:#d70206}.ct-chart .ct-series.ct-series-a .ct-area,.ct-chart .ct-series.ct-series-a .ct-slice:not(.ct-donut){fill:#d70206}.ct-chart .ct-series.ct-series-b .ct-bar,.ct-chart .ct-series.ct-series-b .ct-line,.ct-chart .ct-series.ct-series-b .ct-point,.ct-chart .ct-series.ct-series-b .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-b .ct-area,.ct-chart .ct-series.ct-series-b .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-c .ct-bar,.ct-chart .ct-series.ct-series-c .ct-line,.ct-chart .ct-series.ct-series-c .ct-point,.ct-chart .ct-series.ct-series-c .ct-slice.ct-donut{stroke:#f4c63d}.ct-chart .ct-series.ct-series-c .ct-area,.ct-chart .ct-series.ct-series-c .ct-slice:not(.ct-donut){fill:#f4c63d}.ct-chart .ct-series.ct-series-d .ct-bar,.ct-chart .ct-series.ct-series-d .ct-line,.ct-chart .ct-series.ct-series-d .ct-point,.ct-chart .ct-series.ct-series-d .ct-slice.ct-donut{stroke:#d17905}.ct-chart .ct-series.ct-series-d .ct-area,.ct-chart .ct-series.ct-series-d .ct-slice:not(.ct-donut){fill:#d17905}.ct-chart .ct-series.ct-series-e .ct-bar,.ct-chart .ct-series.ct-series-e .ct-line,.ct-chart .ct-series.ct-series-e .ct-point,.ct-chart .ct-series.ct-series-e .ct-slice.ct-donut{stroke:#453d3f}.ct-chart .ct-series.ct-series-e .ct-area,.ct-chart .ct-series.ct-series-e .ct-slice:not(.ct-donut){fill:#453d3f}.ct-chart .ct-series.ct-series-f .ct-bar,.ct-chart .ct-series.ct-series-f .ct-line,.ct-chart .ct-series.ct-series-f .ct-point,.ct-chart .ct-series.ct-series-f .ct-slice.ct-donut{stroke:#59922b}.ct-chart .ct-series.ct-series-f .ct-area,.ct-chart .ct-series.ct-series-f .ct-slice:not(.ct-donut){fill:#59922b}.ct-chart .ct-series.ct-series-g .ct-bar,.ct-chart .ct-series.ct-series-g .ct-line,.ct-chart .ct-series.ct-series-g .ct-point,.ct-chart .ct-series.ct-series-g .ct-slice.ct-donut{stroke:#0544d3}.ct-chart .ct-series.ct-series-g .ct-area,.ct-chart .ct-series.ct-series-g .ct-slice:not(.ct-donut){fill:#0544d3}.ct-chart .ct-series.ct-series-h .ct-bar,.ct-chart .ct-series.ct-series-h .ct-line,.ct-chart .ct-series.ct-series-h .ct-point,.ct-chart .ct-series.ct-series-h .ct-slice.ct-donut{stroke:#6b0392}.ct-chart .ct-series.ct-series-h .ct-area,.ct-chart .ct-series.ct-series-h .ct-slice:not(.ct-donut){fill:#6b0392}.ct-chart .ct-series.ct-series-i .ct-bar,.ct-chart .ct-series.ct-series-i .ct-line,.ct-chart .ct-series.ct-series-i .ct-point,.ct-chart .ct-series.ct-series-i .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-i .ct-area,.ct-chart .ct-series.ct-series-i .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-j .ct-bar,.ct-chart .ct-series.ct-series-j .ct-line,.ct-chart .ct-series.ct-series-j .ct-point,.ct-chart .ct-series.ct-series-j .ct-slice.ct-donut{stroke:#dda458}.ct-chart .ct-series.ct-series-j .ct-area,.ct-chart .ct-series.ct-series-j .ct-slice:not(.ct-donut){fill:#dda458}.ct-chart .ct-series.ct-series-k .ct-bar,.ct-chart .ct-series.ct-series-k .ct-line,.ct-chart .ct-series.ct-series-k .ct-point,.ct-chart .ct-series.ct-series-k .ct-slice.ct-donut{stroke:#eacf7d}.ct-chart .ct-series.ct-series-k .ct-area,.ct-chart .ct-series.ct-series-k .ct-slice:not(.ct-donut){fill:#eacf7d}.ct-chart .ct-series.ct-series-l .ct-bar,.ct-chart .ct-series.ct-series-l .ct-line,.ct-chart .ct-series.ct-series-l .ct-point,.ct-chart .ct-series.ct-series-l .ct-slice.ct-donut{stroke:#86797d}.ct-chart .ct-series.ct-series-l .ct-area,.ct-chart .ct-series.ct-series-l .ct-slice:not(.ct-donut){fill:#86797d}.ct-chart .ct-series.ct-series-m .ct-bar,.ct-chart .ct-series.ct-series-m .ct-line,.ct-chart .ct-series.ct-series-m .ct-point,.ct-chart .ct-series.ct-series-m .ct-slice.ct-donut{stroke:#b2c326}.ct-chart .ct-series.ct-series-m .ct-area,.ct-chart .ct-series.ct-series-m .ct-slice:not(.ct-donut){fill:#b2c326}.ct-chart .ct-series.ct-series-n .ct-bar,.ct-chart .ct-series.ct-series-n .ct-line,.ct-chart .ct-series.ct-series-n .ct-point,.ct-chart .ct-series.ct-series-n .ct-slice.ct-donut{stroke:#6188e2}.ct-chart .ct-series.ct-series-n .ct-area,.ct-chart .ct-series.ct-series-n .ct-slice:not(.ct-donut){fill:#6188e2}.ct-chart .ct-series.ct-series-o .ct-bar,.ct-chart .ct-series.ct-series-o .ct-line,.ct-chart .ct-series.ct-series-o .ct-point,.ct-chart .ct-series.ct-series-o .ct-slice.ct-donut{stroke:#a748ca}.ct-chart .ct-series.ct-series-o .ct-area,.ct-chart .ct-series.ct-series-o .ct-slice:not(.ct-donut){fill:#a748ca}.ct-chart.ct-square{display:block;position:relative;width:100%}.ct-chart.ct-square:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:100%}.ct-chart.ct-square:after{content:\"\";display:table;clear:both}.ct-chart.ct-square>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-second{display:block;position:relative;width:100%}.ct-chart.ct-minor-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:93.75%}.ct-chart.ct-minor-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-second{display:block;position:relative;width:100%}.ct-chart.ct-major-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:88.8888888889%}.ct-chart.ct-major-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-third{display:block;position:relative;width:100%}.ct-chart.ct-minor-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:83.3333333333%}.ct-chart.ct-minor-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-third{display:block;position:relative;width:100%}.ct-chart.ct-major-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:80%}.ct-chart.ct-major-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fourth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fourth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:75%}.ct-chart.ct-perfect-fourth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fourth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fifth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fifth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:66.6666666667%}.ct-chart.ct-perfect-fifth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fifth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-sixth{display:block;position:relative;width:100%}.ct-chart.ct-minor-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:62.5%}.ct-chart.ct-minor-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-golden-section{display:block;position:relative;width:100%}.ct-chart.ct-golden-section:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:61.804697157%}.ct-chart.ct-golden-section:after{content:\"\";display:table;clear:both}.ct-chart.ct-golden-section>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-sixth{display:block;position:relative;width:100%}.ct-chart.ct-major-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:60%}.ct-chart.ct-major-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-seventh{display:block;position:relative;width:100%}.ct-chart.ct-minor-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:56.25%}.ct-chart.ct-minor-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-seventh{display:block;position:relative;width:100%}.ct-chart.ct-major-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:53.3333333333%}.ct-chart.ct-major-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-octave{display:block;position:relative;width:100%}.ct-chart.ct-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:50%}.ct-chart.ct-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-octave>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-tenth{display:block;position:relative;width:100%}.ct-chart.ct-major-tenth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:40%}.ct-chart.ct-major-tenth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-tenth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-eleventh{display:block;position:relative;width:100%}.ct-chart.ct-major-eleventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:37.5%}.ct-chart.ct-major-eleventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-eleventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-twelfth{display:block;position:relative;width:100%}.ct-chart.ct-major-twelfth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:33.3333333333%}.ct-chart.ct-major-twelfth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-twelfth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-double-octave{display:block;position:relative;width:100%}.ct-chart.ct-double-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:25%}.ct-chart.ct-double-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-double-octave>svg{display:block;position:absolute;top:0;left:0}", ""]);
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
 /* 18 */
