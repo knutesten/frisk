@@ -97,6 +97,16 @@
 	    });
 	  }
 	};
+
+	//MinModul = (function(){
+	//  var x = 0;
+	//
+	//  return {
+	//    x: 0,
+	//    f: function(){}
+	//
+	//  }
+	//})();
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
@@ -184,7 +194,7 @@
 	}
 
 	$(document).ready(function() {
-	  stock.getStock();
+	  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
 	  fetchFriskLog();
 	  
 	  fetchTotalFriskCount();
@@ -252,11 +262,11 @@
 	    });
 	  });
 
-	  var pie = new Chartist.Pie('.ct-chart', {
-	    series: [10, 2, 4, 3]
-	  }, {
-	    donut: true
-	  });
+	  //var pie = new Chartist.Pie('.ct-chart', {
+	  //  series: [10, 2, 4, 3]
+	  //}, {
+	  //  donut: true
+	  //});
 
 	  
 	});
@@ -11845,10 +11855,14 @@
 	 * Created by simena on 25.02.2015.
 	 */
 
+	var api = __webpack_require__(1);
+
 	module.exports = {
-	  getStock: function() {
-	    $.get("http://finance.yahoo.com/d/quotes.csv?s=FUNCOM.OL&f=sb1")
-	      .success(function(data) {
+	  getStock: function(theUrl, data) {
+	    $.ajax({
+	      url: theUrl,
+	      data: { ticker: data }
+	    }).success(function(data) {
 	        var m = data.match(/"(.*?)"/);
 	        var v = data.match(/((?:\d*\.)?\d+)/);
 	        document.getElementById("stockName").innerHTML = m[1];

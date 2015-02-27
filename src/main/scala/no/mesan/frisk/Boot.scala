@@ -5,7 +5,6 @@ import akka.io.IO
 import no.mesan.frisk.actors.routes._
 import no.mesan.frisk.config.Configuration
 import no.mesan.frisk.db._
-import no.mesan.frisk.model.frisk.project.UserProject
 import spray.can.Http
 
 /**
@@ -27,8 +26,10 @@ object Boot extends App with Configuration {
   val consumeTypeRoute = system.actorOf(ConsumeTypeRoute.props, "consume-type-route")
   val logRoute = system.actorOf(LogRoute.props, "log-route")
   val projectRoute = system.actorOf(ProjectRoute.props, "project-route")
+  val stockRoute = system.actorOf(StockRoute.props, "stock-route")
 
-  val apiRoute = system.actorOf(ApiRoute.props(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute), "api-route")
+  val apiRoute = system.actorOf(ApiRoute.props(
+    userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute, stockRoute), "api-route")
 
   IO(Http) ! Http.Bind(apiRoute, serviceHost, servicePort)
 }

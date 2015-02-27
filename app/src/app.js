@@ -79,7 +79,7 @@ function fillProjectSelect(element) {
 }
 
 $(document).ready(function() {
-  stock.getStock();
+  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
   fetchFriskLog();
   
   fetchTotalFriskCount();
@@ -147,11 +147,11 @@ $(document).ready(function() {
     });
   });
 
-  var pie = new Chartist.Pie('.ct-chart', {
-    series: [10, 2, 4, 3]
-  }, {
-    donut: true
-  });
+  //var pie = new Chartist.Pie('.ct-chart', {
+  //  series: [10, 2, 4, 3]
+  //}, {
+  //  donut: true
+  //});
 
   
 });

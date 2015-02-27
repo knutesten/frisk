@@ -32,3 +32,13 @@ module.exports = {
     });
   }
 };
+
+//MinModul = (function(){
+//  var x = 0;
+//
+//  return {
+//    x: 0,
+//    f: function(){}
+//
+//  }
+//})();

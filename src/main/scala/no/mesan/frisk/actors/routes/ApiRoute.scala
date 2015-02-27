@@ -14,13 +14,15 @@ object ApiRoute {
             flavourRoute: ActorRef, 
             consumeTypeRoute: ActorRef,
             logRoute: ActorRef,
-            projectRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute))
+            projectRoute: ActorRef,
+            stockRoute: ActorRef) = Props(new ApiRoute(userRoute, flavourRoute, consumeTypeRoute, logRoute, projectRoute, stockRoute))
 }
 
 class ApiRoute(userRoute: ActorRef, 
                flavourRoute: ActorRef, 
                consumeTypeRoute: ActorRef, 
-               logRoute: ActorRef, projectRoute: ActorRef) extends Actor with HttpService with CORSSupport{
+               logRoute: ActorRef, 
+               projectRoute: ActorRef, stockRoute: ActorRef) extends Actor with HttpService with CORSSupport{
   
   def actorRefFactory = context
 
@@ -31,7 +33,8 @@ class ApiRoute(userRoute: ActorRef,
           pathPrefix("flavour") { ctx => flavourRoute ! ctx} ~
           pathPrefix("consume-type") { ctx => consumeTypeRoute ! ctx} ~
           pathPrefix("log") { ctx => logRoute ! ctx} ~
-          pathPrefix("project") { ctx => projectRoute ! ctx}
+          pathPrefix("project") { ctx => projectRoute ! ctx} ~
+          pathPrefix("stock") { ctx => stockRoute ! ctx}
       } ~ 
       getFromResourceDirectory("app") ~
       pathSingleSlash {
