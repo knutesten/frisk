@@ -7,9 +7,9 @@ var moment = require("moment");
 var Chartist = require("chartist");
 var stock = require("./stock/stock.js");
 
-window.localUrl = 'http://localhost:8080/api';
-//var host = window.location.host;
-//var localUrl = 'http://' + host + '/api';
+//window.localUrl = 'http://localhost:8080/api';
+var host = window.location.host;
+var localUrl = 'http://' + host + '/api';
 
 function deleteLogEntry(id) {
   api.httpDelete(localUrl + "/log" + "/"  + id)
