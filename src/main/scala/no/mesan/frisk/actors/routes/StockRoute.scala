@@ -25,8 +25,9 @@ trait StockRouteTrait extends HttpService with SprayJsonSupport{
       pathEnd {
         parameter("ticker") { ticker =>
           complete {
-            val url = "http://finance.yahoo.com/d/quotes.csv?s=" + ticker + "&f=sb1"
-            val result = scala.io.Source.fromURL(url).mkString//.split("/(.*?)/")
+            val url = "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%3D%22" + 
+              ticker + "%22&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback="
+            val result = scala.io.Source.fromURL(url).mkString
             result
           }
         }

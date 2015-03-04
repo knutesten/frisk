@@ -24,11 +24,14 @@ trait LogRouteTrait extends HttpService with SprayJsonSupport {
   val log = {
     get {
       path("count" / IntNumber) { id =>
-        val c = LogDao.getFriskCountForUsers(id)
+        val c = LogDao.getFriskCountForProject(id)
         complete("Count", c)
       } ~
       path("formatted") {
         complete(LogDao.getFormatedList)
+      } ~
+      path("user-frisk-count" / IntNumber) { id =>
+        complete(LogDao.getFriskForUserInProject(id))
       } ~
       pathEnd {
         complete(LogDao.all)

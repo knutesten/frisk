@@ -10,10 +10,11 @@ module.exports = {
       url: theUrl,
       data: { ticker: data }
     }).success(function(data) {
-        var m = data.match(/"(.*?)"/);
-        var v = data.match(/((?:\d*\.)?\d+)/);
-        document.getElementById("stockName").innerHTML = m[1];
-        document.getElementById("stockValue").innerHTML = v[1];
+        //console.log(JSON.parse(data));
+        document.getElementById("stockName").innerHTML = JSON.parse(data).query.results.quote.Name;
+        document.getElementById("stockValue").innerHTML = JSON.parse(data).query.results.quote.Bid;
+        document.getElementById("stockChange").innerHTML = JSON.parse(data).query.results.quote.Change;
+        document.getElementById("stockPercentChange").innerHTML = JSON.parse(data).query.results.quote.PercentChange;
       });
   }
 };

@@ -14,10 +14,12 @@
             <div class="col-md-12">
                 <label id="stockName"></label>
                 <label id="stockValue"></label>
+                <label id="stockChange"></label>
+                <label id="stockPercentChange"></label>
             </div>
         </div>
         <div id="registration" class="row">
-            <div class="col-md-4">
+            <div class="col-md-5 col-1-offset">
                 <form id="logForm">
                     <!--<div class="form-group">-->
                         <!--<label for="friskUsername">Username</label>-->
@@ -62,13 +64,14 @@
                 </form>
                 <div id="msg"></div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-5 col-1-offset">
                 <label>Show count for:</label>
                 <select id="projectFriskCountSelect" class="form-control">
                     <option> -- Project -- </option>
                 </select>
-                <div id="friskCount"></div>
-                <!--<div class="ct-chart ct-perfect-fourth"></div>-->
+                <div id="pie" class="ct-chart ct-perfect-fourth">
+                    <div id="friskCount"></div>
+                </div>
             </div>
         </div>
         <div class="row">

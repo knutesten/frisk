@@ -6,7 +6,7 @@ import no.mesan.frisk.model.frisk.consumeType.ConsumeTypes
 import no.mesan.frisk.model.frisk.flavour.Flavours
 import no.mesan.frisk.model.frisk.log.{Log, Logs}
 import no.mesan.frisk.model.frisk.project.{UserProjects, Projects}
-import no.mesan.frisk.model.user.Users
+import no.mesan.frisk.model.user.{User, Users}
 
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.meta.MTable
@@ -59,15 +59,31 @@ object LogDao {
     q.list.reverse.take(5)
   }
   
-  def getFriskCountForUsers(projectId: Int): Int = Db.database.withSession { implicit session =>
+  def getFriskCountForProject(projectId: Int): Int = Db.database.withSession { implicit session =>
     val consumeTypes = TableQuery[ConsumeTypes]
 
     val q = for {
       l <- logs if l.projectId === projectId
-          c <- consumeTypes if l.consumeTypeId === c.id
-        } yield (c.amount)
+      c <- consumeTypes if l.consumeTypeId === c.id
+    } yield (c.amount)
 
-        q.list.fold(0) { (sum, i) => sum + i}
+        q.list.sum//.fold(0) { (sum, i) => sum + i}
   }
-  
+
+  def getFriskForUserInProject(project: Int): List[(String,Option[Int])] = Db.database.withSession { implicit session =>
+    val consumeTypes = TableQuery[ConsumeTypes]
+    val users = TableQuery[Users]
+
+    val q = (for {
+      l <- logs
+      c <- consumeTypes if l.consumeTypeId === c.id
+      u <- users if l.userId === u.id
+    } yield (u, c)).groupBy(_._1.username)
+
+    val g2 = q.map { case (username, c) =>
+      (username, c.map(_._2.amount).sum)
+    }
+
+    g2.list
+  }
 }

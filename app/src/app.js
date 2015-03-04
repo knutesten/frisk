@@ -25,6 +25,26 @@ function fetchTotalFriskCount() {
     });
 }
 
+function fetchFriskCountPerUser() {
+
+  api.httpGet(localUrl + "/log/user-frisk-count/" + 2)
+    .success(function(data) {
+      var labels = [];
+      var series = [];
+      data.forEach(function(obj) {
+        labels.push(obj[0]);
+        series.push(obj[1]);
+      });
+      
+      new Chartist.Pie('.ct-chart', {
+        labels: labels,
+        series: series,
+      }, {
+        donut: true
+      });
+  });
+}
+
 function fetchFriskLog() {
   var table = document.getElementById('friskTableBody');
   $("#friskTableBody > tr").remove();
@@ -147,11 +167,6 @@ $(document).ready(function() {
     });
   });
 
-  //var pie = new Chartist.Pie('.ct-chart', {
-  //  series: [10, 2, 4, 3]
-  //}, {
-  //  donut: true
-  //});
-
+  fetchFriskCountPerUser();
   
 });
