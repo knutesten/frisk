@@ -38,7 +38,7 @@ function fetchFriskCountPerUser() {
       
       new Chartist.Pie('.ct-chart', {
         labels: labels,
-        series: series,
+        series: series
       }, {
         donut: true
       });
