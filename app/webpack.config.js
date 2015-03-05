@@ -7,7 +7,7 @@ var BowerWebpackPlugin = require('bower-webpack-plugin');
   
 module.exports = {
   context: __dirname,
-  entry: "./entry.js",
+  entry: "./src/app.js",
   output: {
     path: path.join(__dirname, "dist"),
     publicPath: "dist/",
@@ -19,6 +19,7 @@ module.exports = {
       { test: /\.jpg$/, loader: "file" },
       { test: /\.less$/, loader: "style!css!less"},
       { test: /\.(woff|svg|ttf|eot)([\?]?.*)$/, loader: "file-loader?name=[name].[ext]"}
+      //{ test: /\.(png|jpg)$/, loader: 'url-loader?'}
       //{ test: /\.js$/, loader: 'script!javascript' }
     ]
   },

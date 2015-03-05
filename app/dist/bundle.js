@@ -44,20 +44,98 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * Created by simena on 12.02.2015.
+	/* WEBPACK VAR INJECTION */(function($) {/**
+	 * Created by simena on 20.02.2015.
 	 */
-	__webpack_require__(8);
-	__webpack_require__(3);
+
+	var api = __webpack_require__(1);
+	var moment = __webpack_require__(4);
+	var Chartist = __webpack_require__(7);
+	var stock = __webpack_require__(2);
+
 	__webpack_require__(5);
-	__webpack_require__(4);
-	__webpack_require__(6);
+	__webpack_require__(9);
+	__webpack_require__(8);
+	__webpack_require__(10);
+	__webpack_require__(11);
+	var reg = __webpack_require__(3);
 
-	__webpack_require__(1);
-	__webpack_require__(2);
-	__webpack_require__(7);
+	//window.localUrl = 'http://localhost:8080/api';
+	window.host = window.location.host;
+	window.localUrl = 'http://' + host + '/api';
 
 
+	$(document).ready(function() {
+	  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
+	  reg.fetchFriskLog();
+	  //
+	  reg.fetchTotalFriskCount();
+
+	  var friskCountSelect = document.getElementById('projectFriskCountSelect');
+	  reg.fillProjectSelect(friskCountSelect);
+
+	  var logForm = document.forms['logForm'];
+	  var userSelect = logForm.elements['friskUser'];
+	  api.httpGet(localUrl + '/user')
+	    .success(function(data) {
+	      reg.populateSelect(userSelect, data, "username");
+	      var cookieValue = $.cookie("userId");
+	      if(cookieValue) {
+	        userSelect.value = cookieValue;
+	      }
+	    });
+
+	  var flavourSelect = logForm.elements['friskFlavour'];
+	  api.httpGet(localUrl + '/flavour').success(function(data) {
+	    reg.populateSelect(flavourSelect, data, "flavour");
+	    var cookieValue = $.cookie("flavourId");
+	    if(cookieValue) {
+	      flavourSelect.value = cookieValue;
+	    }
+	  });
+
+	  var typeSelect = logForm.elements['friskType'];
+	  api.httpGet(localUrl + '/consume-type').success(function(data) {
+	    reg.populateSelect(typeSelect, data, "name");
+	    var cookieValue = $.cookie("consumeTypeId");
+	    if(cookieValue) {
+	      typeSelect.value = cookieValue;
+	    }
+	  });
+
+	  var projectSelect = logForm.elements['friskProject'];
+	  reg.fillProjectSelect(projectSelect);
+
+	  $("#submitLog").click(function() {
+	    var log = {
+	      id: null,
+	      date: new Date().getTime(),
+	      userId: parseInt(logForm.elements['friskUser'].value),
+	      flavourId: parseInt(logForm.elements['friskFlavour'].value),
+	      consumeTypeId: parseInt(logForm.elements['friskType'].value),
+	      projectId: parseInt(logForm.elements['friskProject'].value)
+	    };
+
+	    $.cookie("userId", log.userId);
+	    $.cookie("flavourId", log.flavourId);
+	    $.cookie("consumeTypeId", log.consumeTypeId);
+	    $.cookie("projectId", log.projectId);
+
+	    console.log(log.projectId);
+	    api.httpPost(localUrl + '/log', JSON.stringify(log))
+	      .success(function() {
+	        reg.fetchFriskLog();
+	        document.getElementById('msg').innerHTML="Success";
+	        logForm.reset();
+	    }).error(function() {
+	        document.getElementById('msg').innerHTML="Error";
+	    });
+	  });
+
+	  reg.fetchFriskCountPerUser();
+	  
+	});
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
 /* 1 */
@@ -107,24 +185,43 @@
 	//
 	//  }
 	//})();
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function($) {/**
-	 * Created by simena on 20.02.2015.
+	 * Created by simena on 25.02.2015.
 	 */
 
 	var api = __webpack_require__(1);
-	var moment = __webpack_require__(22);
-	var Chartist = __webpack_require__(7);
-	var stock = __webpack_require__(14);
 
-	//window.localUrl = 'http://localhost:8080/api';
-	var host = window.location.host;
-	var localUrl = 'http://' + host + '/api';
+	module.exports = {
+	  getStock: function(theUrl, data) {
+	    $.ajax({
+	      url: theUrl,
+	      data: { ticker: data }
+	    }).success(function(data) {
+	        //console.log(JSON.parse(data));
+	        document.getElementById("stockName").innerHTML = JSON.parse(data).query.results.quote.Name;
+	        document.getElementById("stockValue").innerHTML = JSON.parse(data).query.results.quote.Bid;
+	        document.getElementById("stockChange").innerHTML = JSON.parse(data).query.results.quote.Change;
+	        document.getElementById("stockPercentChange").innerHTML = JSON.parse(data).query.results.quote.PercentChange;
+	      });
+	  }
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function($) {
+	var api = __webpack_require__(1);
+	var moment = __webpack_require__(4);
+	var Chartist = __webpack_require__(7);
+	var stock = __webpack_require__(2);
 
 	function deleteLogEntry(id) {
 	  api.httpDelete(localUrl + "/log" + "/"  + id)
@@ -141,7 +238,6 @@
 	}
 
 	function fetchFriskCountPerUser() {
-
 	  api.httpGet(localUrl + "/log/user-frisk-count/" + 2)
 	    .success(function(data) {
 	      var labels = [];
@@ -150,14 +246,14 @@
 	        labels.push(obj[0]);
 	        series.push(obj[1]);
 	      });
-	      
+
 	      new Chartist.Pie('.ct-chart', {
 	        labels: labels,
 	        series: series
 	      }, {
 	        donut: true
 	      });
-	  });
+	    });
 	}
 
 	function fetchFriskLog() {
@@ -213,127 +309,33 @@
 	  });
 	}
 
-	$(document).ready(function() {
-	  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
-	  fetchFriskLog();
-	  
-	  fetchTotalFriskCount();
-
-	  var friskCountSelect = document.getElementById('projectFriskCountSelect');
-	  //  .onchange(function () {
-	  //    
-	  //});
-	  fillProjectSelect(friskCountSelect);
-
-	  var logForm = document.forms['logForm'];
-	  var userSelect = logForm.elements['friskUser'];
-	  api.httpGet(localUrl + '/user').success(function(data) {
-	    populateSelect(userSelect, data, "username");
-	    var cookieValue = $.cookie("userId");
-	    if(cookieValue) {
-	      userSelect.value = cookieValue;
-	    }
-	  });
-
-	  var flavourSelect = logForm.elements['friskFlavour'];
-	  api.httpGet(localUrl + '/flavour').success(function(data) {
-	    populateSelect(flavourSelect, data, "flavour");
-	    var cookieValue = $.cookie("flavourId");
-	    if(cookieValue) {
-	      flavourSelect.value = cookieValue;
-	    }
-	  });
-
-	  var typeSelect = logForm.elements['friskType'];
-	  api.httpGet(localUrl + '/consume-type').success(function(data) {
-	    populateSelect(typeSelect, data, "name");
-	    var cookieValue = $.cookie("consumeTypeId");
-	    if(cookieValue) {
-	      typeSelect.value = cookieValue;
-	    }
-	  });
-
-	  var projectSelect = logForm.elements['friskProject'];
-	  fillProjectSelect(projectSelect);
-
-	  $("#submitLog").click(function() {
-	    var log = {
-	      id: null,
-	      date: new Date().getTime(),
-	      userId: parseInt(logForm.elements['friskUser'].value),
-	      flavourId: parseInt(logForm.elements['friskFlavour'].value),
-	      consumeTypeId: parseInt(logForm.elements['friskType'].value),
-	      projectId: parseInt(logForm.elements['friskProject'].value)
-	    };
-
-	    $.cookie("userId", log.userId);
-	    $.cookie("flavourId", log.flavourId);
-	    $.cookie("consumeTypeId", log.consumeTypeId);
-	    $.cookie("projectId", log.projectId);
-	    
-	    console.log(log.projectId);
-	    api.httpPost(localUrl + '/log', JSON.stringify(log))
-	      .success(function() {
-	        fetchFriskLog();
-	        document.getElementById('msg').innerHTML="Success";
-	        logForm.reset();
-	    }).error(function() {
-	        document.getElementById('msg').innerHTML="Error";
-	    });
-	  });
-
-	  fetchFriskCountPerUser();
-	  
-	});
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(10);
+	module.exports = {
+	  deleteLogEntry: deleteLogEntry,
+	  fetchTotalFriskCount: fetchTotalFriskCount,
+	  fetchFriskCountPerUser: fetchFriskCountPerUser,
+	  fetchFriskLog: fetchFriskLog,
+	  populateSelect: populateSelect,
+	  fillProjectSelect: fillProjectSelect
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(19);
-	module.exports = __webpack_require__(15);
-	__webpack_require__(23);
-	__webpack_require__(24);
-	__webpack_require__(25);
-	__webpack_require__(26);
+	module.exports = __webpack_require__(12);
 
 /***/ },
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(11);
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(12);
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(13);
-	__webpack_require__(16);
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(9);
+	var content = __webpack_require__(6);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(18)(content, {});
+	var update = __webpack_require__(13)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
@@ -347,14 +349,3432 @@
 	}
 
 /***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(23)();
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(28)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n", ""]);
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(14);
+	__webpack_require__(19);
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(15);
+
+/***/ },
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(21)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(27)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n", ""]);
+	module.exports = __webpack_require__(16);
 
 /***/ },
 /* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	__webpack_require__(21);
+	module.exports = __webpack_require__(17);
+	__webpack_require__(24);
+	__webpack_require__(25);
+	__webpack_require__(26);
+	__webpack_require__(27);
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(18);
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {//! moment.js
+	//! version : 2.9.0
+	//! authors : Tim Wood, Iskren Chernev, Moment.js contributors
+	//! license : MIT
+	//! momentjs.com
+
+	(function (undefined) {
+	    /************************************
+	        Constants
+	    ************************************/
+
+	    var moment,
+	        VERSION = '2.9.0',
+	        // the global-scope this is NOT the global object in Node.js
+	        globalScope = (typeof global !== 'undefined' && (typeof window === 'undefined' || window === global.window)) ? global : this,
+	        oldGlobalMoment,
+	        round = Math.round,
+	        hasOwnProperty = Object.prototype.hasOwnProperty,
+	        i,
+
+	        YEAR = 0,
+	        MONTH = 1,
+	        DATE = 2,
+	        HOUR = 3,
+	        MINUTE = 4,
+	        SECOND = 5,
+	        MILLISECOND = 6,
+
+	        // internal storage for locale config files
+	        locales = {},
+
+	        // extra moment internal properties (plugins register props here)
+	        momentProperties = [],
+
+	        // check for nodeJS
+	        hasModule = (typeof module !== 'undefined' && module && module.exports),
+
+	        // ASP.NET json date format regex
+	        aspNetJsonRegex = /^\/?Date\((\-?\d+)/i,
+	        aspNetTimeSpanJsonRegex = /(\-)?(?:(\d*)\.)?(\d+)\:(\d+)(?:\:(\d+)\.?(\d{3})?)?/,
+
+	        // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
+	        // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
+	        isoDurationRegex = /^(-)?P(?:(?:([0-9,.]*)Y)?(?:([0-9,.]*)M)?(?:([0-9,.]*)D)?(?:T(?:([0-9,.]*)H)?(?:([0-9,.]*)M)?(?:([0-9,.]*)S)?)?|([0-9,.]*)W)$/,
+
+	        // format tokens
+	        formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Q|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|mm?|ss?|S{1,4}|x|X|zz?|ZZ?|.)/g,
+	        localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,
+
+	        // parsing token regexes
+	        parseTokenOneOrTwoDigits = /\d\d?/, // 0 - 99
+	        parseTokenOneToThreeDigits = /\d{1,3}/, // 0 - 999
+	        parseTokenOneToFourDigits = /\d{1,4}/, // 0 - 9999
+	        parseTokenOneToSixDigits = /[+\-]?\d{1,6}/, // -999,999 - 999,999
+	        parseTokenDigits = /\d+/, // nonzero number of digits
+	        parseTokenWord = /[0-9]*['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+|[\u0600-\u06FF\/]+(\s*?[\u0600-\u06FF]+){1,2}/i, // any word (or two) characters or numbers including two/three word month in arabic.
+	        parseTokenTimezone = /Z|[\+\-]\d\d:?\d\d/gi, // +00:00 -00:00 +0000 -0000 or Z
+	        parseTokenT = /T/i, // T (ISO separator)
+	        parseTokenOffsetMs = /[\+\-]?\d+/, // 1234567890123
+	        parseTokenTimestampMs = /[\+\-]?\d+(\.\d{1,3})?/, // 123456789 123456789.123
+
+	        //strict parsing regexes
+	        parseTokenOneDigit = /\d/, // 0 - 9
+	        parseTokenTwoDigits = /\d\d/, // 00 - 99
+	        parseTokenThreeDigits = /\d{3}/, // 000 - 999
+	        parseTokenFourDigits = /\d{4}/, // 0000 - 9999
+	        parseTokenSixDigits = /[+-]?\d{6}/, // -999,999 - 999,999
+	        parseTokenSignedNumber = /[+-]?\d+/, // -inf - inf
+
+	        // iso 8601 regex
+	        // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
+	        isoRegex = /^\s*(?:[+-]\d{6}|\d{4})-(?:(\d\d-\d\d)|(W\d\d$)|(W\d\d-\d)|(\d\d\d))((T| )(\d\d(:\d\d(:\d\d(\.\d+)?)?)?)?([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
+
+	        isoFormat = 'YYYY-MM-DDTHH:mm:ssZ',
+
+	        isoDates = [
+	            ['YYYYYY-MM-DD', /[+-]\d{6}-\d{2}-\d{2}/],
+	            ['YYYY-MM-DD', /\d{4}-\d{2}-\d{2}/],
+	            ['GGGG-[W]WW-E', /\d{4}-W\d{2}-\d/],
+	            ['GGGG-[W]WW', /\d{4}-W\d{2}/],
+	            ['YYYY-DDD', /\d{4}-\d{3}/]
+	        ],
+
+	        // iso time formats and regexes
+	        isoTimes = [
+	            ['HH:mm:ss.SSSS', /(T| )\d\d:\d\d:\d\d\.\d+/],
+	            ['HH:mm:ss', /(T| )\d\d:\d\d:\d\d/],
+	            ['HH:mm', /(T| )\d\d:\d\d/],
+	            ['HH', /(T| )\d\d/]
+	        ],
+
+	        // timezone chunker '+10:00' > ['10', '00'] or '-1530' > ['-', '15', '30']
+	        parseTimezoneChunker = /([\+\-]|\d\d)/gi,
+
+	        // getter and setter names
+	        proxyGettersAndSetters = 'Date|Hours|Minutes|Seconds|Milliseconds'.split('|'),
+	        unitMillisecondFactors = {
+	            'Milliseconds' : 1,
+	            'Seconds' : 1e3,
+	            'Minutes' : 6e4,
+	            'Hours' : 36e5,
+	            'Days' : 864e5,
+	            'Months' : 2592e6,
+	            'Years' : 31536e6
+	        },
+
+	        unitAliases = {
+	            ms : 'millisecond',
+	            s : 'second',
+	            m : 'minute',
+	            h : 'hour',
+	            d : 'day',
+	            D : 'date',
+	            w : 'week',
+	            W : 'isoWeek',
+	            M : 'month',
+	            Q : 'quarter',
+	            y : 'year',
+	            DDD : 'dayOfYear',
+	            e : 'weekday',
+	            E : 'isoWeekday',
+	            gg: 'weekYear',
+	            GG: 'isoWeekYear'
+	        },
+
+	        camelFunctions = {
+	            dayofyear : 'dayOfYear',
+	            isoweekday : 'isoWeekday',
+	            isoweek : 'isoWeek',
+	            weekyear : 'weekYear',
+	            isoweekyear : 'isoWeekYear'
+	        },
+
+	        // format function strings
+	        formatFunctions = {},
+
+	        // default relative time thresholds
+	        relativeTimeThresholds = {
+	            s: 45,  // seconds to minute
+	            m: 45,  // minutes to hour
+	            h: 22,  // hours to day
+	            d: 26,  // days to month
+	            M: 11   // months to year
+	        },
+
+	        // tokens to ordinalize and pad
+	        ordinalizeTokens = 'DDD w W M D d'.split(' '),
+	        paddedTokens = 'M D H h m s w W'.split(' '),
+
+	        formatTokenFunctions = {
+	            M    : function () {
+	                return this.month() + 1;
+	            },
+	            MMM  : function (format) {
+	                return this.localeData().monthsShort(this, format);
+	            },
+	            MMMM : function (format) {
+	                return this.localeData().months(this, format);
+	            },
+	            D    : function () {
+	                return this.date();
+	            },
+	            DDD  : function () {
+	                return this.dayOfYear();
+	            },
+	            d    : function () {
+	                return this.day();
+	            },
+	            dd   : function (format) {
+	                return this.localeData().weekdaysMin(this, format);
+	            },
+	            ddd  : function (format) {
+	                return this.localeData().weekdaysShort(this, format);
+	            },
+	            dddd : function (format) {
+	                return this.localeData().weekdays(this, format);
+	            },
+	            w    : function () {
+	                return this.week();
+	            },
+	            W    : function () {
+	                return this.isoWeek();
+	            },
+	            YY   : function () {
+	                return leftZeroFill(this.year() % 100, 2);
+	            },
+	            YYYY : function () {
+	                return leftZeroFill(this.year(), 4);
+	            },
+	            YYYYY : function () {
+	                return leftZeroFill(this.year(), 5);
+	            },
+	            YYYYYY : function () {
+	                var y = this.year(), sign = y >= 0 ? '+' : '-';
+	                return sign + leftZeroFill(Math.abs(y), 6);
+	            },
+	            gg   : function () {
+	                return leftZeroFill(this.weekYear() % 100, 2);
+	            },
+	            gggg : function () {
+	                return leftZeroFill(this.weekYear(), 4);
+	            },
+	            ggggg : function () {
+	                return leftZeroFill(this.weekYear(), 5);
+	            },
+	            GG   : function () {
+	                return leftZeroFill(this.isoWeekYear() % 100, 2);
+	            },
+	            GGGG : function () {
+	                return leftZeroFill(this.isoWeekYear(), 4);
+	            },
+	            GGGGG : function () {
+	                return leftZeroFill(this.isoWeekYear(), 5);
+	            },
+	            e : function () {
+	                return this.weekday();
+	            },
+	            E : function () {
+	                return this.isoWeekday();
+	            },
+	            a    : function () {
+	                return this.localeData().meridiem(this.hours(), this.minutes(), true);
+	            },
+	            A    : function () {
+	                return this.localeData().meridiem(this.hours(), this.minutes(), false);
+	            },
+	            H    : function () {
+	                return this.hours();
+	            },
+	            h    : function () {
+	                return this.hours() % 12 || 12;
+	            },
+	            m    : function () {
+	                return this.minutes();
+	            },
+	            s    : function () {
+	                return this.seconds();
+	            },
+	            S    : function () {
+	                return toInt(this.milliseconds() / 100);
+	            },
+	            SS   : function () {
+	                return leftZeroFill(toInt(this.milliseconds() / 10), 2);
+	            },
+	            SSS  : function () {
+	                return leftZeroFill(this.milliseconds(), 3);
+	            },
+	            SSSS : function () {
+	                return leftZeroFill(this.milliseconds(), 3);
+	            },
+	            Z    : function () {
+	                var a = this.utcOffset(),
+	                    b = '+';
+	                if (a < 0) {
+	                    a = -a;
+	                    b = '-';
+	                }
+	                return b + leftZeroFill(toInt(a / 60), 2) + ':' + leftZeroFill(toInt(a) % 60, 2);
+	            },
+	            ZZ   : function () {
+	                var a = this.utcOffset(),
+	                    b = '+';
+	                if (a < 0) {
+	                    a = -a;
+	                    b = '-';
+	                }
+	                return b + leftZeroFill(toInt(a / 60), 2) + leftZeroFill(toInt(a) % 60, 2);
+	            },
+	            z : function () {
+	                return this.zoneAbbr();
+	            },
+	            zz : function () {
+	                return this.zoneName();
+	            },
+	            x    : function () {
+	                return this.valueOf();
+	            },
+	            X    : function () {
+	                return this.unix();
+	            },
+	            Q : function () {
+	                return this.quarter();
+	            }
+	        },
+
+	        deprecations = {},
+
+	        lists = ['months', 'monthsShort', 'weekdays', 'weekdaysShort', 'weekdaysMin'],
+
+	        updateInProgress = false;
+
+	    // Pick the first defined of two or three arguments. dfl comes from
+	    // default.
+	    function dfl(a, b, c) {
+	        switch (arguments.length) {
+	            case 2: return a != null ? a : b;
+	            case 3: return a != null ? a : b != null ? b : c;
+	            default: throw new Error('Implement me');
+	        }
+	    }
+
+	    function hasOwnProp(a, b) {
+	        return hasOwnProperty.call(a, b);
+	    }
+
+	    function defaultParsingFlags() {
+	        // We need to deep clone this object, and es5 standard is not very
+	        // helpful.
+	        return {
+	            empty : false,
+	            unusedTokens : [],
+	            unusedInput : [],
+	            overflow : -2,
+	            charsLeftOver : 0,
+	            nullInput : false,
+	            invalidMonth : null,
+	            invalidFormat : false,
+	            userInvalidated : false,
+	            iso: false
+	        };
+	    }
+
+	    function printMsg(msg) {
+	        if (moment.suppressDeprecationWarnings === false &&
+	                typeof console !== 'undefined' && console.warn) {
+	            console.warn('Deprecation warning: ' + msg);
+	        }
+	    }
+
+	    function deprecate(msg, fn) {
+	        var firstTime = true;
+	        return extend(function () {
+	            if (firstTime) {
+	                printMsg(msg);
+	                firstTime = false;
+	            }
+	            return fn.apply(this, arguments);
+	        }, fn);
+	    }
+
+	    function deprecateSimple(name, msg) {
+	        if (!deprecations[name]) {
+	            printMsg(msg);
+	            deprecations[name] = true;
+	        }
+	    }
+
+	    function padToken(func, count) {
+	        return function (a) {
+	            return leftZeroFill(func.call(this, a), count);
+	        };
+	    }
+	    function ordinalizeToken(func, period) {
+	        return function (a) {
+	            return this.localeData().ordinal(func.call(this, a), period);
+	        };
+	    }
+
+	    function monthDiff(a, b) {
+	        // difference in months
+	        var wholeMonthDiff = ((b.year() - a.year()) * 12) + (b.month() - a.month()),
+	            // b is in (anchor - 1 month, anchor + 1 month)
+	            anchor = a.clone().add(wholeMonthDiff, 'months'),
+	            anchor2, adjust;
+
+	        if (b - anchor < 0) {
+	            anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
+	            // linear across the month
+	            adjust = (b - anchor) / (anchor - anchor2);
+	        } else {
+	            anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
+	            // linear across the month
+	            adjust = (b - anchor) / (anchor2 - anchor);
+	        }
+
+	        return -(wholeMonthDiff + adjust);
+	    }
+
+	    while (ordinalizeTokens.length) {
+	        i = ordinalizeTokens.pop();
+	        formatTokenFunctions[i + 'o'] = ordinalizeToken(formatTokenFunctions[i], i);
+	    }
+	    while (paddedTokens.length) {
+	        i = paddedTokens.pop();
+	        formatTokenFunctions[i + i] = padToken(formatTokenFunctions[i], 2);
+	    }
+	    formatTokenFunctions.DDDD = padToken(formatTokenFunctions.DDD, 3);
+
+
+	    function meridiemFixWrap(locale, hour, meridiem) {
+	        var isPm;
+
+	        if (meridiem == null) {
+	            // nothing to do
+	            return hour;
+	        }
+	        if (locale.meridiemHour != null) {
+	            return locale.meridiemHour(hour, meridiem);
+	        } else if (locale.isPM != null) {
+	            // Fallback
+	            isPm = locale.isPM(meridiem);
+	            if (isPm && hour < 12) {
+	                hour += 12;
+	            }
+	            if (!isPm && hour === 12) {
+	                hour = 0;
+	            }
+	            return hour;
+	        } else {
+	            // thie is not supposed to happen
+	            return hour;
+	        }
+	    }
+
+	    /************************************
+	        Constructors
+	    ************************************/
+
+	    function Locale() {
+	    }
+
+	    // Moment prototype object
+	    function Moment(config, skipOverflow) {
+	        if (skipOverflow !== false) {
+	            checkOverflow(config);
+	        }
+	        copyConfig(this, config);
+	        this._d = new Date(+config._d);
+	        // Prevent infinite loop in case updateOffset creates new moment
+	        // objects.
+	        if (updateInProgress === false) {
+	            updateInProgress = true;
+	            moment.updateOffset(this);
+	            updateInProgress = false;
+	        }
+	    }
+
+	    // Duration Constructor
+	    function Duration(duration) {
+	        var normalizedInput = normalizeObjectUnits(duration),
+	            years = normalizedInput.year || 0,
+	            quarters = normalizedInput.quarter || 0,
+	            months = normalizedInput.month || 0,
+	            weeks = normalizedInput.week || 0,
+	            days = normalizedInput.day || 0,
+	            hours = normalizedInput.hour || 0,
+	            minutes = normalizedInput.minute || 0,
+	            seconds = normalizedInput.second || 0,
+	            milliseconds = normalizedInput.millisecond || 0;
+
+	        // representation for dateAddRemove
+	        this._milliseconds = +milliseconds +
+	            seconds * 1e3 + // 1000
+	            minutes * 6e4 + // 1000 * 60
+	            hours * 36e5; // 1000 * 60 * 60
+	        // Because of dateAddRemove treats 24 hours as different from a
+	        // day when working around DST, we need to store them separately
+	        this._days = +days +
+	            weeks * 7;
+	        // It is impossible translate months into days without knowing
+	        // which months you are are talking about, so we have to store
+	        // it separately.
+	        this._months = +months +
+	            quarters * 3 +
+	            years * 12;
+
+	        this._data = {};
+
+	        this._locale = moment.localeData();
+
+	        this._bubble();
+	    }
+
+	    /************************************
+	        Helpers
+	    ************************************/
+
+
+	    function extend(a, b) {
+	        for (var i in b) {
+	            if (hasOwnProp(b, i)) {
+	                a[i] = b[i];
+	            }
+	        }
+
+	        if (hasOwnProp(b, 'toString')) {
+	            a.toString = b.toString;
+	        }
+
+	        if (hasOwnProp(b, 'valueOf')) {
+	            a.valueOf = b.valueOf;
+	        }
+
+	        return a;
+	    }
+
+	    function copyConfig(to, from) {
+	        var i, prop, val;
+
+	        if (typeof from._isAMomentObject !== 'undefined') {
+	            to._isAMomentObject = from._isAMomentObject;
+	        }
+	        if (typeof from._i !== 'undefined') {
+	            to._i = from._i;
+	        }
+	        if (typeof from._f !== 'undefined') {
+	            to._f = from._f;
+	        }
+	        if (typeof from._l !== 'undefined') {
+	            to._l = from._l;
+	        }
+	        if (typeof from._strict !== 'undefined') {
+	            to._strict = from._strict;
+	        }
+	        if (typeof from._tzm !== 'undefined') {
+	            to._tzm = from._tzm;
+	        }
+	        if (typeof from._isUTC !== 'undefined') {
+	            to._isUTC = from._isUTC;
+	        }
+	        if (typeof from._offset !== 'undefined') {
+	            to._offset = from._offset;
+	        }
+	        if (typeof from._pf !== 'undefined') {
+	            to._pf = from._pf;
+	        }
+	        if (typeof from._locale !== 'undefined') {
+	            to._locale = from._locale;
+	        }
+
+	        if (momentProperties.length > 0) {
+	            for (i in momentProperties) {
+	                prop = momentProperties[i];
+	                val = from[prop];
+	                if (typeof val !== 'undefined') {
+	                    to[prop] = val;
+	                }
+	            }
+	        }
+
+	        return to;
+	    }
+
+	    function absRound(number) {
+	        if (number < 0) {
+	            return Math.ceil(number);
+	        } else {
+	            return Math.floor(number);
+	        }
+	    }
+
+	    // left zero fill a number
+	    // see http://jsperf.com/left-zero-filling for performance comparison
+	    function leftZeroFill(number, targetLength, forceSign) {
+	        var output = '' + Math.abs(number),
+	            sign = number >= 0;
+
+	        while (output.length < targetLength) {
+	            output = '0' + output;
+	        }
+	        return (sign ? (forceSign ? '+' : '') : '-') + output;
+	    }
+
+	    function positiveMomentsDifference(base, other) {
+	        var res = {milliseconds: 0, months: 0};
+
+	        res.months = other.month() - base.month() +
+	            (other.year() - base.year()) * 12;
+	        if (base.clone().add(res.months, 'M').isAfter(other)) {
+	            --res.months;
+	        }
+
+	        res.milliseconds = +other - +(base.clone().add(res.months, 'M'));
+
+	        return res;
+	    }
+
+	    function momentsDifference(base, other) {
+	        var res;
+	        other = makeAs(other, base);
+	        if (base.isBefore(other)) {
+	            res = positiveMomentsDifference(base, other);
+	        } else {
+	            res = positiveMomentsDifference(other, base);
+	            res.milliseconds = -res.milliseconds;
+	            res.months = -res.months;
+	        }
+
+	        return res;
+	    }
+
+	    // TODO: remove 'name' arg after deprecation is removed
+	    function createAdder(direction, name) {
+	        return function (val, period) {
+	            var dur, tmp;
+	            //invert the arguments, but complain about it
+	            if (period !== null && !isNaN(+period)) {
+	                deprecateSimple(name, 'moment().' + name  + '(period, number) is deprecated. Please use moment().' + name + '(number, period).');
+	                tmp = val; val = period; period = tmp;
+	            }
+
+	            val = typeof val === 'string' ? +val : val;
+	            dur = moment.duration(val, period);
+	            addOrSubtractDurationFromMoment(this, dur, direction);
+	            return this;
+	        };
+	    }
+
+	    function addOrSubtractDurationFromMoment(mom, duration, isAdding, updateOffset) {
+	        var milliseconds = duration._milliseconds,
+	            days = duration._days,
+	            months = duration._months;
+	        updateOffset = updateOffset == null ? true : updateOffset;
+
+	        if (milliseconds) {
+	            mom._d.setTime(+mom._d + milliseconds * isAdding);
+	        }
+	        if (days) {
+	            rawSetter(mom, 'Date', rawGetter(mom, 'Date') + days * isAdding);
+	        }
+	        if (months) {
+	            rawMonthSetter(mom, rawGetter(mom, 'Month') + months * isAdding);
+	        }
+	        if (updateOffset) {
+	            moment.updateOffset(mom, days || months);
+	        }
+	    }
+
+	    // check if is an array
+	    function isArray(input) {
+	        return Object.prototype.toString.call(input) === '[object Array]';
+	    }
+
+	    function isDate(input) {
+	        return Object.prototype.toString.call(input) === '[object Date]' ||
+	            input instanceof Date;
+	    }
+
+	    // compare two arrays, return the number of differences
+	    function compareArrays(array1, array2, dontConvert) {
+	        var len = Math.min(array1.length, array2.length),
+	            lengthDiff = Math.abs(array1.length - array2.length),
+	            diffs = 0,
+	            i;
+	        for (i = 0; i < len; i++) {
+	            if ((dontConvert && array1[i] !== array2[i]) ||
+	                (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))) {
+	                diffs++;
+	            }
+	        }
+	        return diffs + lengthDiff;
+	    }
+
+	    function normalizeUnits(units) {
+	        if (units) {
+	            var lowered = units.toLowerCase().replace(/(.)s$/, '$1');
+	            units = unitAliases[units] || camelFunctions[lowered] || lowered;
+	        }
+	        return units;
+	    }
+
+	    function normalizeObjectUnits(inputObject) {
+	        var normalizedInput = {},
+	            normalizedProp,
+	            prop;
+
+	        for (prop in inputObject) {
+	            if (hasOwnProp(inputObject, prop)) {
+	                normalizedProp = normalizeUnits(prop);
+	                if (normalizedProp) {
+	                    normalizedInput[normalizedProp] = inputObject[prop];
+	                }
+	            }
+	        }
+
+	        return normalizedInput;
+	    }
+
+	    function makeList(field) {
+	        var count, setter;
+
+	        if (field.indexOf('week') === 0) {
+	            count = 7;
+	            setter = 'day';
+	        }
+	        else if (field.indexOf('month') === 0) {
+	            count = 12;
+	            setter = 'month';
+	        }
+	        else {
+	            return;
+	        }
+
+	        moment[field] = function (format, index) {
+	            var i, getter,
+	                method = moment._locale[field],
+	                results = [];
+
+	            if (typeof format === 'number') {
+	                index = format;
+	                format = undefined;
+	            }
+
+	            getter = function (i) {
+	                var m = moment().utc().set(setter, i);
+	                return method.call(moment._locale, m, format || '');
+	            };
+
+	            if (index != null) {
+	                return getter(index);
+	            }
+	            else {
+	                for (i = 0; i < count; i++) {
+	                    results.push(getter(i));
+	                }
+	                return results;
+	            }
+	        };
+	    }
+
+	    function toInt(argumentForCoercion) {
+	        var coercedNumber = +argumentForCoercion,
+	            value = 0;
+
+	        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
+	            if (coercedNumber >= 0) {
+	                value = Math.floor(coercedNumber);
+	            } else {
+	                value = Math.ceil(coercedNumber);
+	            }
+	        }
+
+	        return value;
+	    }
+
+	    function daysInMonth(year, month) {
+	        return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+	    }
+
+	    function weeksInYear(year, dow, doy) {
+	        return weekOfYear(moment([year, 11, 31 + dow - doy]), dow, doy).week;
+	    }
+
+	    function daysInYear(year) {
+	        return isLeapYear(year) ? 366 : 365;
+	    }
+
+	    function isLeapYear(year) {
+	        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+	    }
+
+	    function checkOverflow(m) {
+	        var overflow;
+	        if (m._a && m._pf.overflow === -2) {
+	            overflow =
+	                m._a[MONTH] < 0 || m._a[MONTH] > 11 ? MONTH :
+	                m._a[DATE] < 1 || m._a[DATE] > daysInMonth(m._a[YEAR], m._a[MONTH]) ? DATE :
+	                m._a[HOUR] < 0 || m._a[HOUR] > 24 ||
+	                    (m._a[HOUR] === 24 && (m._a[MINUTE] !== 0 ||
+	                                           m._a[SECOND] !== 0 ||
+	                                           m._a[MILLISECOND] !== 0)) ? HOUR :
+	                m._a[MINUTE] < 0 || m._a[MINUTE] > 59 ? MINUTE :
+	                m._a[SECOND] < 0 || m._a[SECOND] > 59 ? SECOND :
+	                m._a[MILLISECOND] < 0 || m._a[MILLISECOND] > 999 ? MILLISECOND :
+	                -1;
+
+	            if (m._pf._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
+	                overflow = DATE;
+	            }
+
+	            m._pf.overflow = overflow;
+	        }
+	    }
+
+	    function isValid(m) {
+	        if (m._isValid == null) {
+	            m._isValid = !isNaN(m._d.getTime()) &&
+	                m._pf.overflow < 0 &&
+	                !m._pf.empty &&
+	                !m._pf.invalidMonth &&
+	                !m._pf.nullInput &&
+	                !m._pf.invalidFormat &&
+	                !m._pf.userInvalidated;
+
+	            if (m._strict) {
+	                m._isValid = m._isValid &&
+	                    m._pf.charsLeftOver === 0 &&
+	                    m._pf.unusedTokens.length === 0 &&
+	                    m._pf.bigHour === undefined;
+	            }
+	        }
+	        return m._isValid;
+	    }
+
+	    function normalizeLocale(key) {
+	        return key ? key.toLowerCase().replace('_', '-') : key;
+	    }
+
+	    // pick the locale from the array
+	    // try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
+	    // substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
+	    function chooseLocale(names) {
+	        var i = 0, j, next, locale, split;
+
+	        while (i < names.length) {
+	            split = normalizeLocale(names[i]).split('-');
+	            j = split.length;
+	            next = normalizeLocale(names[i + 1]);
+	            next = next ? next.split('-') : null;
+	            while (j > 0) {
+	                locale = loadLocale(split.slice(0, j).join('-'));
+	                if (locale) {
+	                    return locale;
+	                }
+	                if (next && next.length >= j && compareArrays(split, next, true) >= j - 1) {
+	                    //the next array item is better than a shallower substring of this one
+	                    break;
+	                }
+	                j--;
+	            }
+	            i++;
+	        }
+	        return null;
+	    }
+
+	    function loadLocale(name) {
+	        var oldLocale = null;
+	        if (!locales[name] && hasModule) {
+	            try {
+	                oldLocale = moment.locale();
+	                __webpack_require__(29)("./" + name);
+	                // because defineLocale currently also sets the global locale, we want to undo that for lazy loaded locales
+	                moment.locale(oldLocale);
+	            } catch (e) { }
+	        }
+	        return locales[name];
+	    }
+
+	    // Return a moment from input, that is local/utc/utcOffset equivalent to
+	    // model.
+	    function makeAs(input, model) {
+	        var res, diff;
+	        if (model._isUTC) {
+	            res = model.clone();
+	            diff = (moment.isMoment(input) || isDate(input) ?
+	                    +input : +moment(input)) - (+res);
+	            // Use low-level api, because this fn is low-level api.
+	            res._d.setTime(+res._d + diff);
+	            moment.updateOffset(res, false);
+	            return res;
+	        } else {
+	            return moment(input).local();
+	        }
+	    }
+
+	    /************************************
+	        Locale
+	    ************************************/
+
+
+	    extend(Locale.prototype, {
+
+	        set : function (config) {
+	            var prop, i;
+	            for (i in config) {
+	                prop = config[i];
+	                if (typeof prop === 'function') {
+	                    this[i] = prop;
+	                } else {
+	                    this['_' + i] = prop;
+	                }
+	            }
+	            // Lenient ordinal parsing accepts just a number in addition to
+	            // number + (possibly) stuff coming from _ordinalParseLenient.
+	            this._ordinalParseLenient = new RegExp(this._ordinalParse.source + '|' + /\d{1,2}/.source);
+	        },
+
+	        _months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
+	        months : function (m) {
+	            return this._months[m.month()];
+	        },
+
+	        _monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
+	        monthsShort : function (m) {
+	            return this._monthsShort[m.month()];
+	        },
+
+	        monthsParse : function (monthName, format, strict) {
+	            var i, mom, regex;
+
+	            if (!this._monthsParse) {
+	                this._monthsParse = [];
+	                this._longMonthsParse = [];
+	                this._shortMonthsParse = [];
+	            }
+
+	            for (i = 0; i < 12; i++) {
+	                // make the regex if we don't have it already
+	                mom = moment.utc([2000, i]);
+	                if (strict && !this._longMonthsParse[i]) {
+	                    this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
+	                    this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
+	                }
+	                if (!strict && !this._monthsParse[i]) {
+	                    regex = '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
+	                    this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
+	                }
+	                // test the regex
+	                if (strict && format === 'MMMM' && this._longMonthsParse[i].test(monthName)) {
+	                    return i;
+	                } else if (strict && format === 'MMM' && this._shortMonthsParse[i].test(monthName)) {
+	                    return i;
+	                } else if (!strict && this._monthsParse[i].test(monthName)) {
+	                    return i;
+	                }
+	            }
+	        },
+
+	        _weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
+	        weekdays : function (m) {
+	            return this._weekdays[m.day()];
+	        },
+
+	        _weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
+	        weekdaysShort : function (m) {
+	            return this._weekdaysShort[m.day()];
+	        },
+
+	        _weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
+	        weekdaysMin : function (m) {
+	            return this._weekdaysMin[m.day()];
+	        },
+
+	        weekdaysParse : function (weekdayName) {
+	            var i, mom, regex;
+
+	            if (!this._weekdaysParse) {
+	                this._weekdaysParse = [];
+	            }
+
+	            for (i = 0; i < 7; i++) {
+	                // make the regex if we don't have it already
+	                if (!this._weekdaysParse[i]) {
+	                    mom = moment([2000, 1]).day(i);
+	                    regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
+	                    this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
+	                }
+	                // test the regex
+	                if (this._weekdaysParse[i].test(weekdayName)) {
+	                    return i;
+	                }
+	            }
+	        },
+
+	        _longDateFormat : {
+	            LTS : 'h:mm:ss A',
+	            LT : 'h:mm A',
+	            L : 'MM/DD/YYYY',
+	            LL : 'MMMM D, YYYY',
+	            LLL : 'MMMM D, YYYY LT',
+	            LLLL : 'dddd, MMMM D, YYYY LT'
+	        },
+	        longDateFormat : function (key) {
+	            var output = this._longDateFormat[key];
+	            if (!output && this._longDateFormat[key.toUpperCase()]) {
+	                output = this._longDateFormat[key.toUpperCase()].replace(/MMMM|MM|DD|dddd/g, function (val) {
+	                    return val.slice(1);
+	                });
+	                this._longDateFormat[key] = output;
+	            }
+	            return output;
+	        },
+
+	        isPM : function (input) {
+	            // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
+	            // Using charAt should be more compatible.
+	            return ((input + '').toLowerCase().charAt(0) === 'p');
+	        },
+
+	        _meridiemParse : /[ap]\.?m?\.?/i,
+	        meridiem : function (hours, minutes, isLower) {
+	            if (hours > 11) {
+	                return isLower ? 'pm' : 'PM';
+	            } else {
+	                return isLower ? 'am' : 'AM';
+	            }
+	        },
+
+
+	        _calendar : {
+	            sameDay : '[Today at] LT',
+	            nextDay : '[Tomorrow at] LT',
+	            nextWeek : 'dddd [at] LT',
+	            lastDay : '[Yesterday at] LT',
+	            lastWeek : '[Last] dddd [at] LT',
+	            sameElse : 'L'
+	        },
+	        calendar : function (key, mom, now) {
+	            var output = this._calendar[key];
+	            return typeof output === 'function' ? output.apply(mom, [now]) : output;
+	        },
+
+	        _relativeTime : {
+	            future : 'in %s',
+	            past : '%s ago',
+	            s : 'a few seconds',
+	            m : 'a minute',
+	            mm : '%d minutes',
+	            h : 'an hour',
+	            hh : '%d hours',
+	            d : 'a day',
+	            dd : '%d days',
+	            M : 'a month',
+	            MM : '%d months',
+	            y : 'a year',
+	            yy : '%d years'
+	        },
+
+	        relativeTime : function (number, withoutSuffix, string, isFuture) {
+	            var output = this._relativeTime[string];
+	            return (typeof output === 'function') ?
+	                output(number, withoutSuffix, string, isFuture) :
+	                output.replace(/%d/i, number);
+	        },
+
+	        pastFuture : function (diff, output) {
+	            var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
+	            return typeof format === 'function' ? format(output) : format.replace(/%s/i, output);
+	        },
+
+	        ordinal : function (number) {
+	            return this._ordinal.replace('%d', number);
+	        },
+	        _ordinal : '%d',
+	        _ordinalParse : /\d{1,2}/,
+
+	        preparse : function (string) {
+	            return string;
+	        },
+
+	        postformat : function (string) {
+	            return string;
+	        },
+
+	        week : function (mom) {
+	            return weekOfYear(mom, this._week.dow, this._week.doy).week;
+	        },
+
+	        _week : {
+	            dow : 0, // Sunday is the first day of the week.
+	            doy : 6  // The week that contains Jan 1st is the first week of the year.
+	        },
+
+	        firstDayOfWeek : function () {
+	            return this._week.dow;
+	        },
+
+	        firstDayOfYear : function () {
+	            return this._week.doy;
+	        },
+
+	        _invalidDate: 'Invalid date',
+	        invalidDate: function () {
+	            return this._invalidDate;
+	        }
+	    });
+
+	    /************************************
+	        Formatting
+	    ************************************/
+
+
+	    function removeFormattingTokens(input) {
+	        if (input.match(/\[[\s\S]/)) {
+	            return input.replace(/^\[|\]$/g, '');
+	        }
+	        return input.replace(/\\/g, '');
+	    }
+
+	    function makeFormatFunction(format) {
+	        var array = format.match(formattingTokens), i, length;
+
+	        for (i = 0, length = array.length; i < length; i++) {
+	            if (formatTokenFunctions[array[i]]) {
+	                array[i] = formatTokenFunctions[array[i]];
+	            } else {
+	                array[i] = removeFormattingTokens(array[i]);
+	            }
+	        }
+
+	        return function (mom) {
+	            var output = '';
+	            for (i = 0; i < length; i++) {
+	                output += array[i] instanceof Function ? array[i].call(mom, format) : array[i];
+	            }
+	            return output;
+	        };
+	    }
+
+	    // format date using native date object
+	    function formatMoment(m, format) {
+	        if (!m.isValid()) {
+	            return m.localeData().invalidDate();
+	        }
+
+	        format = expandFormat(format, m.localeData());
+
+	        if (!formatFunctions[format]) {
+	            formatFunctions[format] = makeFormatFunction(format);
+	        }
+
+	        return formatFunctions[format](m);
+	    }
+
+	    function expandFormat(format, locale) {
+	        var i = 5;
+
+	        function replaceLongDateFormatTokens(input) {
+	            return locale.longDateFormat(input) || input;
+	        }
+
+	        localFormattingTokens.lastIndex = 0;
+	        while (i >= 0 && localFormattingTokens.test(format)) {
+	            format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
+	            localFormattingTokens.lastIndex = 0;
+	            i -= 1;
+	        }
+
+	        return format;
+	    }
+
+
+	    /************************************
+	        Parsing
+	    ************************************/
+
+
+	    // get the regex to find the next token
+	    function getParseRegexForToken(token, config) {
+	        var a, strict = config._strict;
+	        switch (token) {
+	        case 'Q':
+	            return parseTokenOneDigit;
+	        case 'DDDD':
+	            return parseTokenThreeDigits;
+	        case 'YYYY':
+	        case 'GGGG':
+	        case 'gggg':
+	            return strict ? parseTokenFourDigits : parseTokenOneToFourDigits;
+	        case 'Y':
+	        case 'G':
+	        case 'g':
+	            return parseTokenSignedNumber;
+	        case 'YYYYYY':
+	        case 'YYYYY':
+	        case 'GGGGG':
+	        case 'ggggg':
+	            return strict ? parseTokenSixDigits : parseTokenOneToSixDigits;
+	        case 'S':
+	            if (strict) {
+	                return parseTokenOneDigit;
+	            }
+	            /* falls through */
+	        case 'SS':
+	            if (strict) {
+	                return parseTokenTwoDigits;
+	            }
+	            /* falls through */
+	        case 'SSS':
+	            if (strict) {
+	                return parseTokenThreeDigits;
+	            }
+	            /* falls through */
+	        case 'DDD':
+	            return parseTokenOneToThreeDigits;
+	        case 'MMM':
+	        case 'MMMM':
+	        case 'dd':
+	        case 'ddd':
+	        case 'dddd':
+	            return parseTokenWord;
+	        case 'a':
+	        case 'A':
+	            return config._locale._meridiemParse;
+	        case 'x':
+	            return parseTokenOffsetMs;
+	        case 'X':
+	            return parseTokenTimestampMs;
+	        case 'Z':
+	        case 'ZZ':
+	            return parseTokenTimezone;
+	        case 'T':
+	            return parseTokenT;
+	        case 'SSSS':
+	            return parseTokenDigits;
+	        case 'MM':
+	        case 'DD':
+	        case 'YY':
+	        case 'GG':
+	        case 'gg':
+	        case 'HH':
+	        case 'hh':
+	        case 'mm':
+	        case 'ss':
+	        case 'ww':
+	        case 'WW':
+	            return strict ? parseTokenTwoDigits : parseTokenOneOrTwoDigits;
+	        case 'M':
+	        case 'D':
+	        case 'd':
+	        case 'H':
+	        case 'h':
+	        case 'm':
+	        case 's':
+	        case 'w':
+	        case 'W':
+	        case 'e':
+	        case 'E':
+	            return parseTokenOneOrTwoDigits;
+	        case 'Do':
+	            return strict ? config._locale._ordinalParse : config._locale._ordinalParseLenient;
+	        default :
+	            a = new RegExp(regexpEscape(unescapeFormat(token.replace('\\', '')), 'i'));
+	            return a;
+	        }
+	    }
+
+	    function utcOffsetFromString(string) {
+	        string = string || '';
+	        var possibleTzMatches = (string.match(parseTokenTimezone) || []),
+	            tzChunk = possibleTzMatches[possibleTzMatches.length - 1] || [],
+	            parts = (tzChunk + '').match(parseTimezoneChunker) || ['-', 0, 0],
+	            minutes = +(parts[1] * 60) + toInt(parts[2]);
+
+	        return parts[0] === '+' ? minutes : -minutes;
+	    }
+
+	    // function to convert string input to date
+	    function addTimeToArrayFromToken(token, input, config) {
+	        var a, datePartArray = config._a;
+
+	        switch (token) {
+	        // QUARTER
+	        case 'Q':
+	            if (input != null) {
+	                datePartArray[MONTH] = (toInt(input) - 1) * 3;
+	            }
+	            break;
+	        // MONTH
+	        case 'M' : // fall through to MM
+	        case 'MM' :
+	            if (input != null) {
+	                datePartArray[MONTH] = toInt(input) - 1;
+	            }
+	            break;
+	        case 'MMM' : // fall through to MMMM
+	        case 'MMMM' :
+	            a = config._locale.monthsParse(input, token, config._strict);
+	            // if we didn't find a month name, mark the date as invalid.
+	            if (a != null) {
+	                datePartArray[MONTH] = a;
+	            } else {
+	                config._pf.invalidMonth = input;
+	            }
+	            break;
+	        // DAY OF MONTH
+	        case 'D' : // fall through to DD
+	        case 'DD' :
+	            if (input != null) {
+	                datePartArray[DATE] = toInt(input);
+	            }
+	            break;
+	        case 'Do' :
+	            if (input != null) {
+	                datePartArray[DATE] = toInt(parseInt(
+	                            input.match(/\d{1,2}/)[0], 10));
+	            }
+	            break;
+	        // DAY OF YEAR
+	        case 'DDD' : // fall through to DDDD
+	        case 'DDDD' :
+	            if (input != null) {
+	                config._dayOfYear = toInt(input);
+	            }
+
+	            break;
+	        // YEAR
+	        case 'YY' :
+	            datePartArray[YEAR] = moment.parseTwoDigitYear(input);
+	            break;
+	        case 'YYYY' :
+	        case 'YYYYY' :
+	        case 'YYYYYY' :
+	            datePartArray[YEAR] = toInt(input);
+	            break;
+	        // AM / PM
+	        case 'a' : // fall through to A
+	        case 'A' :
+	            config._meridiem = input;
+	            // config._isPm = config._locale.isPM(input);
+	            break;
+	        // HOUR
+	        case 'h' : // fall through to hh
+	        case 'hh' :
+	            config._pf.bigHour = true;
+	            /* falls through */
+	        case 'H' : // fall through to HH
+	        case 'HH' :
+	            datePartArray[HOUR] = toInt(input);
+	            break;
+	        // MINUTE
+	        case 'm' : // fall through to mm
+	        case 'mm' :
+	            datePartArray[MINUTE] = toInt(input);
+	            break;
+	        // SECOND
+	        case 's' : // fall through to ss
+	        case 'ss' :
+	            datePartArray[SECOND] = toInt(input);
+	            break;
+	        // MILLISECOND
+	        case 'S' :
+	        case 'SS' :
+	        case 'SSS' :
+	        case 'SSSS' :
+	            datePartArray[MILLISECOND] = toInt(('0.' + input) * 1000);
+	            break;
+	        // UNIX OFFSET (MILLISECONDS)
+	        case 'x':
+	            config._d = new Date(toInt(input));
+	            break;
+	        // UNIX TIMESTAMP WITH MS
+	        case 'X':
+	            config._d = new Date(parseFloat(input) * 1000);
+	            break;
+	        // TIMEZONE
+	        case 'Z' : // fall through to ZZ
+	        case 'ZZ' :
+	            config._useUTC = true;
+	            config._tzm = utcOffsetFromString(input);
+	            break;
+	        // WEEKDAY - human
+	        case 'dd':
+	        case 'ddd':
+	        case 'dddd':
+	            a = config._locale.weekdaysParse(input);
+	            // if we didn't get a weekday name, mark the date as invalid
+	            if (a != null) {
+	                config._w = config._w || {};
+	                config._w['d'] = a;
+	            } else {
+	                config._pf.invalidWeekday = input;
+	            }
+	            break;
+	        // WEEK, WEEK DAY - numeric
+	        case 'w':
+	        case 'ww':
+	        case 'W':
+	        case 'WW':
+	        case 'd':
+	        case 'e':
+	        case 'E':
+	            token = token.substr(0, 1);
+	            /* falls through */
+	        case 'gggg':
+	        case 'GGGG':
+	        case 'GGGGG':
+	            token = token.substr(0, 2);
+	            if (input) {
+	                config._w = config._w || {};
+	                config._w[token] = toInt(input);
+	            }
+	            break;
+	        case 'gg':
+	        case 'GG':
+	            config._w = config._w || {};
+	            config._w[token] = moment.parseTwoDigitYear(input);
+	        }
+	    }
+
+	    function dayOfYearFromWeekInfo(config) {
+	        var w, weekYear, week, weekday, dow, doy, temp;
+
+	        w = config._w;
+	        if (w.GG != null || w.W != null || w.E != null) {
+	            dow = 1;
+	            doy = 4;
+
+	            // TODO: We need to take the current isoWeekYear, but that depends on
+	            // how we interpret now (local, utc, fixed offset). So create
+	            // a now version of current config (take local/utc/offset flags, and
+	            // create now).
+	            weekYear = dfl(w.GG, config._a[YEAR], weekOfYear(moment(), 1, 4).year);
+	            week = dfl(w.W, 1);
+	            weekday = dfl(w.E, 1);
+	        } else {
+	            dow = config._locale._week.dow;
+	            doy = config._locale._week.doy;
+
+	            weekYear = dfl(w.gg, config._a[YEAR], weekOfYear(moment(), dow, doy).year);
+	            week = dfl(w.w, 1);
+
+	            if (w.d != null) {
+	                // weekday -- low day numbers are considered next week
+	                weekday = w.d;
+	                if (weekday < dow) {
+	                    ++week;
+	                }
+	            } else if (w.e != null) {
+	                // local weekday -- counting starts from begining of week
+	                weekday = w.e + dow;
+	            } else {
+	                // default to begining of week
+	                weekday = dow;
+	            }
+	        }
+	        temp = dayOfYearFromWeeks(weekYear, week, weekday, doy, dow);
+
+	        config._a[YEAR] = temp.year;
+	        config._dayOfYear = temp.dayOfYear;
+	    }
+
+	    // convert an array to a date.
+	    // the array should mirror the parameters below
+	    // note: all values past the year are optional and will default to the lowest possible value.
+	    // [year, month, day , hour, minute, second, millisecond]
+	    function dateFromConfig(config) {
+	        var i, date, input = [], currentDate, yearToUse;
+
+	        if (config._d) {
+	            return;
+	        }
+
+	        currentDate = currentDateArray(config);
+
+	        //compute day of the year from weeks and weekdays
+	        if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
+	            dayOfYearFromWeekInfo(config);
+	        }
+
+	        //if the day of the year is set, figure out what it is
+	        if (config._dayOfYear) {
+	            yearToUse = dfl(config._a[YEAR], currentDate[YEAR]);
+
+	            if (config._dayOfYear > daysInYear(yearToUse)) {
+	                config._pf._overflowDayOfYear = true;
+	            }
+
+	            date = makeUTCDate(yearToUse, 0, config._dayOfYear);
+	            config._a[MONTH] = date.getUTCMonth();
+	            config._a[DATE] = date.getUTCDate();
+	        }
+
+	        // Default to current date.
+	        // * if no year, month, day of month are given, default to today
+	        // * if day of month is given, default month and year
+	        // * if month is given, default only year
+	        // * if year is given, don't default anything
+	        for (i = 0; i < 3 && config._a[i] == null; ++i) {
+	            config._a[i] = input[i] = currentDate[i];
+	        }
+
+	        // Zero out whatever was not defaulted, including time
+	        for (; i < 7; i++) {
+	            config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
+	        }
+
+	        // Check for 24:00:00.000
+	        if (config._a[HOUR] === 24 &&
+	                config._a[MINUTE] === 0 &&
+	                config._a[SECOND] === 0 &&
+	                config._a[MILLISECOND] === 0) {
+	            config._nextDay = true;
+	            config._a[HOUR] = 0;
+	        }
+
+	        config._d = (config._useUTC ? makeUTCDate : makeDate).apply(null, input);
+	        // Apply timezone offset from input. The actual utcOffset can be changed
+	        // with parseZone.
+	        if (config._tzm != null) {
+	            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
+	        }
+
+	        if (config._nextDay) {
+	            config._a[HOUR] = 24;
+	        }
+	    }
+
+	    function dateFromObject(config) {
+	        var normalizedInput;
+
+	        if (config._d) {
+	            return;
+	        }
+
+	        normalizedInput = normalizeObjectUnits(config._i);
+	        config._a = [
+	            normalizedInput.year,
+	            normalizedInput.month,
+	            normalizedInput.day || normalizedInput.date,
+	            normalizedInput.hour,
+	            normalizedInput.minute,
+	            normalizedInput.second,
+	            normalizedInput.millisecond
+	        ];
+
+	        dateFromConfig(config);
+	    }
+
+	    function currentDateArray(config) {
+	        var now = new Date();
+	        if (config._useUTC) {
+	            return [
+	                now.getUTCFullYear(),
+	                now.getUTCMonth(),
+	                now.getUTCDate()
+	            ];
+	        } else {
+	            return [now.getFullYear(), now.getMonth(), now.getDate()];
+	        }
+	    }
+
+	    // date from string and format string
+	    function makeDateFromStringAndFormat(config) {
+	        if (config._f === moment.ISO_8601) {
+	            parseISO(config);
+	            return;
+	        }
+
+	        config._a = [];
+	        config._pf.empty = true;
+
+	        // This array is used to make a Date, either with `new Date` or `Date.UTC`
+	        var string = '' + config._i,
+	            i, parsedInput, tokens, token, skipped,
+	            stringLength = string.length,
+	            totalParsedInputLength = 0;
+
+	        tokens = expandFormat(config._f, config._locale).match(formattingTokens) || [];
+
+	        for (i = 0; i < tokens.length; i++) {
+	            token = tokens[i];
+	            parsedInput = (string.match(getParseRegexForToken(token, config)) || [])[0];
+	            if (parsedInput) {
+	                skipped = string.substr(0, string.indexOf(parsedInput));
+	                if (skipped.length > 0) {
+	                    config._pf.unusedInput.push(skipped);
+	                }
+	                string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
+	                totalParsedInputLength += parsedInput.length;
+	            }
+	            // don't parse if it's not a known token
+	            if (formatTokenFunctions[token]) {
+	                if (parsedInput) {
+	                    config._pf.empty = false;
+	                }
+	                else {
+	                    config._pf.unusedTokens.push(token);
+	                }
+	                addTimeToArrayFromToken(token, parsedInput, config);
+	            }
+	            else if (config._strict && !parsedInput) {
+	                config._pf.unusedTokens.push(token);
+	            }
+	        }
+
+	        // add remaining unparsed input length to the string
+	        config._pf.charsLeftOver = stringLength - totalParsedInputLength;
+	        if (string.length > 0) {
+	            config._pf.unusedInput.push(string);
+	        }
+
+	        // clear _12h flag if hour is <= 12
+	        if (config._pf.bigHour === true && config._a[HOUR] <= 12) {
+	            config._pf.bigHour = undefined;
+	        }
+	        // handle meridiem
+	        config._a[HOUR] = meridiemFixWrap(config._locale, config._a[HOUR],
+	                config._meridiem);
+	        dateFromConfig(config);
+	        checkOverflow(config);
+	    }
+
+	    function unescapeFormat(s) {
+	        return s.replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (matched, p1, p2, p3, p4) {
+	            return p1 || p2 || p3 || p4;
+	        });
+	    }
+
+	    // Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
+	    function regexpEscape(s) {
+	        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	    }
+
+	    // date from string and array of format strings
+	    function makeDateFromStringAndArray(config) {
+	        var tempConfig,
+	            bestMoment,
+
+	            scoreToBeat,
+	            i,
+	            currentScore;
+
+	        if (config._f.length === 0) {
+	            config._pf.invalidFormat = true;
+	            config._d = new Date(NaN);
+	            return;
+	        }
+
+	        for (i = 0; i < config._f.length; i++) {
+	            currentScore = 0;
+	            tempConfig = copyConfig({}, config);
+	            if (config._useUTC != null) {
+	                tempConfig._useUTC = config._useUTC;
+	            }
+	            tempConfig._pf = defaultParsingFlags();
+	            tempConfig._f = config._f[i];
+	            makeDateFromStringAndFormat(tempConfig);
+
+	            if (!isValid(tempConfig)) {
+	                continue;
+	            }
+
+	            // if there is any input that was not parsed add a penalty for that format
+	            currentScore += tempConfig._pf.charsLeftOver;
+
+	            //or tokens
+	            currentScore += tempConfig._pf.unusedTokens.length * 10;
+
+	            tempConfig._pf.score = currentScore;
+
+	            if (scoreToBeat == null || currentScore < scoreToBeat) {
+	                scoreToBeat = currentScore;
+	                bestMoment = tempConfig;
+	            }
+	        }
+
+	        extend(config, bestMoment || tempConfig);
+	    }
+
+	    // date from iso format
+	    function parseISO(config) {
+	        var i, l,
+	            string = config._i,
+	            match = isoRegex.exec(string);
+
+	        if (match) {
+	            config._pf.iso = true;
+	            for (i = 0, l = isoDates.length; i < l; i++) {
+	                if (isoDates[i][1].exec(string)) {
+	                    // match[5] should be 'T' or undefined
+	                    config._f = isoDates[i][0] + (match[6] || ' ');
+	                    break;
+	                }
+	            }
+	            for (i = 0, l = isoTimes.length; i < l; i++) {
+	                if (isoTimes[i][1].exec(string)) {
+	                    config._f += isoTimes[i][0];
+	                    break;
+	                }
+	            }
+	            if (string.match(parseTokenTimezone)) {
+	                config._f += 'Z';
+	            }
+	            makeDateFromStringAndFormat(config);
+	        } else {
+	            config._isValid = false;
+	        }
+	    }
+
+	    // date from iso format or fallback
+	    function makeDateFromString(config) {
+	        parseISO(config);
+	        if (config._isValid === false) {
+	            delete config._isValid;
+	            moment.createFromInputFallback(config);
+	        }
+	    }
+
+	    function map(arr, fn) {
+	        var res = [], i;
+	        for (i = 0; i < arr.length; ++i) {
+	            res.push(fn(arr[i], i));
+	        }
+	        return res;
+	    }
+
+	    function makeDateFromInput(config) {
+	        var input = config._i, matched;
+	        if (input === undefined) {
+	            config._d = new Date();
+	        } else if (isDate(input)) {
+	            config._d = new Date(+input);
+	        } else if ((matched = aspNetJsonRegex.exec(input)) !== null) {
+	            config._d = new Date(+matched[1]);
+	        } else if (typeof input === 'string') {
+	            makeDateFromString(config);
+	        } else if (isArray(input)) {
+	            config._a = map(input.slice(0), function (obj) {
+	                return parseInt(obj, 10);
+	            });
+	            dateFromConfig(config);
+	        } else if (typeof(input) === 'object') {
+	            dateFromObject(config);
+	        } else if (typeof(input) === 'number') {
+	            // from milliseconds
+	            config._d = new Date(input);
+	        } else {
+	            moment.createFromInputFallback(config);
+	        }
+	    }
+
+	    function makeDate(y, m, d, h, M, s, ms) {
+	        //can't just apply() to create a date:
+	        //http://stackoverflow.com/questions/181348/instantiating-a-javascript-object-by-calling-prototype-constructor-apply
+	        var date = new Date(y, m, d, h, M, s, ms);
+
+	        //the date constructor doesn't accept years < 1970
+	        if (y < 1970) {
+	            date.setFullYear(y);
+	        }
+	        return date;
+	    }
+
+	    function makeUTCDate(y) {
+	        var date = new Date(Date.UTC.apply(null, arguments));
+	        if (y < 1970) {
+	            date.setUTCFullYear(y);
+	        }
+	        return date;
+	    }
+
+	    function parseWeekday(input, locale) {
+	        if (typeof input === 'string') {
+	            if (!isNaN(input)) {
+	                input = parseInt(input, 10);
+	            }
+	            else {
+	                input = locale.weekdaysParse(input);
+	                if (typeof input !== 'number') {
+	                    return null;
+	                }
+	            }
+	        }
+	        return input;
+	    }
+
+	    /************************************
+	        Relative Time
+	    ************************************/
+
+
+	    // helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
+	    function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
+	        return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
+	    }
+
+	    function relativeTime(posNegDuration, withoutSuffix, locale) {
+	        var duration = moment.duration(posNegDuration).abs(),
+	            seconds = round(duration.as('s')),
+	            minutes = round(duration.as('m')),
+	            hours = round(duration.as('h')),
+	            days = round(duration.as('d')),
+	            months = round(duration.as('M')),
+	            years = round(duration.as('y')),
+
+	            args = seconds < relativeTimeThresholds.s && ['s', seconds] ||
+	                minutes === 1 && ['m'] ||
+	                minutes < relativeTimeThresholds.m && ['mm', minutes] ||
+	                hours === 1 && ['h'] ||
+	                hours < relativeTimeThresholds.h && ['hh', hours] ||
+	                days === 1 && ['d'] ||
+	                days < relativeTimeThresholds.d && ['dd', days] ||
+	                months === 1 && ['M'] ||
+	                months < relativeTimeThresholds.M && ['MM', months] ||
+	                years === 1 && ['y'] || ['yy', years];
+
+	        args[2] = withoutSuffix;
+	        args[3] = +posNegDuration > 0;
+	        args[4] = locale;
+	        return substituteTimeAgo.apply({}, args);
+	    }
+
+
+	    /************************************
+	        Week of Year
+	    ************************************/
+
+
+	    // firstDayOfWeek       0 = sun, 6 = sat
+	    //                      the day of the week that starts the week
+	    //                      (usually sunday or monday)
+	    // firstDayOfWeekOfYear 0 = sun, 6 = sat
+	    //                      the first week is the week that contains the first
+	    //                      of this day of the week
+	    //                      (eg. ISO weeks use thursday (4))
+	    function weekOfYear(mom, firstDayOfWeek, firstDayOfWeekOfYear) {
+	        var end = firstDayOfWeekOfYear - firstDayOfWeek,
+	            daysToDayOfWeek = firstDayOfWeekOfYear - mom.day(),
+	            adjustedMoment;
+
+
+	        if (daysToDayOfWeek > end) {
+	            daysToDayOfWeek -= 7;
+	        }
+
+	        if (daysToDayOfWeek < end - 7) {
+	            daysToDayOfWeek += 7;
+	        }
+
+	        adjustedMoment = moment(mom).add(daysToDayOfWeek, 'd');
+	        return {
+	            week: Math.ceil(adjustedMoment.dayOfYear() / 7),
+	            year: adjustedMoment.year()
+	        };
+	    }
+
+	    //http://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
+	    function dayOfYearFromWeeks(year, week, weekday, firstDayOfWeekOfYear, firstDayOfWeek) {
+	        var d = makeUTCDate(year, 0, 1).getUTCDay(), daysToAdd, dayOfYear;
+
+	        d = d === 0 ? 7 : d;
+	        weekday = weekday != null ? weekday : firstDayOfWeek;
+	        daysToAdd = firstDayOfWeek - d + (d > firstDayOfWeekOfYear ? 7 : 0) - (d < firstDayOfWeek ? 7 : 0);
+	        dayOfYear = 7 * (week - 1) + (weekday - firstDayOfWeek) + daysToAdd + 1;
+
+	        return {
+	            year: dayOfYear > 0 ? year : year - 1,
+	            dayOfYear: dayOfYear > 0 ?  dayOfYear : daysInYear(year - 1) + dayOfYear
+	        };
+	    }
+
+	    /************************************
+	        Top Level Functions
+	    ************************************/
+
+	    function makeMoment(config) {
+	        var input = config._i,
+	            format = config._f,
+	            res;
+
+	        config._locale = config._locale || moment.localeData(config._l);
+
+	        if (input === null || (format === undefined && input === '')) {
+	            return moment.invalid({nullInput: true});
+	        }
+
+	        if (typeof input === 'string') {
+	            config._i = input = config._locale.preparse(input);
+	        }
+
+	        if (moment.isMoment(input)) {
+	            return new Moment(input, true);
+	        } else if (format) {
+	            if (isArray(format)) {
+	                makeDateFromStringAndArray(config);
+	            } else {
+	                makeDateFromStringAndFormat(config);
+	            }
+	        } else {
+	            makeDateFromInput(config);
+	        }
+
+	        res = new Moment(config);
+	        if (res._nextDay) {
+	            // Adding is smart enough around DST
+	            res.add(1, 'd');
+	            res._nextDay = undefined;
+	        }
+
+	        return res;
+	    }
+
+	    moment = function (input, format, locale, strict) {
+	        var c;
+
+	        if (typeof(locale) === 'boolean') {
+	            strict = locale;
+	            locale = undefined;
+	        }
+	        // object construction must be done this way.
+	        // https://github.com/moment/moment/issues/1423
+	        c = {};
+	        c._isAMomentObject = true;
+	        c._i = input;
+	        c._f = format;
+	        c._l = locale;
+	        c._strict = strict;
+	        c._isUTC = false;
+	        c._pf = defaultParsingFlags();
+
+	        return makeMoment(c);
+	    };
+
+	    moment.suppressDeprecationWarnings = false;
+
+	    moment.createFromInputFallback = deprecate(
+	        'moment construction falls back to js Date. This is ' +
+	        'discouraged and will be removed in upcoming major ' +
+	        'release. Please refer to ' +
+	        'https://github.com/moment/moment/issues/1407 for more info.',
+	        function (config) {
+	            config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
+	        }
+	    );
+
+	    // Pick a moment m from moments so that m[fn](other) is true for all
+	    // other. This relies on the function fn to be transitive.
+	    //
+	    // moments should either be an array of moment objects or an array, whose
+	    // first element is an array of moment objects.
+	    function pickBy(fn, moments) {
+	        var res, i;
+	        if (moments.length === 1 && isArray(moments[0])) {
+	            moments = moments[0];
+	        }
+	        if (!moments.length) {
+	            return moment();
+	        }
+	        res = moments[0];
+	        for (i = 1; i < moments.length; ++i) {
+	            if (moments[i][fn](res)) {
+	                res = moments[i];
+	            }
+	        }
+	        return res;
+	    }
+
+	    moment.min = function () {
+	        var args = [].slice.call(arguments, 0);
+
+	        return pickBy('isBefore', args);
+	    };
+
+	    moment.max = function () {
+	        var args = [].slice.call(arguments, 0);
+
+	        return pickBy('isAfter', args);
+	    };
+
+	    // creating with utc
+	    moment.utc = function (input, format, locale, strict) {
+	        var c;
+
+	        if (typeof(locale) === 'boolean') {
+	            strict = locale;
+	            locale = undefined;
+	        }
+	        // object construction must be done this way.
+	        // https://github.com/moment/moment/issues/1423
+	        c = {};
+	        c._isAMomentObject = true;
+	        c._useUTC = true;
+	        c._isUTC = true;
+	        c._l = locale;
+	        c._i = input;
+	        c._f = format;
+	        c._strict = strict;
+	        c._pf = defaultParsingFlags();
+
+	        return makeMoment(c).utc();
+	    };
+
+	    // creating with unix timestamp (in seconds)
+	    moment.unix = function (input) {
+	        return moment(input * 1000);
+	    };
+
+	    // duration
+	    moment.duration = function (input, key) {
+	        var duration = input,
+	            // matching against regexp is expensive, do it on demand
+	            match = null,
+	            sign,
+	            ret,
+	            parseIso,
+	            diffRes;
+
+	        if (moment.isDuration(input)) {
+	            duration = {
+	                ms: input._milliseconds,
+	                d: input._days,
+	                M: input._months
+	            };
+	        } else if (typeof input === 'number') {
+	            duration = {};
+	            if (key) {
+	                duration[key] = input;
+	            } else {
+	                duration.milliseconds = input;
+	            }
+	        } else if (!!(match = aspNetTimeSpanJsonRegex.exec(input))) {
+	            sign = (match[1] === '-') ? -1 : 1;
+	            duration = {
+	                y: 0,
+	                d: toInt(match[DATE]) * sign,
+	                h: toInt(match[HOUR]) * sign,
+	                m: toInt(match[MINUTE]) * sign,
+	                s: toInt(match[SECOND]) * sign,
+	                ms: toInt(match[MILLISECOND]) * sign
+	            };
+	        } else if (!!(match = isoDurationRegex.exec(input))) {
+	            sign = (match[1] === '-') ? -1 : 1;
+	            parseIso = function (inp) {
+	                // We'd normally use ~~inp for this, but unfortunately it also
+	                // converts floats to ints.
+	                // inp may be undefined, so careful calling replace on it.
+	                var res = inp && parseFloat(inp.replace(',', '.'));
+	                // apply sign while we're at it
+	                return (isNaN(res) ? 0 : res) * sign;
+	            };
+	            duration = {
+	                y: parseIso(match[2]),
+	                M: parseIso(match[3]),
+	                d: parseIso(match[4]),
+	                h: parseIso(match[5]),
+	                m: parseIso(match[6]),
+	                s: parseIso(match[7]),
+	                w: parseIso(match[8])
+	            };
+	        } else if (duration == null) {// checks for null or undefined
+	            duration = {};
+	        } else if (typeof duration === 'object' &&
+	                ('from' in duration || 'to' in duration)) {
+	            diffRes = momentsDifference(moment(duration.from), moment(duration.to));
+
+	            duration = {};
+	            duration.ms = diffRes.milliseconds;
+	            duration.M = diffRes.months;
+	        }
+
+	        ret = new Duration(duration);
+
+	        if (moment.isDuration(input) && hasOwnProp(input, '_locale')) {
+	            ret._locale = input._locale;
+	        }
+
+	        return ret;
+	    };
+
+	    // version number
+	    moment.version = VERSION;
+
+	    // default format
+	    moment.defaultFormat = isoFormat;
+
+	    // constant that refers to the ISO standard
+	    moment.ISO_8601 = function () {};
+
+	    // Plugins that add properties should also add the key here (null value),
+	    // so we can properly clone ourselves.
+	    moment.momentProperties = momentProperties;
+
+	    // This function will be called whenever a moment is mutated.
+	    // It is intended to keep the offset in sync with the timezone.
+	    moment.updateOffset = function () {};
+
+	    // This function allows you to set a threshold for relative time strings
+	    moment.relativeTimeThreshold = function (threshold, limit) {
+	        if (relativeTimeThresholds[threshold] === undefined) {
+	            return false;
+	        }
+	        if (limit === undefined) {
+	            return relativeTimeThresholds[threshold];
+	        }
+	        relativeTimeThresholds[threshold] = limit;
+	        return true;
+	    };
+
+	    moment.lang = deprecate(
+	        'moment.lang is deprecated. Use moment.locale instead.',
+	        function (key, value) {
+	            return moment.locale(key, value);
+	        }
+	    );
+
+	    // This function will load locale and then set the global locale.  If
+	    // no arguments are passed in, it will simply return the current global
+	    // locale key.
+	    moment.locale = function (key, values) {
+	        var data;
+	        if (key) {
+	            if (typeof(values) !== 'undefined') {
+	                data = moment.defineLocale(key, values);
+	            }
+	            else {
+	                data = moment.localeData(key);
+	            }
+
+	            if (data) {
+	                moment.duration._locale = moment._locale = data;
+	            }
+	        }
+
+	        return moment._locale._abbr;
+	    };
+
+	    moment.defineLocale = function (name, values) {
+	        if (values !== null) {
+	            values.abbr = name;
+	            if (!locales[name]) {
+	                locales[name] = new Locale();
+	            }
+	            locales[name].set(values);
+
+	            // backwards compat for now: also set the locale
+	            moment.locale(name);
+
+	            return locales[name];
+	        } else {
+	            // useful for testing
+	            delete locales[name];
+	            return null;
+	        }
+	    };
+
+	    moment.langData = deprecate(
+	        'moment.langData is deprecated. Use moment.localeData instead.',
+	        function (key) {
+	            return moment.localeData(key);
+	        }
+	    );
+
+	    // returns locale data
+	    moment.localeData = function (key) {
+	        var locale;
+
+	        if (key && key._locale && key._locale._abbr) {
+	            key = key._locale._abbr;
+	        }
+
+	        if (!key) {
+	            return moment._locale;
+	        }
+
+	        if (!isArray(key)) {
+	            //short-circuit everything else
+	            locale = loadLocale(key);
+	            if (locale) {
+	                return locale;
+	            }
+	            key = [key];
+	        }
+
+	        return chooseLocale(key);
+	    };
+
+	    // compare moment object
+	    moment.isMoment = function (obj) {
+	        return obj instanceof Moment ||
+	            (obj != null && hasOwnProp(obj, '_isAMomentObject'));
+	    };
+
+	    // for typechecking Duration objects
+	    moment.isDuration = function (obj) {
+	        return obj instanceof Duration;
+	    };
+
+	    for (i = lists.length - 1; i >= 0; --i) {
+	        makeList(lists[i]);
+	    }
+
+	    moment.normalizeUnits = function (units) {
+	        return normalizeUnits(units);
+	    };
+
+	    moment.invalid = function (flags) {
+	        var m = moment.utc(NaN);
+	        if (flags != null) {
+	            extend(m._pf, flags);
+	        }
+	        else {
+	            m._pf.userInvalidated = true;
+	        }
+
+	        return m;
+	    };
+
+	    moment.parseZone = function () {
+	        return moment.apply(null, arguments).parseZone();
+	    };
+
+	    moment.parseTwoDigitYear = function (input) {
+	        return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
+	    };
+
+	    moment.isDate = isDate;
+
+	    /************************************
+	        Moment Prototype
+	    ************************************/
+
+
+	    extend(moment.fn = Moment.prototype, {
+
+	        clone : function () {
+	            return moment(this);
+	        },
+
+	        valueOf : function () {
+	            return +this._d - ((this._offset || 0) * 60000);
+	        },
+
+	        unix : function () {
+	            return Math.floor(+this / 1000);
+	        },
+
+	        toString : function () {
+	            return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
+	        },
+
+	        toDate : function () {
+	            return this._offset ? new Date(+this) : this._d;
+	        },
+
+	        toISOString : function () {
+	            var m = moment(this).utc();
+	            if (0 < m.year() && m.year() <= 9999) {
+	                if ('function' === typeof Date.prototype.toISOString) {
+	                    // native implementation is ~50x faster, use it when we can
+	                    return this.toDate().toISOString();
+	                } else {
+	                    return formatMoment(m, 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
+	                }
+	            } else {
+	                return formatMoment(m, 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
+	            }
+	        },
+
+	        toArray : function () {
+	            var m = this;
+	            return [
+	                m.year(),
+	                m.month(),
+	                m.date(),
+	                m.hours(),
+	                m.minutes(),
+	                m.seconds(),
+	                m.milliseconds()
+	            ];
+	        },
+
+	        isValid : function () {
+	            return isValid(this);
+	        },
+
+	        isDSTShifted : function () {
+	            if (this._a) {
+	                return this.isValid() && compareArrays(this._a, (this._isUTC ? moment.utc(this._a) : moment(this._a)).toArray()) > 0;
+	            }
+
+	            return false;
+	        },
+
+	        parsingFlags : function () {
+	            return extend({}, this._pf);
+	        },
+
+	        invalidAt: function () {
+	            return this._pf.overflow;
+	        },
+
+	        utc : function (keepLocalTime) {
+	            return this.utcOffset(0, keepLocalTime);
+	        },
+
+	        local : function (keepLocalTime) {
+	            if (this._isUTC) {
+	                this.utcOffset(0, keepLocalTime);
+	                this._isUTC = false;
+
+	                if (keepLocalTime) {
+	                    this.subtract(this._dateUtcOffset(), 'm');
+	                }
+	            }
+	            return this;
+	        },
+
+	        format : function (inputString) {
+	            var output = formatMoment(this, inputString || moment.defaultFormat);
+	            return this.localeData().postformat(output);
+	        },
+
+	        add : createAdder(1, 'add'),
+
+	        subtract : createAdder(-1, 'subtract'),
+
+	        diff : function (input, units, asFloat) {
+	            var that = makeAs(input, this),
+	                zoneDiff = (that.utcOffset() - this.utcOffset()) * 6e4,
+	                anchor, diff, output, daysAdjust;
+
+	            units = normalizeUnits(units);
+
+	            if (units === 'year' || units === 'month' || units === 'quarter') {
+	                output = monthDiff(this, that);
+	                if (units === 'quarter') {
+	                    output = output / 3;
+	                } else if (units === 'year') {
+	                    output = output / 12;
+	                }
+	            } else {
+	                diff = this - that;
+	                output = units === 'second' ? diff / 1e3 : // 1000
+	                    units === 'minute' ? diff / 6e4 : // 1000 * 60
+	                    units === 'hour' ? diff / 36e5 : // 1000 * 60 * 60
+	                    units === 'day' ? (diff - zoneDiff) / 864e5 : // 1000 * 60 * 60 * 24, negate dst
+	                    units === 'week' ? (diff - zoneDiff) / 6048e5 : // 1000 * 60 * 60 * 24 * 7, negate dst
+	                    diff;
+	            }
+	            return asFloat ? output : absRound(output);
+	        },
+
+	        from : function (time, withoutSuffix) {
+	            return moment.duration({to: this, from: time}).locale(this.locale()).humanize(!withoutSuffix);
+	        },
+
+	        fromNow : function (withoutSuffix) {
+	            return this.from(moment(), withoutSuffix);
+	        },
+
+	        calendar : function (time) {
+	            // We want to compare the start of today, vs this.
+	            // Getting start-of-today depends on whether we're locat/utc/offset
+	            // or not.
+	            var now = time || moment(),
+	                sod = makeAs(now, this).startOf('day'),
+	                diff = this.diff(sod, 'days', true),
+	                format = diff < -6 ? 'sameElse' :
+	                    diff < -1 ? 'lastWeek' :
+	                    diff < 0 ? 'lastDay' :
+	                    diff < 1 ? 'sameDay' :
+	                    diff < 2 ? 'nextDay' :
+	                    diff < 7 ? 'nextWeek' : 'sameElse';
+	            return this.format(this.localeData().calendar(format, this, moment(now)));
+	        },
+
+	        isLeapYear : function () {
+	            return isLeapYear(this.year());
+	        },
+
+	        isDST : function () {
+	            return (this.utcOffset() > this.clone().month(0).utcOffset() ||
+	                this.utcOffset() > this.clone().month(5).utcOffset());
+	        },
+
+	        day : function (input) {
+	            var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
+	            if (input != null) {
+	                input = parseWeekday(input, this.localeData());
+	                return this.add(input - day, 'd');
+	            } else {
+	                return day;
+	            }
+	        },
+
+	        month : makeAccessor('Month', true),
+
+	        startOf : function (units) {
+	            units = normalizeUnits(units);
+	            // the following switch intentionally omits break keywords
+	            // to utilize falling through the cases.
+	            switch (units) {
+	            case 'year':
+	                this.month(0);
+	                /* falls through */
+	            case 'quarter':
+	            case 'month':
+	                this.date(1);
+	                /* falls through */
+	            case 'week':
+	            case 'isoWeek':
+	            case 'day':
+	                this.hours(0);
+	                /* falls through */
+	            case 'hour':
+	                this.minutes(0);
+	                /* falls through */
+	            case 'minute':
+	                this.seconds(0);
+	                /* falls through */
+	            case 'second':
+	                this.milliseconds(0);
+	                /* falls through */
+	            }
+
+	            // weeks are a special case
+	            if (units === 'week') {
+	                this.weekday(0);
+	            } else if (units === 'isoWeek') {
+	                this.isoWeekday(1);
+	            }
+
+	            // quarters are also special
+	            if (units === 'quarter') {
+	                this.month(Math.floor(this.month() / 3) * 3);
+	            }
+
+	            return this;
+	        },
+
+	        endOf: function (units) {
+	            units = normalizeUnits(units);
+	            if (units === undefined || units === 'millisecond') {
+	                return this;
+	            }
+	            return this.startOf(units).add(1, (units === 'isoWeek' ? 'week' : units)).subtract(1, 'ms');
+	        },
+
+	        isAfter: function (input, units) {
+	            var inputMs;
+	            units = normalizeUnits(typeof units !== 'undefined' ? units : 'millisecond');
+	            if (units === 'millisecond') {
+	                input = moment.isMoment(input) ? input : moment(input);
+	                return +this > +input;
+	            } else {
+	                inputMs = moment.isMoment(input) ? +input : +moment(input);
+	                return inputMs < +this.clone().startOf(units);
+	            }
+	        },
+
+	        isBefore: function (input, units) {
+	            var inputMs;
+	            units = normalizeUnits(typeof units !== 'undefined' ? units : 'millisecond');
+	            if (units === 'millisecond') {
+	                input = moment.isMoment(input) ? input : moment(input);
+	                return +this < +input;
+	            } else {
+	                inputMs = moment.isMoment(input) ? +input : +moment(input);
+	                return +this.clone().endOf(units) < inputMs;
+	            }
+	        },
+
+	        isBetween: function (from, to, units) {
+	            return this.isAfter(from, units) && this.isBefore(to, units);
+	        },
+
+	        isSame: function (input, units) {
+	            var inputMs;
+	            units = normalizeUnits(units || 'millisecond');
+	            if (units === 'millisecond') {
+	                input = moment.isMoment(input) ? input : moment(input);
+	                return +this === +input;
+	            } else {
+	                inputMs = +moment(input);
+	                return +(this.clone().startOf(units)) <= inputMs && inputMs <= +(this.clone().endOf(units));
+	            }
+	        },
+
+	        min: deprecate(
+	                 'moment().min is deprecated, use moment.min instead. https://github.com/moment/moment/issues/1548',
+	                 function (other) {
+	                     other = moment.apply(null, arguments);
+	                     return other < this ? this : other;
+	                 }
+	         ),
+
+	        max: deprecate(
+	                'moment().max is deprecated, use moment.max instead. https://github.com/moment/moment/issues/1548',
+	                function (other) {
+	                    other = moment.apply(null, arguments);
+	                    return other > this ? this : other;
+	                }
+	        ),
+
+	        zone : deprecate(
+	                'moment().zone is deprecated, use moment().utcOffset instead. ' +
+	                'https://github.com/moment/moment/issues/1779',
+	                function (input, keepLocalTime) {
+	                    if (input != null) {
+	                        if (typeof input !== 'string') {
+	                            input = -input;
+	                        }
+
+	                        this.utcOffset(input, keepLocalTime);
+
+	                        return this;
+	                    } else {
+	                        return -this.utcOffset();
+	                    }
+	                }
+	        ),
+
+	        // keepLocalTime = true means only change the timezone, without
+	        // affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
+	        // 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
+	        // +0200, so we adjust the time as needed, to be valid.
+	        //
+	        // Keeping the time actually adds/subtracts (one hour)
+	        // from the actual represented time. That is why we call updateOffset
+	        // a second time. In case it wants us to change the offset again
+	        // _changeInProgress == true case, then we have to adjust, because
+	        // there is no such time in the given timezone.
+	        utcOffset : function (input, keepLocalTime) {
+	            var offset = this._offset || 0,
+	                localAdjust;
+	            if (input != null) {
+	                if (typeof input === 'string') {
+	                    input = utcOffsetFromString(input);
+	                }
+	                if (Math.abs(input) < 16) {
+	                    input = input * 60;
+	                }
+	                if (!this._isUTC && keepLocalTime) {
+	                    localAdjust = this._dateUtcOffset();
+	                }
+	                this._offset = input;
+	                this._isUTC = true;
+	                if (localAdjust != null) {
+	                    this.add(localAdjust, 'm');
+	                }
+	                if (offset !== input) {
+	                    if (!keepLocalTime || this._changeInProgress) {
+	                        addOrSubtractDurationFromMoment(this,
+	                                moment.duration(input - offset, 'm'), 1, false);
+	                    } else if (!this._changeInProgress) {
+	                        this._changeInProgress = true;
+	                        moment.updateOffset(this, true);
+	                        this._changeInProgress = null;
+	                    }
+	                }
+
+	                return this;
+	            } else {
+	                return this._isUTC ? offset : this._dateUtcOffset();
+	            }
+	        },
+
+	        isLocal : function () {
+	            return !this._isUTC;
+	        },
+
+	        isUtcOffset : function () {
+	            return this._isUTC;
+	        },
+
+	        isUtc : function () {
+	            return this._isUTC && this._offset === 0;
+	        },
+
+	        zoneAbbr : function () {
+	            return this._isUTC ? 'UTC' : '';
+	        },
+
+	        zoneName : function () {
+	            return this._isUTC ? 'Coordinated Universal Time' : '';
+	        },
+
+	        parseZone : function () {
+	            if (this._tzm) {
+	                this.utcOffset(this._tzm);
+	            } else if (typeof this._i === 'string') {
+	                this.utcOffset(utcOffsetFromString(this._i));
+	            }
+	            return this;
+	        },
+
+	        hasAlignedHourOffset : function (input) {
+	            if (!input) {
+	                input = 0;
+	            }
+	            else {
+	                input = moment(input).utcOffset();
+	            }
+
+	            return (this.utcOffset() - input) % 60 === 0;
+	        },
+
+	        daysInMonth : function () {
+	            return daysInMonth(this.year(), this.month());
+	        },
+
+	        dayOfYear : function (input) {
+	            var dayOfYear = round((moment(this).startOf('day') - moment(this).startOf('year')) / 864e5) + 1;
+	            return input == null ? dayOfYear : this.add((input - dayOfYear), 'd');
+	        },
+
+	        quarter : function (input) {
+	            return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
+	        },
+
+	        weekYear : function (input) {
+	            var year = weekOfYear(this, this.localeData()._week.dow, this.localeData()._week.doy).year;
+	            return input == null ? year : this.add((input - year), 'y');
+	        },
+
+	        isoWeekYear : function (input) {
+	            var year = weekOfYear(this, 1, 4).year;
+	            return input == null ? year : this.add((input - year), 'y');
+	        },
+
+	        week : function (input) {
+	            var week = this.localeData().week(this);
+	            return input == null ? week : this.add((input - week) * 7, 'd');
+	        },
+
+	        isoWeek : function (input) {
+	            var week = weekOfYear(this, 1, 4).week;
+	            return input == null ? week : this.add((input - week) * 7, 'd');
+	        },
+
+	        weekday : function (input) {
+	            var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
+	            return input == null ? weekday : this.add(input - weekday, 'd');
+	        },
+
+	        isoWeekday : function (input) {
+	            // behaves the same as moment#day except
+	            // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
+	            // as a setter, sunday should belong to the previous week.
+	            return input == null ? this.day() || 7 : this.day(this.day() % 7 ? input : input - 7);
+	        },
+
+	        isoWeeksInYear : function () {
+	            return weeksInYear(this.year(), 1, 4);
+	        },
+
+	        weeksInYear : function () {
+	            var weekInfo = this.localeData()._week;
+	            return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
+	        },
+
+	        get : function (units) {
+	            units = normalizeUnits(units);
+	            return this[units]();
+	        },
+
+	        set : function (units, value) {
+	            var unit;
+	            if (typeof units === 'object') {
+	                for (unit in units) {
+	                    this.set(unit, units[unit]);
+	                }
+	            }
+	            else {
+	                units = normalizeUnits(units);
+	                if (typeof this[units] === 'function') {
+	                    this[units](value);
+	                }
+	            }
+	            return this;
+	        },
+
+	        // If passed a locale key, it will set the locale for this
+	        // instance.  Otherwise, it will return the locale configuration
+	        // variables for this instance.
+	        locale : function (key) {
+	            var newLocaleData;
+
+	            if (key === undefined) {
+	                return this._locale._abbr;
+	            } else {
+	                newLocaleData = moment.localeData(key);
+	                if (newLocaleData != null) {
+	                    this._locale = newLocaleData;
+	                }
+	                return this;
+	            }
+	        },
+
+	        lang : deprecate(
+	            'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
+	            function (key) {
+	                if (key === undefined) {
+	                    return this.localeData();
+	                } else {
+	                    return this.locale(key);
+	                }
+	            }
+	        ),
+
+	        localeData : function () {
+	            return this._locale;
+	        },
+
+	        _dateUtcOffset : function () {
+	            // On Firefox.24 Date#getTimezoneOffset returns a floating point.
+	            // https://github.com/moment/moment/pull/1871
+	            return -Math.round(this._d.getTimezoneOffset() / 15) * 15;
+	        }
+
+	    });
+
+	    function rawMonthSetter(mom, value) {
+	        var dayOfMonth;
+
+	        // TODO: Move this out of here!
+	        if (typeof value === 'string') {
+	            value = mom.localeData().monthsParse(value);
+	            // TODO: Another silent failure?
+	            if (typeof value !== 'number') {
+	                return mom;
+	            }
+	        }
+
+	        dayOfMonth = Math.min(mom.date(),
+	                daysInMonth(mom.year(), value));
+	        mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
+	        return mom;
+	    }
+
+	    function rawGetter(mom, unit) {
+	        return mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]();
+	    }
+
+	    function rawSetter(mom, unit, value) {
+	        if (unit === 'Month') {
+	            return rawMonthSetter(mom, value);
+	        } else {
+	            return mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
+	        }
+	    }
+
+	    function makeAccessor(unit, keepTime) {
+	        return function (value) {
+	            if (value != null) {
+	                rawSetter(this, unit, value);
+	                moment.updateOffset(this, keepTime);
+	                return this;
+	            } else {
+	                return rawGetter(this, unit);
+	            }
+	        };
+	    }
+
+	    moment.fn.millisecond = moment.fn.milliseconds = makeAccessor('Milliseconds', false);
+	    moment.fn.second = moment.fn.seconds = makeAccessor('Seconds', false);
+	    moment.fn.minute = moment.fn.minutes = makeAccessor('Minutes', false);
+	    // Setting the hour should keep the time, because the user explicitly
+	    // specified which hour he wants. So trying to maintain the same hour (in
+	    // a new timezone) makes sense. Adding/subtracting hours does not follow
+	    // this rule.
+	    moment.fn.hour = moment.fn.hours = makeAccessor('Hours', true);
+	    // moment.fn.month is defined separately
+	    moment.fn.date = makeAccessor('Date', true);
+	    moment.fn.dates = deprecate('dates accessor is deprecated. Use date instead.', makeAccessor('Date', true));
+	    moment.fn.year = makeAccessor('FullYear', true);
+	    moment.fn.years = deprecate('years accessor is deprecated. Use year instead.', makeAccessor('FullYear', true));
+
+	    // add plural methods
+	    moment.fn.days = moment.fn.day;
+	    moment.fn.months = moment.fn.month;
+	    moment.fn.weeks = moment.fn.week;
+	    moment.fn.isoWeeks = moment.fn.isoWeek;
+	    moment.fn.quarters = moment.fn.quarter;
+
+	    // add aliased format methods
+	    moment.fn.toJSON = moment.fn.toISOString;
+
+	    // alias isUtc for dev-friendliness
+	    moment.fn.isUTC = moment.fn.isUtc;
+
+	    /************************************
+	        Duration Prototype
+	    ************************************/
+
+
+	    function daysToYears (days) {
+	        // 400 years have 146097 days (taking into account leap year rules)
+	        return days * 400 / 146097;
+	    }
+
+	    function yearsToDays (years) {
+	        // years * 365 + absRound(years / 4) -
+	        //     absRound(years / 100) + absRound(years / 400);
+	        return years * 146097 / 400;
+	    }
+
+	    extend(moment.duration.fn = Duration.prototype, {
+
+	        _bubble : function () {
+	            var milliseconds = this._milliseconds,
+	                days = this._days,
+	                months = this._months,
+	                data = this._data,
+	                seconds, minutes, hours, years = 0;
+
+	            // The following code bubbles up values, see the tests for
+	            // examples of what that means.
+	            data.milliseconds = milliseconds % 1000;
+
+	            seconds = absRound(milliseconds / 1000);
+	            data.seconds = seconds % 60;
+
+	            minutes = absRound(seconds / 60);
+	            data.minutes = minutes % 60;
+
+	            hours = absRound(minutes / 60);
+	            data.hours = hours % 24;
+
+	            days += absRound(hours / 24);
+
+	            // Accurately convert days to years, assume start from year 0.
+	            years = absRound(daysToYears(days));
+	            days -= absRound(yearsToDays(years));
+
+	            // 30 days to a month
+	            // TODO (iskren): Use anchor date (like 1st Jan) to compute this.
+	            months += absRound(days / 30);
+	            days %= 30;
+
+	            // 12 months -> 1 year
+	            years += absRound(months / 12);
+	            months %= 12;
+
+	            data.days = days;
+	            data.months = months;
+	            data.years = years;
+	        },
+
+	        abs : function () {
+	            this._milliseconds = Math.abs(this._milliseconds);
+	            this._days = Math.abs(this._days);
+	            this._months = Math.abs(this._months);
+
+	            this._data.milliseconds = Math.abs(this._data.milliseconds);
+	            this._data.seconds = Math.abs(this._data.seconds);
+	            this._data.minutes = Math.abs(this._data.minutes);
+	            this._data.hours = Math.abs(this._data.hours);
+	            this._data.months = Math.abs(this._data.months);
+	            this._data.years = Math.abs(this._data.years);
+
+	            return this;
+	        },
+
+	        weeks : function () {
+	            return absRound(this.days() / 7);
+	        },
+
+	        valueOf : function () {
+	            return this._milliseconds +
+	              this._days * 864e5 +
+	              (this._months % 12) * 2592e6 +
+	              toInt(this._months / 12) * 31536e6;
+	        },
+
+	        humanize : function (withSuffix) {
+	            var output = relativeTime(this, !withSuffix, this.localeData());
+
+	            if (withSuffix) {
+	                output = this.localeData().pastFuture(+this, output);
+	            }
+
+	            return this.localeData().postformat(output);
+	        },
+
+	        add : function (input, val) {
+	            // supports only 2.0-style add(1, 's') or add(moment)
+	            var dur = moment.duration(input, val);
+
+	            this._milliseconds += dur._milliseconds;
+	            this._days += dur._days;
+	            this._months += dur._months;
+
+	            this._bubble();
+
+	            return this;
+	        },
+
+	        subtract : function (input, val) {
+	            var dur = moment.duration(input, val);
+
+	            this._milliseconds -= dur._milliseconds;
+	            this._days -= dur._days;
+	            this._months -= dur._months;
+
+	            this._bubble();
+
+	            return this;
+	        },
+
+	        get : function (units) {
+	            units = normalizeUnits(units);
+	            return this[units.toLowerCase() + 's']();
+	        },
+
+	        as : function (units) {
+	            var days, months;
+	            units = normalizeUnits(units);
+
+	            if (units === 'month' || units === 'year') {
+	                days = this._days + this._milliseconds / 864e5;
+	                months = this._months + daysToYears(days) * 12;
+	                return units === 'month' ? months : months / 12;
+	            } else {
+	                // handle milliseconds separately because of floating point math errors (issue #1867)
+	                days = this._days + Math.round(yearsToDays(this._months / 12));
+	                switch (units) {
+	                    case 'week': return days / 7 + this._milliseconds / 6048e5;
+	                    case 'day': return days + this._milliseconds / 864e5;
+	                    case 'hour': return days * 24 + this._milliseconds / 36e5;
+	                    case 'minute': return days * 24 * 60 + this._milliseconds / 6e4;
+	                    case 'second': return days * 24 * 60 * 60 + this._milliseconds / 1000;
+	                    // Math.floor prevents floating point math errors here
+	                    case 'millisecond': return Math.floor(days * 24 * 60 * 60 * 1000) + this._milliseconds;
+	                    default: throw new Error('Unknown unit ' + units);
+	                }
+	            }
+	        },
+
+	        lang : moment.fn.lang,
+	        locale : moment.fn.locale,
+
+	        toIsoString : deprecate(
+	            'toIsoString() is deprecated. Please use toISOString() instead ' +
+	            '(notice the capitals)',
+	            function () {
+	                return this.toISOString();
+	            }
+	        ),
+
+	        toISOString : function () {
+	            // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
+	            var years = Math.abs(this.years()),
+	                months = Math.abs(this.months()),
+	                days = Math.abs(this.days()),
+	                hours = Math.abs(this.hours()),
+	                minutes = Math.abs(this.minutes()),
+	                seconds = Math.abs(this.seconds() + this.milliseconds() / 1000);
+
+	            if (!this.asSeconds()) {
+	                // this is the same as C#'s (Noda) and python (isodate)...
+	                // but not other JS (goog.date)
+	                return 'P0D';
+	            }
+
+	            return (this.asSeconds() < 0 ? '-' : '') +
+	                'P' +
+	                (years ? years + 'Y' : '') +
+	                (months ? months + 'M' : '') +
+	                (days ? days + 'D' : '') +
+	                ((hours || minutes || seconds) ? 'T' : '') +
+	                (hours ? hours + 'H' : '') +
+	                (minutes ? minutes + 'M' : '') +
+	                (seconds ? seconds + 'S' : '');
+	        },
+
+	        localeData : function () {
+	            return this._locale;
+	        },
+
+	        toJSON : function () {
+	            return this.toISOString();
+	        }
+	    });
+
+	    moment.duration.fn.toString = moment.duration.fn.toISOString;
+
+	    function makeDurationGetter(name) {
+	        moment.duration.fn[name] = function () {
+	            return this._data[name];
+	        };
+	    }
+
+	    for (i in unitMillisecondFactors) {
+	        if (hasOwnProp(unitMillisecondFactors, i)) {
+	            makeDurationGetter(i.toLowerCase());
+	        }
+	    }
+
+	    moment.duration.fn.asMilliseconds = function () {
+	        return this.as('ms');
+	    };
+	    moment.duration.fn.asSeconds = function () {
+	        return this.as('s');
+	    };
+	    moment.duration.fn.asMinutes = function () {
+	        return this.as('m');
+	    };
+	    moment.duration.fn.asHours = function () {
+	        return this.as('h');
+	    };
+	    moment.duration.fn.asDays = function () {
+	        return this.as('d');
+	    };
+	    moment.duration.fn.asWeeks = function () {
+	        return this.as('weeks');
+	    };
+	    moment.duration.fn.asMonths = function () {
+	        return this.as('M');
+	    };
+	    moment.duration.fn.asYears = function () {
+	        return this.as('y');
+	    };
+
+	    /************************************
+	        Default Locale
+	    ************************************/
+
+
+	    // Set default locale, other locale will inherit from English.
+	    moment.locale('en', {
+	        ordinalParse: /\d{1,2}(th|st|nd|rd)/,
+	        ordinal : function (number) {
+	            var b = number % 10,
+	                output = (toInt(number % 100 / 10) === 1) ? 'th' :
+	                (b === 1) ? 'st' :
+	                (b === 2) ? 'nd' :
+	                (b === 3) ? 'rd' : 'th';
+	            return number + output;
+	        }
+	    });
+
+	    /* EMBED_LOCALES */
+
+	    /************************************
+	        Exposing Moment
+	    ************************************/
+
+	    function makeGlobal(shouldDeprecate) {
+	        /*global ender:false */
+	        if (typeof ender !== 'undefined') {
+	            return;
+	        }
+	        oldGlobalMoment = globalScope.moment;
+	        if (shouldDeprecate) {
+	            globalScope.moment = deprecate(
+	                    'Accessing Moment through the global scope is ' +
+	                    'deprecated, and will be removed in an upcoming ' +
+	                    'release.',
+	                    moment);
+	        } else {
+	            globalScope.moment = moment;
+	        }
+	    }
+
+	    // CommonJS module is defined
+	    if (hasModule) {
+	        module.exports = moment;
+	    } else if (true) {
+	        !(__WEBPACK_AMD_DEFINE_RESULT__ = function (require, exports, module) {
+	            if (module.config && module.config() && module.config().noGlobal === true) {
+	                // release the global variable
+	                globalScope.moment = oldGlobalMoment;
+	            }
+
+	            return moment;
+	        }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	        makeGlobal(true);
+	    } else {
+	        makeGlobal();
+	    }
+	}).call(this);
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(111)(module)))
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	var stylesInDom = {},
+		memoize = function(fn) {
+			var memo;
+			return function () {
+				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+				return memo;
+			};
+		},
+		isIE9 = memoize(function() {
+			return /msie 9\b/.test(window.navigator.userAgent.toLowerCase());
+		}),
+		getHeadElement = memoize(function () {
+			return document.head || document.getElementsByTagName("head")[0];
+		}),
+		singletonElement = null,
+		singletonCounter = 0;
+
+	module.exports = function(list, options) {
+		if(false) {
+			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+		}
+
+		options = options || {};
+		// Force single-tag solution on IE9, which has a hard limit on the # of <style>
+		// tags it will allow on a page
+		if (typeof options.singleton === "undefined") options.singleton = isIE9();
+
+		var styles = listToStyles(list);
+		addStylesToDom(styles, options);
+
+		return function update(newList) {
+			var mayRemove = [];
+			for(var i = 0; i < styles.length; i++) {
+				var item = styles[i];
+				var domStyle = stylesInDom[item.id];
+				domStyle.refs--;
+				mayRemove.push(domStyle);
+			}
+			if(newList) {
+				var newStyles = listToStyles(newList);
+				addStylesToDom(newStyles, options);
+			}
+			for(var i = 0; i < mayRemove.length; i++) {
+				var domStyle = mayRemove[i];
+				if(domStyle.refs === 0) {
+					for(var j = 0; j < domStyle.parts.length; j++)
+						domStyle.parts[j]();
+					delete stylesInDom[domStyle.id];
+				}
+			}
+		};
+	}
+
+	function addStylesToDom(styles, options) {
+		for(var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+			if(domStyle) {
+				domStyle.refs++;
+				for(var j = 0; j < domStyle.parts.length; j++) {
+					domStyle.parts[j](item.parts[j]);
+				}
+				for(; j < item.parts.length; j++) {
+					domStyle.parts.push(addStyle(item.parts[j], options));
+				}
+			} else {
+				var parts = [];
+				for(var j = 0; j < item.parts.length; j++) {
+					parts.push(addStyle(item.parts[j], options));
+				}
+				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+			}
+		}
+	}
+
+	function listToStyles(list) {
+		var styles = [];
+		var newStyles = {};
+		for(var i = 0; i < list.length; i++) {
+			var item = list[i];
+			var id = item[0];
+			var css = item[1];
+			var media = item[2];
+			var sourceMap = item[3];
+			var part = {css: css, media: media, sourceMap: sourceMap};
+			if(!newStyles[id])
+				styles.push(newStyles[id] = {id: id, parts: [part]});
+			else
+				newStyles[id].parts.push(part);
+		}
+		return styles;
+	}
+
+	function createStyleElement() {
+		var styleElement = document.createElement("style");
+		var head = getHeadElement();
+		styleElement.type = "text/css";
+		head.appendChild(styleElement);
+		return styleElement;
+	}
+
+	function addStyle(obj, options) {
+		var styleElement, update, remove;
+
+		if (options.singleton) {
+			var styleIndex = singletonCounter++;
+			styleElement = singletonElement || (singletonElement = createStyleElement());
+			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
+			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
+		} else {
+			styleElement = createStyleElement();
+			update = applyToTag.bind(null, styleElement);
+			remove = function () {
+				styleElement.parentNode.removeChild(styleElement);
+			};
+		}
+
+		update(obj);
+
+		return function updateStyle(newObj) {
+			if(newObj) {
+				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
+					return;
+				update(obj = newObj);
+			} else {
+				remove();
+			}
+		};
+	}
+
+	function replaceText(source, id, replacement) {
+		var boundaries = ["/** >>" + id + " **/", "/** " + id + "<< **/"];
+		var start = source.lastIndexOf(boundaries[0]);
+		var wrappedReplacement = replacement
+			? (boundaries[0] + replacement + boundaries[1])
+			: "";
+		if (source.lastIndexOf(boundaries[0]) >= 0) {
+			var end = source.lastIndexOf(boundaries[1]) + boundaries[1].length;
+			return source.slice(0, start) + wrappedReplacement + source.slice(end);
+		} else {
+			return source + wrappedReplacement;
+		}
+	}
+
+	function applyToSingletonTag(styleElement, index, remove, obj) {
+		var css = remove ? "" : obj.css;
+
+		if(styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = replaceText(styleElement.styleSheet.cssText, index, css);
+		} else {
+			var cssNode = document.createTextNode(css);
+			var childNodes = styleElement.childNodes;
+			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
+			if (childNodes.length) {
+				styleElement.insertBefore(cssNode, childNodes[index]);
+			} else {
+				styleElement.appendChild(cssNode);
+			}
+		}
+	}
+
+	function applyToTag(styleElement, obj) {
+		var css = obj.css;
+		var media = obj.media;
+		var sourceMap = obj.sourceMap;
+
+		if(sourceMap && typeof btoa === "function") {
+			try {
+				css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
+				css = "@import url(\"data:text/css;base64," + btoa(css) + "\")";
+			} catch(e) {}
+		}
+
+		if(media) {
+			styleElement.setAttribute("media", media)
+		}
+
+		if(styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = css;
+		} else {
+			while(styleElement.firstChild) {
+				styleElement.removeChild(styleElement.firstChild);
+			}
+			styleElement.appendChild(document.createTextNode(css));
+		}
+	}
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Chartist.js 0.7.2
+	 * Copyright © 2015 Gion Kunz
+	 * Free to use under the WTFPL license.
+	 * http://www.wtfpl.net/
+	 */
+
+	!function(a,b){true?!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function(){return a.returnExportsGlobal=b()}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)):"object"==typeof exports?module.exports=b():a.Chartist=b()}(this,function(){var a={version:"0.7.1"};return function(a,b,c){"use strict";c.noop=function(a){return a},c.alphaNumerate=function(a){return String.fromCharCode(97+a%26)},c.extend=function(a){a=a||{};var b=Array.prototype.slice.call(arguments,1);return b.forEach(function(b){for(var d in b)a[d]="object"!=typeof b[d]||b[d]instanceof Array?b[d]:c.extend(a[d],b[d])}),a},c.replaceAll=function(a,b,c){return a.replace(new RegExp(b,"g"),c)},c.stripUnit=function(a){return"string"==typeof a&&(a=a.replace(/[^0-9\+-\.]/g,"")),+a},c.ensureUnit=function(a,b){return"number"==typeof a&&(a+=b),a},c.querySelector=function(a){return a instanceof Node?a:b.querySelector(a)},c.times=function(a){return Array.apply(null,new Array(a))},c.sum=function(a,b){return a+b},c.serialMap=function(a,b){var d=[],e=Math.max.apply(null,a.map(function(a){return a.length}));return c.times(e).forEach(function(c,e){var f=a.map(function(a){return a[e]});d[e]=b.apply(null,f)}),d},c.escapingMap={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"},c.serialize=function(a){return null===a||void 0===a?a:("number"==typeof a?a=""+a:"object"==typeof a&&(a=JSON.stringify({data:a})),Object.keys(c.escapingMap).reduce(function(a,b){return c.replaceAll(a,b,c.escapingMap[b])},a))},c.deserialize=function(a){if("string"!=typeof a)return a;a=Object.keys(c.escapingMap).reduce(function(a,b){return c.replaceAll(a,c.escapingMap[b],b)},a);try{a=JSON.parse(a),a=void 0!==a.data?a.data:a}catch(b){}return a},c.createSvg=function(a,b,d,e){var f;return b=b||"100%",d=d||"100%",Array.prototype.slice.call(a.querySelectorAll("svg")).filter(function(a){return a.getAttribute(c.xmlNs.qualifiedName)}).forEach(function(b){a.removeChild(b)}),f=new c.Svg("svg").attr({width:b,height:d}).addClass(e).attr({style:"width: "+b+"; height: "+d+";"}),a.appendChild(f._node),f},c.reverseData=function(a){a.labels.reverse(),a.series.reverse();for(var b=0;b<a.series.length;b++)"object"==typeof a.series[b]&&void 0!==a.series[b].data?a.series[b].data.reverse():a.series[b].reverse()},c.getDataArray=function(a,b){var d,e,f=[];(b&&!a.reversed||!b&&a.reversed)&&(c.reverseData(a),a.reversed=!a.reversed);for(var g=0;g<a.series.length;g++){e="object"==typeof a.series[g]&&void 0!==a.series[g].data?a.series[g].data:a.series[g],e instanceof Array?(f[g]=[],Array.prototype.push.apply(f[g],e)):f[g]=e;for(var h=0;h<f[g].length;h++)d=f[g][h],d=0===d.value?0:d.value||d,f[g][h]=+d}return f},c.normalizeDataArray=function(a,b){for(var c=0;c<a.length;c++)if(a[c].length!==b)for(var d=a[c].length;b>d;d++)a[c][d]=0;return a},c.getMetaData=function(a,b){var d=a.data?a.data[b]:a[b];return d?c.serialize(d.meta):void 0},c.orderOfMagnitude=function(a){return Math.floor(Math.log(Math.abs(a))/Math.LN10)},c.projectLength=function(a,b,c){return b/c.range*a},c.getAvailableHeight=function(a,b){return Math.max((c.stripUnit(b.height)||a.height())-2*b.chartPadding-b.axisX.offset,0)},c.getHighLow=function(a){var b,c,d={high:-Number.MAX_VALUE,low:Number.MAX_VALUE};for(b=0;b<a.length;b++)for(c=0;c<a[b].length;c++)a[b][c]>d.high&&(d.high=a[b][c]),a[b][c]<d.low&&(d.low=a[b][c]);return d},c.getBounds=function(a,b,d,e){var f,g,h,i={high:b.high,low:b.low};i.high===i.low&&(0===i.low?i.high=1:i.low<0?i.high=0:i.low=0),(e||0===e)&&(i.high=Math.max(e,i.high),i.low=Math.min(e,i.low)),i.valueRange=i.high-i.low,i.oom=c.orderOfMagnitude(i.valueRange),i.min=Math.floor(i.low/Math.pow(10,i.oom))*Math.pow(10,i.oom),i.max=Math.ceil(i.high/Math.pow(10,i.oom))*Math.pow(10,i.oom),i.range=i.max-i.min,i.step=Math.pow(10,i.oom),i.numberOfSteps=Math.round(i.range/i.step);for(var j=c.projectLength(a,i.step,i),k=d>j;;)if(k&&c.projectLength(a,i.step,i)<=d)i.step*=2;else{if(k||!(c.projectLength(a,i.step/2,i)>=d))break;i.step/=2}for(g=i.min,h=i.max,f=i.min;f<=i.max;f+=i.step)f+i.step<i.low&&(g+=i.step),f-i.step>=i.high&&(h-=i.step);for(i.min=g,i.max=h,i.range=i.max-i.min,i.values=[],f=i.min;f<=i.max;f+=i.step)i.values.push(f);return i},c.polarToCartesian=function(a,b,c,d){var e=(d-90)*Math.PI/180;return{x:a+c*Math.cos(e),y:b+c*Math.sin(e)}},c.createChartRect=function(a,b){var d=b.axisY?b.axisY.offset||0:0,e=b.axisX?b.axisX.offset||0:0,f=c.stripUnit(b.width)||a.width(),g=c.stripUnit(b.height)||a.height();return{x1:b.chartPadding+d,y1:Math.max(g-b.chartPadding-e,b.chartPadding),x2:Math.max(f-b.chartPadding,b.chartPadding+d),y2:b.chartPadding,width:function(){return this.x2-this.x1},height:function(){return this.y1-this.y2}}},c.createGrid=function(a,b,d,e,f,g,h,i){var j={};j[d.units.pos+"1"]=a.pos,j[d.units.pos+"2"]=a.pos,j[d.counterUnits.pos+"1"]=e,j[d.counterUnits.pos+"2"]=e+f;var k=g.elem("line",j,h.join(" "));i.emit("draw",c.extend({type:"grid",axis:d.units.pos,index:b,group:g,element:k},j))},c.createLabel=function(a,b,d,e,f,g,h,i,j,k){var l,m={};if(m[e.units.pos]=a.pos+g[e.units.pos],m[e.counterUnits.pos]=g[e.counterUnits.pos],m[e.units.len]=a.len,m[e.counterUnits.len]=f,j){var n='<span class="'+i.join(" ")+'">'+d[b]+"</span>";l=h.foreignObject(n,c.extend({style:"overflow: visible;"},m))}else l=h.elem("text",m,i.join(" ")).text(d[b]);k.emit("draw",c.extend({type:"label",axis:e,index:b,group:h,element:l,text:d[b]},m))},c.createAxis=function(a,b,d,e,f,g,h,i){var j=h["axis"+a.units.pos.toUpperCase()],k=b.map(a.projectValue.bind(a)).map(a.transform),l=b.map(j.labelInterpolationFnc);k.forEach(function(b,k){(l[k]||0===l[k])&&(j.showGrid&&c.createGrid(b,k,a,a.gridOffset,d[a.counterUnits.len](),e,[h.classNames.grid,h.classNames[a.units.dir]],i),j.showLabel&&c.createLabel(b,k,l,a,j.offset,a.labelOffset,f,[h.classNames.label,h.classNames[a.units.dir]],g,i))})},c.optionsProvider=function(b,d,e){function f(){var b=h;if(h=c.extend({},j),d)for(i=0;i<d.length;i++){var f=a.matchMedia(d[i][0]);f.matches&&(h=c.extend(h,d[i][1]))}e&&e.emit("optionsChanged",{previousOptions:b,currentOptions:h})}function g(){k.forEach(function(a){a.removeListener(f)})}var h,i,j=c.extend({},b),k=[];if(!a.matchMedia)throw"window.matchMedia not found! Make sure you're using a polyfill.";if(d)for(i=0;i<d.length;i++){var l=a.matchMedia(d[i][0]);l.addListener(f),k.push(l)}return f(),{get currentOptions(){return c.extend({},h)},removeMediaQueryListeners:g}},c.catmullRom2bezier=function(a,b){for(var c=[],d=0,e=a.length;e-2*!b>d;d+=2){var f=[{x:+a[d-2],y:+a[d-1]},{x:+a[d],y:+a[d+1]},{x:+a[d+2],y:+a[d+3]},{x:+a[d+4],y:+a[d+5]}];b?d?e-4===d?f[3]={x:+a[0],y:+a[1]}:e-2===d&&(f[2]={x:+a[0],y:+a[1]},f[3]={x:+a[2],y:+a[3]}):f[0]={x:+a[e-2],y:+a[e-1]}:e-4===d?f[3]=f[2]:d||(f[0]={x:+a[d],y:+a[d+1]}),c.push([(-f[0].x+6*f[1].x+f[2].x)/6,(-f[0].y+6*f[1].y+f[2].y)/6,(f[1].x+6*f[2].x-f[3].x)/6,(f[1].y+6*f[2].y-f[3].y)/6,f[2].x,f[2].y])}return c}}(window,document,a),function(a,b,c){"use strict";c.Interpolation={},c.Interpolation.none=function(){return function(a){for(var b=(new c.Svg.Path).move(a[0],a[1]),d=3;d<a.length;d+=2)b.line(a[d-1],a[d]);return b}},c.Interpolation.simple=function(a){var b={divisor:2};a=c.extend({},b,a);var d=1/Math.max(1,a.divisor);return function(a){for(var b=(new c.Svg.Path).move(a[0],a[1]),e=2;e<a.length;e+=2){var f=a[e-2],g=a[e-1],h=a[e],i=a[e+1],j=(h-f)*d;b.curve(f+j,g,h-j,i,h,i)}return b}},c.Interpolation.cardinal=function(a){var b={tension:1};a=c.extend({},b,a);var d=Math.min(1,Math.max(0,a.tension)),e=1-d;return function(a){if(a.length<=4)return c.Interpolation.none()(a);for(var b,f=(new c.Svg.Path).move(a[0],a[1]),g=0,h=a.length;h-2*!b>g;g+=2){var i=[{x:+a[g-2],y:+a[g-1]},{x:+a[g],y:+a[g+1]},{x:+a[g+2],y:+a[g+3]},{x:+a[g+4],y:+a[g+5]}];b?g?h-4===g?i[3]={x:+a[0],y:+a[1]}:h-2===g&&(i[2]={x:+a[0],y:+a[1]},i[3]={x:+a[2],y:+a[3]}):i[0]={x:+a[h-2],y:+a[h-1]}:h-4===g?i[3]=i[2]:g||(i[0]={x:+a[g],y:+a[g+1]}),f.curve(d*(-i[0].x+6*i[1].x+i[2].x)/6+e*i[2].x,d*(-i[0].y+6*i[1].y+i[2].y)/6+e*i[2].y,d*(i[1].x+6*i[2].x-i[3].x)/6+e*i[2].x,d*(i[1].y+6*i[2].y-i[3].y)/6+e*i[2].y,i[2].x,i[2].y)}return f}}}(window,document,a),function(a,b,c){"use strict";c.EventEmitter=function(){function a(a,b){d[a]=d[a]||[],d[a].push(b)}function b(a,b){d[a]&&(b?(d[a].splice(d[a].indexOf(b),1),0===d[a].length&&delete d[a]):delete d[a])}function c(a,b){d[a]&&d[a].forEach(function(a){a(b)}),d["*"]&&d["*"].forEach(function(c){c(a,b)})}var d=[];return{addEventHandler:a,removeEventHandler:b,emit:c}}}(window,document,a),function(a,b,c){"use strict";function d(a){var b=[];if(a.length)for(var c=0;c<a.length;c++)b.push(a[c]);return b}function e(a,b){var d=b||this.prototype||c.Class,e=Object.create(d);c.Class.cloneDefinitions(e,a);var f=function(){var a,b=e.constructor||function(){};return a=this===c?Object.create(e):this,b.apply(a,Array.prototype.slice.call(arguments,0)),a};return f.prototype=e,f["super"]=d,f.extend=this.extend,f}function f(){var a=d(arguments),b=a[0];return a.splice(1,a.length-1).forEach(function(a){Object.getOwnPropertyNames(a).forEach(function(c){delete b[c],Object.defineProperty(b,c,Object.getOwnPropertyDescriptor(a,c))})}),b}c.Class={extend:e,cloneDefinitions:f}}(window,document,a),function(a,b,c){"use strict";function d(a,b,d){return a&&(this.data=a,this.eventEmitter.emit("data",{type:"update",data:this.data})),b&&(this.options=c.extend({},d?this.options:{},b),this.initializeTimeoutId||(this.optionsProvider.removeMediaQueryListeners(),this.optionsProvider=c.optionsProvider(this.options,this.responsiveOptions,this.eventEmitter))),this.initializeTimeoutId||this.createChart(this.optionsProvider.currentOptions),this}function e(){return a.removeEventListener("resize",this.resizeListener),this.optionsProvider.removeMediaQueryListeners(),this}function f(a,b){return this.eventEmitter.addEventHandler(a,b),this}function g(a,b){return this.eventEmitter.removeEventHandler(a,b),this}function h(){a.addEventListener("resize",this.resizeListener),this.optionsProvider=c.optionsProvider(this.options,this.responsiveOptions,this.eventEmitter),this.eventEmitter.addEventHandler("optionsChanged",function(){this.update()}.bind(this)),this.options.plugins&&this.options.plugins.forEach(function(a){a instanceof Array?a[0](this,a[1]):a(this)}.bind(this)),this.eventEmitter.emit("data",{type:"initial",data:this.data}),this.createChart(this.optionsProvider.currentOptions),this.initializeTimeoutId=void 0}function i(b,d,e,f){this.container=c.querySelector(b),this.data=d,this.options=e,this.responsiveOptions=f,this.eventEmitter=c.EventEmitter(),this.supportsForeignObject=c.Svg.isSupported("Extensibility"),this.supportsAnimations=c.Svg.isSupported("AnimationEventsAttribute"),this.resizeListener=function(){this.update()}.bind(this),this.container&&(this.container.__chartist__&&(this.container.__chartist__.initializeTimeoutId?a.clearTimeout(this.container.__chartist__.initializeTimeoutId):this.container.__chartist__.detach()),this.container.__chartist__=this),this.initializeTimeoutId=setTimeout(h.bind(this),0)}c.Base=c.Class.extend({constructor:i,optionsProvider:void 0,container:void 0,svg:void 0,eventEmitter:void 0,createChart:function(){throw new Error("Base chart type can't be instantiated!")},update:d,detach:e,on:f,off:g,version:c.version,supportsForeignObject:!1})}(window,document,a),function(a,b,c){"use strict";function d(a,d,e,f,g){a instanceof SVGElement?this._node=a:(this._node=b.createElementNS(y,a),"svg"===a&&this._node.setAttributeNS(z,c.xmlNs.qualifiedName,c.xmlNs.uri),d&&this.attr(d),e&&this.addClass(e),f&&(g&&f._node.firstChild?f._node.insertBefore(this._node,f._node.firstChild):f._node.appendChild(this._node)))}function e(a,b){return"string"==typeof a?b?this._node.getAttributeNS(b,a):this._node.getAttribute(a):(Object.keys(a).forEach(function(d){void 0!==a[d]&&(b?this._node.setAttributeNS(b,[c.xmlNs.prefix,":",d].join(""),a[d]):this._node.setAttribute(d,a[d]))}.bind(this)),this)}function f(a,b,d,e){return new c.Svg(a,b,d,this,e)}function g(){return this._node.parentNode instanceof SVGElement?new c.Svg(this._node.parentNode):null}function h(){for(var a=this._node;"svg"!==a.nodeName;)a=a.parentNode;return new c.Svg(a)}function i(a){var b=this._node.querySelector(a);return b?new c.Svg(b):null}function j(a){var b=this._node.querySelectorAll(a);return b.length?new c.Svg.List(b):null}function k(a,c,d,e){if("string"==typeof a){var f=b.createElement("div");f.innerHTML=a,a=f.firstChild}a.setAttribute("xmlns",A);var g=this.elem("foreignObject",c,d,e);return g._node.appendChild(a),g}function l(a){return this._node.appendChild(b.createTextNode(a)),this}function m(){for(;this._node.firstChild;)this._node.removeChild(this._node.firstChild);return this}function n(){return this._node.parentNode.removeChild(this._node),this.parent()}function o(a){return this._node.parentNode.replaceChild(a._node,this._node),a}function p(a,b){return b&&this._node.firstChild?this._node.insertBefore(a._node,this._node.firstChild):this._node.appendChild(a._node),this}function q(){return this._node.getAttribute("class")?this._node.getAttribute("class").trim().split(/\s+/):[]}function r(a){return this._node.setAttribute("class",this.classes(this._node).concat(a.trim().split(/\s+/)).filter(function(a,b,c){return c.indexOf(a)===b}).join(" ")),this}function s(a){var b=a.trim().split(/\s+/);return this._node.setAttribute("class",this.classes(this._node).filter(function(a){return-1===b.indexOf(a)}).join(" ")),this}function t(){return this._node.setAttribute("class",""),this}function u(){return this._node.clientHeight||Math.round(this._node.getBBox().height)||this._node.parentNode.clientHeight}function v(){return this._node.clientWidth||Math.round(this._node.getBBox().width)||this._node.parentNode.clientWidth}function w(a,b,d){return void 0===b&&(b=!0),Object.keys(a).forEach(function(e){function f(a,b){var f,g,h,i={};a.easing&&(h=a.easing instanceof Array?a.easing:c.Svg.Easing[a.easing],delete a.easing),a.begin=c.ensureUnit(a.begin,"ms"),a.dur=c.ensureUnit(a.dur,"ms"),h&&(a.calcMode="spline",a.keySplines=h.join(" "),a.keyTimes="0;1"),b&&(a.fill="freeze",i[e]=a.from,this.attr(i),g=c.stripUnit(a.begin||0),a.begin="indefinite"),f=this.elem("animate",c.extend({attributeName:e},a)),b&&setTimeout(function(){try{f._node.beginElement()}catch(b){i[e]=a.to,this.attr(i),f.remove()}}.bind(this),g),d&&f._node.addEventListener("beginEvent",function(){d.emit("animationBegin",{element:this,animate:f._node,params:a})}.bind(this)),f._node.addEventListener("endEvent",function(){d&&d.emit("animationEnd",{element:this,animate:f._node,params:a}),b&&(i[e]=a.to,this.attr(i),f.remove())}.bind(this))}a[e]instanceof Array?a[e].forEach(function(a){f.bind(this)(a,!1)}.bind(this)):f.bind(this)(a[e],b)}.bind(this)),this}function x(a){var b=this;this.svgElements=[];for(var d=0;d<a.length;d++)this.svgElements.push(new c.Svg(a[d]));Object.keys(c.Svg.prototype).filter(function(a){return-1===["constructor","parent","querySelector","querySelectorAll","replace","append","classes","height","width"].indexOf(a)}).forEach(function(a){b[a]=function(){var d=Array.prototype.slice.call(arguments,0);return b.svgElements.forEach(function(b){c.Svg.prototype[a].apply(b,d)}),b}})}var y="http://www.w3.org/2000/svg",z="http://www.w3.org/2000/xmlns/",A="http://www.w3.org/1999/xhtml";c.xmlNs={qualifiedName:"xmlns:ct",prefix:"ct",uri:"http://gionkunz.github.com/chartist-js/ct"},c.Svg=c.Class.extend({constructor:d,attr:e,elem:f,parent:g,root:h,querySelector:i,querySelectorAll:j,foreignObject:k,text:l,empty:m,remove:n,replace:o,append:p,classes:q,addClass:r,removeClass:s,removeAllClasses:t,height:u,width:v,animate:w}),c.Svg.isSupported=function(a){return b.implementation.hasFeature("www.http://w3.org/TR/SVG11/feature#"+a,"1.1")};var B={easeInSine:[.47,0,.745,.715],easeOutSine:[.39,.575,.565,1],easeInOutSine:[.445,.05,.55,.95],easeInQuad:[.55,.085,.68,.53],easeOutQuad:[.25,.46,.45,.94],easeInOutQuad:[.455,.03,.515,.955],easeInCubic:[.55,.055,.675,.19],easeOutCubic:[.215,.61,.355,1],easeInOutCubic:[.645,.045,.355,1],easeInQuart:[.895,.03,.685,.22],easeOutQuart:[.165,.84,.44,1],easeInOutQuart:[.77,0,.175,1],easeInQuint:[.755,.05,.855,.06],easeOutQuint:[.23,1,.32,1],easeInOutQuint:[.86,0,.07,1],easeInExpo:[.95,.05,.795,.035],easeOutExpo:[.19,1,.22,1],easeInOutExpo:[1,0,0,1],easeInCirc:[.6,.04,.98,.335],easeOutCirc:[.075,.82,.165,1],easeInOutCirc:[.785,.135,.15,.86],easeInBack:[.6,-.28,.735,.045],easeOutBack:[.175,.885,.32,1.275],easeInOutBack:[.68,-.55,.265,1.55]};c.Svg.Easing=B,c.Svg.List=c.Class.extend({constructor:x})}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){d.splice(e,0,c.extend({command:f?a.toLowerCase():a.toUpperCase()},b))}function e(a,b){a.forEach(function(c,d){r[c.command.toLowerCase()].forEach(function(e,f){b(c,e,d,f,a)})})}function f(a,b){this.pathElements=[],this.pos=0,this.close=a,this.options=c.extend({},s,b)}function g(a){return void 0!==a?(this.pos=Math.max(0,Math.min(this.pathElements.length,a)),this):this.pos}function h(a){return this.pathElements.splice(this.pos,a),this}function i(a,b,c){return d("M",{x:+a,y:+b},this.pathElements,this.pos++,c),this}function j(a,b,c){return d("L",{x:+a,y:+b},this.pathElements,this.pos++,c),this}function k(a,b,c,e,f,g,h){return d("C",{x1:+a,y1:+b,x2:+c,y2:+e,x:+f,y:+g},this.pathElements,this.pos++,h),this}function l(a){var b=a.replace(/([A-Za-z])([0-9])/g,"$1 $2").replace(/([0-9])([A-Za-z])/g,"$1 $2").split(/[\s,]+/).reduce(function(a,b){return b.match(/[A-Za-z]/)&&a.push([]),a[a.length-1].push(b),a},[]);"Z"===b[b.length-1][0].toUpperCase()&&b.pop();var d=b.map(function(a){var b=a.shift(),d=r[b.toLowerCase()];return c.extend({command:b},d.reduce(function(b,c,d){return b[c]=+a[d],b},{}))}),e=[this.pos,0];return Array.prototype.push.apply(e,d),Array.prototype.splice.apply(this.pathElements,e),this.pos+=d.length,this}function m(){var a=Math.pow(10,this.options.accuracy);return this.pathElements.reduce(function(b,c){var d=r[c.command.toLowerCase()].map(function(b){return this.options.accuracy?Math.round(c[b]*a)/a:c[b]}.bind(this));return b+c.command+d.join(",")}.bind(this),"")+(this.close?"Z":"")}function n(a,b){return e(this.pathElements,function(c,d){c[d]*="x"===d[0]?a:b}),this}function o(a,b){return e(this.pathElements,function(c,d){c[d]+="x"===d[0]?a:b}),this}function p(a){return e(this.pathElements,function(b,c,d,e,f){var g=a(b,c,d,e,f);(g||0===g)&&(b[c]=g)}),this}function q(){var a=new c.Svg.Path(this.close);return a.pos=this.pos,a.pathElements=this.pathElements.slice().map(function(a){return c.extend({},a)}),a.options=c.extend({},this.options),a}var r={m:["x","y"],l:["x","y"],c:["x1","y1","x2","y2","x","y"]},s={accuracy:3};c.Svg.Path=c.Class.extend({constructor:f,position:g,remove:h,move:i,line:j,curve:k,scale:n,translate:o,transform:p,parse:l,stringify:m,clone:q}),c.Svg.Path.elementDescriptions=r}(window,document,a),function(a,b,c){"use strict";function d(a,b,c,d,f){this.units=a,this.counterUnits=a===e.x?e.y:e.x,this.chartRect=b,this.axisLength=b[a.rectEnd]-b[a.rectStart],this.gridOffset=b[a.rectOffset],this.transform=c,this.labelOffset=d,this.options=f}var e={x:{pos:"x",len:"width",dir:"horizontal",rectStart:"x1",rectEnd:"x2",rectOffset:"y2"},y:{pos:"y",len:"height",dir:"vertical",rectStart:"y2",rectEnd:"y1",rectOffset:"x1"}};c.Axis=c.Class.extend({constructor:d,projectValue:function(){throw new Error("Base axis can't be instantiated!")}}),c.Axis.units=e}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){c.LinearScaleAxis["super"].constructor.call(this,a,b,d,e,f),this.bounds=c.getBounds(this.axisLength,f.highLow,f.scaleMinSpace,f.referenceValue)}function e(a){return{pos:this.axisLength*(a-this.bounds.min)/(this.bounds.range+this.bounds.step),len:c.projectLength(this.axisLength,this.bounds.step,this.bounds)}}c.LinearScaleAxis=c.Axis.extend({constructor:d,projectValue:e})}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){c.StepAxis["super"].constructor.call(this,a,b,d,e,f),this.stepLength=this.axisLength/(f.stepCount-(f.stretch?1:0))}function e(a,b){return{pos:this.stepLength*b,len:this.stepLength}}c.StepAxis=c.Axis.extend({constructor:d,projectValue:e})}(window,document,a),function(a,b,c){"use strict";function d(a){var b=[],d=c.normalizeDataArray(c.getDataArray(this.data,a.reverseData),this.data.labels.length);this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart);var e=c.createChartRect(this.svg,a),f=c.getHighLow(d);f.high=+a.high||(0===a.high?0:f.high),f.low=+a.low||(0===a.low?0:f.low);var g=new c.StepAxis(c.Axis.units.x,e,function(a){return a.pos=e.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:e.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{stepCount:this.data.labels.length,stretch:a.fullWidth}),h=new c.LinearScaleAxis(c.Axis.units.y,e,function(a){return a.pos=e.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y+(this.supportsForeignObject?-15:0)},{highLow:f,scaleMinSpace:a.axisY.scaleMinSpace}),i=this.svg.elem("g").addClass(a.classNames.labelGroup),j=this.svg.elem("g").addClass(a.classNames.gridGroup);c.createAxis(g,this.data.labels,e,j,i,this.supportsForeignObject,a,this.eventEmitter),c.createAxis(h,h.bounds.values,e,j,i,this.supportsForeignObject,a,this.eventEmitter),this.data.series.forEach(function(f,i){b[i]=this.svg.elem("g"),b[i].attr({"series-name":f.name,meta:c.serialize(f.meta)},c.xmlNs.uri),b[i].addClass([a.classNames.series,f.className||a.classNames.series+"-"+c.alphaNumerate(i)].join(" "));var j=[];if(d[i].forEach(function(k,l){var m={x:e.x1+g.projectValue(k,l,d[i]).pos,y:e.y1-h.projectValue(k,l,d[i]).pos};if(j.push(m.x,m.y),a.showPoint){var n=b[i].elem("line",{x1:m.x,y1:m.y,x2:m.x+.01,y2:m.y},a.classNames.point).attr({value:k,meta:c.getMetaData(f,l)},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"point",value:k,index:l,group:b[i],element:n,x:m.x,y:m.y})}}.bind(this)),a.showLine||a.showArea){var k="function"==typeof a.lineSmooth?a.lineSmooth:a.lineSmooth?c.Interpolation.cardinal():c.Interpolation.none(),l=k(j);if(a.showLine){var m=b[i].elem("path",{d:l.stringify()},a.classNames.line,!0).attr({values:d[i]},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"line",values:d[i],path:l.clone(),chartRect:e,index:i,group:b[i],element:m})}if(a.showArea){var n=Math.max(Math.min(a.areaBase,h.bounds.max),h.bounds.min),o=e.y1-h.projectValue(n).pos,p=l.clone();p.position(0).remove(1).move(e.x1,o).line(j[0],j[1]).position(p.pathElements.length).line(j[j.length-2],o);var q=b[i].elem("path",{d:p.stringify()},a.classNames.area,!0).attr({values:d[i]},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"area",values:d[i],path:p.clone(),chartRect:e,index:i,group:b[i],element:q})}}}.bind(this)),this.eventEmitter.emit("created",{bounds:h.bounds,chartRect:e,svg:this.svg,options:a})}function e(a,b,d,e){c.Line["super"].constructor.call(this,a,b,c.extend({},f,d),e)}var f={axisX:{offset:30,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop},axisY:{offset:40,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:20},width:void 0,height:void 0,showLine:!0,showPoint:!0,showArea:!1,areaBase:0,lineSmooth:!0,low:void 0,high:void 0,chartPadding:5,fullWidth:!1,reverseData:!1,classNames:{chart:"ct-chart-line",label:"ct-label",labelGroup:"ct-labels",series:"ct-series",line:"ct-line",point:"ct-point",area:"ct-area",grid:"ct-grid",gridGroup:"ct-grids",vertical:"ct-vertical",horizontal:"ct-horizontal"}};c.Line=c.Base.extend({constructor:e,createChart:d})}(window,document,a),function(a,b,c){"use strict";function d(a){var b,d=[],e=c.normalizeDataArray(c.getDataArray(this.data,a.reverseData),this.data.labels.length);if(this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart),a.stackBars){var f=c.serialMap(e,function(){return Array.prototype.slice.call(arguments).reduce(c.sum,0)});b=c.getHighLow([f])}else b=c.getHighLow(e);b.high=+a.high||(0===a.high?0:b.high),b.low=+a.low||(0===a.low?0:b.low);var g,h,i=c.createChartRect(this.svg,a);a.horizontalBars?(h=new c.StepAxis(c.Axis.units.y,i,function(a){return a.pos=i.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y-i.height()/this.data.labels.length},{stepCount:this.data.labels.length,stretch:a.fullHeight}),g=new c.LinearScaleAxis(c.Axis.units.x,i,function(a){return a.pos=i.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:i.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{highLow:b,scaleMinSpace:a.axisX.scaleMinSpace,referenceValue:0})):(h=new c.StepAxis(c.Axis.units.x,i,function(a){return a.pos=i.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:i.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{stepCount:this.data.labels.length}),g=new c.LinearScaleAxis(c.Axis.units.y,i,function(a){return a.pos=i.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y+(this.supportsForeignObject?-15:0)},{highLow:b,scaleMinSpace:a.axisY.scaleMinSpace,referenceValue:0}));var j=this.svg.elem("g").addClass(a.classNames.labelGroup),k=this.svg.elem("g").addClass(a.classNames.gridGroup),l=a.horizontalBars?i.x1+g.projectValue(0).pos:i.y1-g.projectValue(0).pos,m=[];c.createAxis(h,this.data.labels,i,k,j,this.supportsForeignObject,a,this.eventEmitter),c.createAxis(g,g.bounds.values,i,k,j,this.supportsForeignObject,a,this.eventEmitter),this.data.series.forEach(function(b,f){var j=f-(this.data.series.length-1)/2,k=i[h.units.len]()/e[f].length/2;d[f]=this.svg.elem("g"),d[f].attr({"series-name":b.name,meta:c.serialize(b.meta)},c.xmlNs.uri),d[f].addClass([a.classNames.series,b.className||a.classNames.series+"-"+c.alphaNumerate(f)].join(" ")),e[f].forEach(function(n,o){var p,q,r={x:i.x1+(a.horizontalBars?g:h).projectValue(n,o,e[f]).pos,y:i.y1-(a.horizontalBars?h:g).projectValue(n,o,e[f]).pos};r[h.units.pos]+=k*(a.horizontalBars?-1:1),r[h.units.pos]+=a.stackBars?0:j*a.seriesBarDistance*(a.horizontalBars?-1:1),q=m[o]||l,m[o]=q-(l-r[h.counterUnits.pos]);var s={};s[h.units.pos+"1"]=r[h.units.pos],s[h.units.pos+"2"]=r[h.units.pos],s[h.counterUnits.pos+"1"]=a.stackBars?q:l,s[h.counterUnits.pos+"2"]=a.stackBars?m[o]:r[h.counterUnits.pos],p=d[f].elem("line",s,a.classNames.bar).attr({value:n,meta:c.getMetaData(b,o)},c.xmlNs.uri),this.eventEmitter.emit("draw",c.extend({type:"bar",value:n,index:o,chartRect:i,group:d[f],element:p},s))}.bind(this))}.bind(this)),this.eventEmitter.emit("created",{bounds:g.bounds,chartRect:i,svg:this.svg,options:a})}function e(a,b,d,e){c.Bar["super"].constructor.call(this,a,b,c.extend({},f,d),e)}var f={axisX:{offset:30,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:40},axisY:{offset:40,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:20},width:void 0,height:void 0,high:void 0,low:void 0,chartPadding:5,seriesBarDistance:15,stackBars:!1,horizontalBars:!1,reverseData:!1,classNames:{chart:"ct-chart-bar",label:"ct-label",labelGroup:"ct-labels",series:"ct-series",bar:"ct-bar",grid:"ct-grid",gridGroup:"ct-grids",vertical:"ct-vertical",horizontal:"ct-horizontal"}};c.Bar=c.Base.extend({constructor:e,createChart:d})}(window,document,a),function(a,b,c){"use strict";function d(a,b,c){var d=b.x>a.x;return d&&"explode"===c||!d&&"implode"===c?"start":d&&"implode"===c||!d&&"explode"===c?"end":"middle"}function e(a){var b,e,f,g,h=[],i=a.startAngle,j=c.getDataArray(this.data,a.reverseData);this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart),b=c.createChartRect(this.svg,a,0,0),e=Math.min(b.width()/2,b.height()/2),g=a.total||j.reduce(function(a,b){return a+b},0),e-=a.donut?a.donutWidth/2:0,f=a.donut?e:e/2,f+=a.labelOffset;for(var k={x:b.x1+b.width()/2,y:b.y2+b.height()/2},l=1===this.data.series.filter(function(a){return 0!==a}).length,m=0;m<this.data.series.length;m++){h[m]=this.svg.elem("g",null,null,!0),this.data.series[m].name&&h[m].attr({"series-name":this.data.series[m].name,meta:c.serialize(this.data.series[m].meta)},c.xmlNs.uri),h[m].addClass([a.classNames.series,this.data.series[m].className||a.classNames.series+"-"+c.alphaNumerate(m)].join(" "));var n=i+j[m]/g*360;n-i===360&&(n-=.01);var o=c.polarToCartesian(k.x,k.y,e,i-(0===m||l?0:.2)),p=c.polarToCartesian(k.x,k.y,e,n),q=180>=n-i?"0":"1",r=["M",p.x,p.y,"A",e,e,0,q,0,o.x,o.y];a.donut===!1&&r.push("L",k.x,k.y);var s=h[m].elem("path",{d:r.join(" ")},a.classNames.slice+(a.donut?" "+a.classNames.donut:""));if(s.attr({value:j[m]},c.xmlNs.uri),a.donut===!0&&s.attr({style:"stroke-width: "+ +a.donutWidth+"px"}),this.eventEmitter.emit("draw",{type:"slice",value:j[m],totalDataSum:g,index:m,group:h[m],element:s,center:k,radius:e,startAngle:i,endAngle:n}),a.showLabel){var t=c.polarToCartesian(k.x,k.y,f,i+(n-i)/2),u=a.labelInterpolationFnc(this.data.labels?this.data.labels[m]:j[m],m),v=h[m].elem("text",{dx:t.x,dy:t.y,"text-anchor":d(k,t,a.labelDirection)},a.classNames.label).text(""+u);this.eventEmitter.emit("draw",{type:"label",index:m,group:h[m],element:v,text:""+u,x:t.x,y:t.y})}i=n}this.eventEmitter.emit("created",{chartRect:b,svg:this.svg,options:a})}function f(a,b,d,e){c.Pie["super"].constructor.call(this,a,b,c.extend({},g,d),e)}var g={width:void 0,height:void 0,chartPadding:5,classNames:{chart:"ct-chart-pie",series:"ct-series",slice:"ct-slice",donut:"ct-donut",label:"ct-label"},startAngle:0,total:void 0,donut:!1,donutWidth:60,showLabel:!0,labelOffset:0,labelInterpolationFnc:c.noop,labelDirection:"neutral",reverseData:!1};c.Pie=c.Base.extend({constructor:f,createChart:e,determineAnchorPosition:d})}(window,document,a),a});
+	//# sourceMappingURL=chartist.min.js.map
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	 * jQuery Cookie Plugin v1.4.1
+	 * https://github.com/carhartl/jquery-cookie
+	 *
+	 * Copyright 2013 Klaus Hartl
+	 * Released under the MIT license
+	 */
+	(function (factory) {
+		if (true) {
+			// AMD
+			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(9)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof exports === 'object') {
+			// CommonJS
+			factory(require('jquery'));
+		} else {
+			// Browser globals
+			factory(jQuery);
+		}
+	}(function ($) {
+
+		var pluses = /\+/g;
+
+		function encode(s) {
+			return config.raw ? s : encodeURIComponent(s);
+		}
+
+		function decode(s) {
+			return config.raw ? s : decodeURIComponent(s);
+		}
+
+		function stringifyCookieValue(value) {
+			return encode(config.json ? JSON.stringify(value) : String(value));
+		}
+
+		function parseCookieValue(s) {
+			if (s.indexOf('"') === 0) {
+				// This is a quoted cookie as according to RFC2068, unescape...
+				s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+			}
+
+			try {
+				// Replace server-side written pluses with spaces.
+				// If we can't decode the cookie, ignore it, it's unusable.
+				// If we can't parse the cookie, ignore it, it's unusable.
+				s = decodeURIComponent(s.replace(pluses, ' '));
+				return config.json ? JSON.parse(s) : s;
+			} catch(e) {}
+		}
+
+		function read(s, converter) {
+			var value = config.raw ? s : parseCookieValue(s);
+			return $.isFunction(converter) ? converter(value) : value;
+		}
+
+		var config = $.cookie = function (key, value, options) {
+
+			// Write
+
+			if (value !== undefined && !$.isFunction(value)) {
+				options = $.extend({}, config.defaults, options);
+
+				if (typeof options.expires === 'number') {
+					var days = options.expires, t = options.expires = new Date();
+					t.setTime(+t + days * 864e+5);
+				}
+
+				return (document.cookie = [
+					encode(key), '=', stringifyCookieValue(value),
+					options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+					options.path    ? '; path=' + options.path : '',
+					options.domain  ? '; domain=' + options.domain : '',
+					options.secure  ? '; secure' : ''
+				].join(''));
+			}
+
+			// Read
+
+			var result = key ? undefined : {};
+
+			// To prevent the for loop in the first place assign an empty array
+			// in case there are no cookies at all. Also prevents odd result when
+			// calling $.cookie().
+			var cookies = document.cookie ? document.cookie.split('; ') : [];
+
+			for (var i = 0, l = cookies.length; i < l; i++) {
+				var parts = cookies[i].split('=');
+				var name = decode(parts.shift());
+				var cookie = parts.join('=');
+
+				if (key && key === name) {
+					// If second argument (value) is a function it's a converter...
+					result = read(cookie, value);
+					break;
+				}
+
+				// Prevent storing a cookie that we couldn't decode.
+				if (!key && (cookie = read(cookie)) !== undefined) {
+					result[name] = cookie;
+				}
+			}
+
+			return result;
+		};
+
+		config.defaults = {};
+
+		$.removeCookie = function (key, options) {
+			if ($.cookie(key) === undefined) {
+				return false;
+			}
+
+			// Must not alter options, thus extending a fresh object...
+			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
+			return !$.cookie(key);
+		};
+
+	}));
+
+
+/***/ },
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -9565,2331 +12985,7 @@
 
 
 /***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * jQuery Cookie Plugin v1.4.1
-	 * https://github.com/carhartl/jquery-cookie
-	 *
-	 * Copyright 2013 Klaus Hartl
-	 * Released under the MIT license
-	 */
-	(function (factory) {
-		if (true) {
-			// AMD
-			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(3)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else if (typeof exports === 'object') {
-			// CommonJS
-			factory(require('jquery'));
-		} else {
-			// Browser globals
-			factory(jQuery);
-		}
-	}(function ($) {
-
-		var pluses = /\+/g;
-
-		function encode(s) {
-			return config.raw ? s : encodeURIComponent(s);
-		}
-
-		function decode(s) {
-			return config.raw ? s : decodeURIComponent(s);
-		}
-
-		function stringifyCookieValue(value) {
-			return encode(config.json ? JSON.stringify(value) : String(value));
-		}
-
-		function parseCookieValue(s) {
-			if (s.indexOf('"') === 0) {
-				// This is a quoted cookie as according to RFC2068, unescape...
-				s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-			}
-
-			try {
-				// Replace server-side written pluses with spaces.
-				// If we can't decode the cookie, ignore it, it's unusable.
-				// If we can't parse the cookie, ignore it, it's unusable.
-				s = decodeURIComponent(s.replace(pluses, ' '));
-				return config.json ? JSON.parse(s) : s;
-			} catch(e) {}
-		}
-
-		function read(s, converter) {
-			var value = config.raw ? s : parseCookieValue(s);
-			return $.isFunction(converter) ? converter(value) : value;
-		}
-
-		var config = $.cookie = function (key, value, options) {
-
-			// Write
-
-			if (value !== undefined && !$.isFunction(value)) {
-				options = $.extend({}, config.defaults, options);
-
-				if (typeof options.expires === 'number') {
-					var days = options.expires, t = options.expires = new Date();
-					t.setTime(+t + days * 864e+5);
-				}
-
-				return (document.cookie = [
-					encode(key), '=', stringifyCookieValue(value),
-					options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
-					options.path    ? '; path=' + options.path : '',
-					options.domain  ? '; domain=' + options.domain : '',
-					options.secure  ? '; secure' : ''
-				].join(''));
-			}
-
-			// Read
-
-			var result = key ? undefined : {};
-
-			// To prevent the for loop in the first place assign an empty array
-			// in case there are no cookies at all. Also prevents odd result when
-			// calling $.cookie().
-			var cookies = document.cookie ? document.cookie.split('; ') : [];
-
-			for (var i = 0, l = cookies.length; i < l; i++) {
-				var parts = cookies[i].split('=');
-				var name = decode(parts.shift());
-				var cookie = parts.join('=');
-
-				if (key && key === name) {
-					// If second argument (value) is a function it's a converter...
-					result = read(cookie, value);
-					break;
-				}
-
-				// Prevent storing a cookie that we couldn't decode.
-				if (!key && (cookie = read(cookie)) !== undefined) {
-					result[name] = cookie;
-				}
-			}
-
-			return result;
-		};
-
-		config.defaults = {};
-
-		$.removeCookie = function (key, options) {
-			if ($.cookie(key) === undefined) {
-				return false;
-			}
-
-			// Must not alter options, thus extending a fresh object...
-			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
-			return !$.cookie(key);
-		};
-
-	}));
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// name: sammy
-	// version: 0.7.6
-
-	// Sammy.js / http://sammyjs.org
-
-	(function(factory){
-	  // Support module loading scenarios
-	  if (true){
-	    // AMD Anonymous Module
-	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(3)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	  } else {
-	    // No module loader (plain <script> tag) - put directly in global namespace
-	    jQuery.sammy = window.Sammy = factory(jQuery);
-	  }
-	})(function($){
-
-	  var Sammy,
-	      PATH_REPLACER = "([^\/]+)",
-	      PATH_NAME_MATCHER = /:([\w\d]+)/g,
-	      QUERY_STRING_MATCHER = /\?([^#]*)?$/,
-	      // mainly for making `arguments` an Array
-	      _makeArray = function(nonarray) { return Array.prototype.slice.call(nonarray); },
-	      // borrowed from jQuery
-	      _isFunction = function( obj ) { return Object.prototype.toString.call(obj) === "[object Function]"; },
-	      _isArray = function( obj ) { return Object.prototype.toString.call(obj) === "[object Array]"; },
-	      _isRegExp = function( obj ) { return Object.prototype.toString.call(obj) === "[object RegExp]"; },
-	      _decode = function( str ) { return decodeURIComponent((str || '').replace(/\+/g, ' ')); },
-	      _encode = encodeURIComponent,
-	      _escapeHTML = function(s) {
-	        return String(s).replace(/&(?!\w+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-	      },
-	      _routeWrapper = function(verb) {
-	        return function() {
-	          return this.route.apply(this, [verb].concat(Array.prototype.slice.call(arguments)));
-	        };
-	      },
-	      _template_cache = {},
-	      _has_history = !!(window.history && history.pushState),
-	      loggers = [];
-
-
-	  // `Sammy` (also aliased as $.sammy) is not only the namespace for a
-	  // number of prototypes, its also a top level method that allows for easy
-	  // creation/management of `Sammy.Application` instances. There are a
-	  // number of different forms for `Sammy()` but each returns an instance
-	  // of `Sammy.Application`. When a new instance is created using
-	  // `Sammy` it is added to an Object called `Sammy.apps`. This
-	  // provides for an easy way to get at existing Sammy applications. Only one
-	  // instance is allowed per `element_selector` so when calling
-	  // `Sammy('selector')` multiple times, the first time will create
-	  // the application and the following times will extend the application
-	  // already added to that selector.
-	  //
-	  // ### Example
-	  //
-	  //      // returns the app at #main or a new app
-	  //      Sammy('#main')
-	  //
-	  //      // equivalent to "new Sammy.Application", except appends to apps
-	  //      Sammy();
-	  //      Sammy(function() { ... });
-	  //
-	  //      // extends the app at '#main' with function.
-	  //      Sammy('#main', function() { ... });
-	  //
-	  Sammy = function() {
-	    var args = _makeArray(arguments),
-	        app, selector;
-	    Sammy.apps = Sammy.apps || {};
-	    if (args.length === 0 || args[0] && _isFunction(args[0])) { // Sammy()
-	      return Sammy.apply(Sammy, ['body'].concat(args));
-	    } else if (typeof (selector = args.shift()) == 'string') { // Sammy('#main')
-	      app = Sammy.apps[selector] || new Sammy.Application();
-	      app.element_selector = selector;
-	      if (args.length > 0) {
-	        $.each(args, function(i, plugin) {
-	          app.use(plugin);
-	        });
-	      }
-	      // if the selector changes make sure the reference in Sammy.apps changes
-	      if (app.element_selector != selector) {
-	        delete Sammy.apps[selector];
-	      }
-	      Sammy.apps[app.element_selector] = app;
-	      return app;
-	    }
-	  };
-
-	  Sammy.VERSION = '0.7.6';
-
-	  // Add to the global logger pool. Takes a function that accepts an
-	  // unknown number of arguments and should print them or send them somewhere
-	  // The first argument is always a timestamp.
-	  Sammy.addLogger = function(logger) {
-	    loggers.push(logger);
-	  };
-
-	  // Sends a log message to each logger listed in the global
-	  // loggers pool. Can take any number of arguments.
-	  // Also prefixes the arguments with a timestamp.
-	  Sammy.log = function()  {
-	    var args = _makeArray(arguments);
-	    args.unshift("[" + Date() + "]");
-	    $.each(loggers, function(i, logger) {
-	      logger.apply(Sammy, args);
-	    });
-	  };
-
-	  if (typeof window.console != 'undefined') {
-	    if (typeof window.console.log === 'function' && _isFunction(window.console.log.apply)) {
-	      Sammy.addLogger(function() {
-	        window.console.log.apply(window.console, arguments);
-	      });
-	    } else {
-	      Sammy.addLogger(function() {
-	        window.console.log(arguments);
-	      });
-	    }
-	  } else if (typeof console != 'undefined') {
-	    Sammy.addLogger(function() {
-	      console.log.apply(console, arguments);
-	    });
-	  }
-
-	  $.extend(Sammy, {
-	    makeArray: _makeArray,
-	    isFunction: _isFunction,
-	    isArray: _isArray
-	  });
-
-	  // Sammy.Object is the base for all other Sammy classes. It provides some useful
-	  // functionality, including cloning, iterating, etc.
-	  Sammy.Object = function(obj) { // constructor
-	    return $.extend(this, obj || {});
-	  };
-
-	  $.extend(Sammy.Object.prototype, {
-
-	    // Escape HTML in string, use in templates to prevent script injection.
-	    // Also aliased as `h()`
-	    escapeHTML: _escapeHTML,
-	    h: _escapeHTML,
-
-	    // Returns a copy of the object with Functions removed.
-	    toHash: function() {
-	      var json = {};
-	      $.each(this, function(k,v) {
-	        if (!_isFunction(v)) {
-	          json[k] = v;
-	        }
-	      });
-	      return json;
-	    },
-
-	    // Renders a simple HTML version of this Objects attributes.
-	    // Does not render functions.
-	    // For example. Given this Sammy.Object:
-	    //
-	    //     var s = new Sammy.Object({first_name: 'Sammy', last_name: 'Davis Jr.'});
-	    //     s.toHTML()
-	    //     //=> '<strong>first_name</strong> Sammy<br /><strong>last_name</strong> Davis Jr.<br />'
-	    //
-	    toHTML: function() {
-	      var display = "";
-	      $.each(this, function(k, v) {
-	        if (!_isFunction(v)) {
-	          display += "<strong>" + k + "</strong> " + v + "<br />";
-	        }
-	      });
-	      return display;
-	    },
-
-	    // Returns an array of keys for this object. If `attributes_only`
-	    // is true will not return keys that map to a `function()`
-	    keys: function(attributes_only) {
-	      var keys = [];
-	      for (var property in this) {
-	        if (!_isFunction(this[property]) || !attributes_only) {
-	          keys.push(property);
-	        }
-	      }
-	      return keys;
-	    },
-
-	    // Checks if the object has a value at `key` and that the value is not empty
-	    has: function(key) {
-	      return this[key] && $.trim(this[key].toString()) !== '';
-	    },
-
-	    // convenience method to join as many arguments as you want
-	    // by the first argument - useful for making paths
-	    join: function() {
-	      var args = _makeArray(arguments);
-	      var delimiter = args.shift();
-	      return args.join(delimiter);
-	    },
-
-	    // Shortcut to Sammy.log
-	    log: function() {
-	      Sammy.log.apply(Sammy, arguments);
-	    },
-
-	    // Returns a string representation of this object.
-	    // if `include_functions` is true, it will also toString() the
-	    // methods of this object. By default only prints the attributes.
-	    toString: function(include_functions) {
-	      var s = [];
-	      $.each(this, function(k, v) {
-	        if (!_isFunction(v) || include_functions) {
-	          s.push('"' + k + '": ' + v.toString());
-	        }
-	      });
-	      return "Sammy.Object: {" + s.join(',') + "}";
-	    }
-	  });
-
-
-	  // Return whether the event targets this window.
-	  Sammy.targetIsThisWindow = function targetIsThisWindow(event, tagName) {
-	    var targetElement = $(event.target).closest(tagName);
-	    if (targetElement.length === 0) { return true; }
-
-	    var targetWindow = targetElement.attr('target');
-	    if (!targetWindow || targetWindow === window.name || targetWindow === '_self') { return true; }
-	    if (targetWindow === '_blank') { return false; }
-	    if (targetWindow === 'top' && window === window.top) { return true; }
-	    return false;
-	  };
-
-
-	  // The DefaultLocationProxy is the default location proxy for all Sammy applications.
-	  // A location proxy is a prototype that conforms to a simple interface. The purpose
-	  // of a location proxy is to notify the Sammy.Application its bound to when the location
-	  // or 'external state' changes.
-	  //
-	  // The `DefaultLocationProxy` watches for changes to the path of the current window and
-	  // is also able to set the path based on changes in the application. It does this by
-	  // using different methods depending on what is available in the current browser. In
-	  // the latest and greatest browsers it used the HTML5 History API and the `pushState`
-	  // `popState` events/methods. This allows you to use Sammy to serve a site behind normal
-	  // URI paths as opposed to the older default of hash (#) based routing. Because the server
-	  // can interpret the changed path on a refresh or re-entry, though, it requires additional
-	  // support on the server side. If you'd like to force disable HTML5 history support, please
-	  // use the `disable_push_state` setting on `Sammy.Application`. If pushState support
-	  // is enabled, `DefaultLocationProxy` also binds to all links on the page. If a link is clicked
-	  // that matches the current set of routes, the URL is changed using pushState instead of
-	  // fully setting the location and the app is notified of the change.
-	  //
-	  // If the browser does not have support for HTML5 History, `DefaultLocationProxy` automatically
-	  // falls back to the older hash based routing. The newest browsers (IE, Safari > 4, FF >= 3.6)
-	  // support a 'onhashchange' DOM event, thats fired whenever the location.hash changes.
-	  // In this situation the DefaultLocationProxy just binds to this event and delegates it to
-	  // the application. In the case of older browsers a poller is set up to track changes to the
-	  // hash.
-	  Sammy.DefaultLocationProxy = function(app, run_interval_every) {
-	    this.app = app;
-	    // set is native to false and start the poller immediately
-	    this.is_native = false;
-	    this.has_history = _has_history;
-	    this._startPolling(run_interval_every);
-	  };
-
-	  Sammy.DefaultLocationProxy.fullPath = function(location_obj) {
-	   // Bypass the `window.location.hash` attribute.  If a question mark
-	    // appears in the hash IE6 will strip it and all of the following
-	    // characters from `window.location.hash`.
-	    var matches = location_obj.toString().match(/^[^#]*(#.+)$/);
-	    var hash = matches ? matches[1] : '';
-	    return [location_obj.pathname, location_obj.search, hash].join('');
-	  };
-	$.extend(Sammy.DefaultLocationProxy.prototype , {
-	    // bind the proxy events to the current app.
-	    bind: function() {
-	      var proxy = this, app = this.app, lp = Sammy.DefaultLocationProxy;
-	      $(window).bind('hashchange.' + this.app.eventNamespace(), function(e, non_native) {
-	        // if we receive a native hash change event, set the proxy accordingly
-	        // and stop polling
-	        if (proxy.is_native === false && !non_native) {
-	          proxy.is_native = true;
-	          window.clearInterval(lp._interval);
-	          lp._interval = null;
-	        }
-	        app.trigger('location-changed');
-	      });
-	      if (_has_history && !app.disable_push_state) {
-	        // bind to popstate
-	        $(window).bind('popstate.' + this.app.eventNamespace(), function(e) {
-	          app.trigger('location-changed');
-	        });
-	        // bind to link clicks that have routes
-	        $(document).delegate('a', 'click.history-' + this.app.eventNamespace(), function (e) {
-	          if (e.isDefaultPrevented() || e.metaKey || e.ctrlKey) {
-	            return;
-	          }
-	          var full_path = lp.fullPath(this),
-	            // Get anchor's host name in a cross browser compatible way.
-	            // IE looses hostname property when setting href in JS
-	            // with a relative URL, e.g. a.setAttribute('href',"/whatever").
-	            // Circumvent this problem by creating a new link with given URL and
-	            // querying that for a hostname.
-	            hostname = this.hostname ? this.hostname : function (a) {
-	              var l = document.createElement("a");
-	              l.href = a.href;
-	              return l.hostname;
-	            }(this);
-
-	          if (hostname == window.location.hostname &&
-	              app.lookupRoute('get', full_path) &&
-	              Sammy.targetIsThisWindow(e, 'a')) {
-	            e.preventDefault();
-	            proxy.setLocation(full_path);
-	            return false;
-	          }
-	        });
-	      }
-	      if (!lp._bindings) {
-	        lp._bindings = 0;
-	      }
-	      lp._bindings++;
-	    },
-
-	    // unbind the proxy events from the current app
-	    unbind: function() {
-	      $(window).unbind('hashchange.' + this.app.eventNamespace());
-	      $(window).unbind('popstate.' + this.app.eventNamespace());
-	      $(document).undelegate('a', 'click.history-' + this.app.eventNamespace());
-	      Sammy.DefaultLocationProxy._bindings--;
-	      if (Sammy.DefaultLocationProxy._bindings <= 0) {
-	        window.clearInterval(Sammy.DefaultLocationProxy._interval);
-	        Sammy.DefaultLocationProxy._interval = null;
-	      }
-	    },
-
-	    // get the current location from the hash.
-	    getLocation: function() {
-	      return Sammy.DefaultLocationProxy.fullPath(window.location);
-	    },
-
-	    // set the current location to `new_location`
-	    setLocation: function(new_location) {
-	      if (/^([^#\/]|$)/.test(new_location)) { // non-prefixed url
-	        if (_has_history && !this.app.disable_push_state) {
-	          new_location = '/' + new_location;
-	        } else {
-	          new_location = '#!/' + new_location;
-	        }
-	      }
-	      if (new_location != this.getLocation()) {
-	        // HTML5 History exists and new_location is a full path
-	        if (_has_history && !this.app.disable_push_state && /^\//.test(new_location)) {
-	          history.pushState({ path: new_location }, window.title, new_location);
-	          this.app.trigger('location-changed');
-	        } else {
-	          return (window.location = new_location);
-	        }
-	      }
-	    },
-
-	    _startPolling: function(every) {
-	      // set up interval
-	      var proxy = this;
-	      if (!Sammy.DefaultLocationProxy._interval) {
-	        if (!every) { every = 10; }
-	        var hashCheck = function() {
-	          var current_location = proxy.getLocation();
-	          if (typeof Sammy.DefaultLocationProxy._last_location == 'undefined' ||
-	            current_location != Sammy.DefaultLocationProxy._last_location) {
-	            window.setTimeout(function() {
-	              $(window).trigger('hashchange', [true]);
-	            }, 0);
-	          }
-	          Sammy.DefaultLocationProxy._last_location = current_location;
-	        };
-	        hashCheck();
-	        Sammy.DefaultLocationProxy._interval = window.setInterval(hashCheck, every);
-	      }
-	    }
-	  });
-
-
-	  // Sammy.Application is the Base prototype for defining 'applications'.
-	  // An 'application' is a collection of 'routes' and bound events that is
-	  // attached to an element when `run()` is called.
-	  // The only argument an 'app_function' is evaluated within the context of the application.
-	  Sammy.Application = function(app_function) {
-	    var app = this;
-	    this.routes            = {};
-	    this.listeners         = new Sammy.Object({});
-	    this.arounds           = [];
-	    this.befores           = [];
-	    // generate a unique namespace
-	    this.namespace         = (new Date()).getTime() + '-' + parseInt(Math.random() * 1000, 10);
-	    this.context_prototype = function() { Sammy.EventContext.apply(this, arguments); };
-	    this.context_prototype.prototype = new Sammy.EventContext();
-
-	    if (_isFunction(app_function)) {
-	      app_function.apply(this, [this]);
-	    }
-	    // set the location proxy if not defined to the default (DefaultLocationProxy)
-	    if (!this._location_proxy) {
-	      this.setLocationProxy(new Sammy.DefaultLocationProxy(this, this.run_interval_every));
-	    }
-	    if (this.debug) {
-	      this.bindToAllEvents(function(e, data) {
-	        app.log(app.toString(), e.cleaned_type, data || {});
-	      });
-	    }
-	  };
-
-	  Sammy.Application.prototype = $.extend({}, Sammy.Object.prototype, {
-
-	    // the four route verbs
-	    ROUTE_VERBS: ['get','post','put','delete'],
-
-	    // An array of the default events triggered by the
-	    // application during its lifecycle
-	    APP_EVENTS: ['run', 'unload', 'lookup-route', 'run-route', 'route-found', 'event-context-before', 'event-context-after', 'changed', 'error', 'check-form-submission', 'redirect', 'location-changed'],
-
-	    _last_route: null,
-	    _location_proxy: null,
-	    _running: false,
-
-	    // Defines what element the application is bound to. Provide a selector
-	    // (parseable by `jQuery()`) and this will be used by `$element()`
-	    element_selector: 'body',
-
-	    // When set to true, logs all of the default events using `log()`
-	    debug: false,
-
-	    // When set to true, and the error() handler is not overridden, will actually
-	    // raise JS errors in routes (500) and when routes can't be found (404)
-	    raise_errors: false,
-
-	    // The time in milliseconds that the URL is queried for changes
-	    run_interval_every: 50,
-
-	    // if using the `DefaultLocationProxy` setting this to true will force the app to use
-	    // traditional hash based routing as opposed to the new HTML5 PushState support
-	    disable_push_state: false,
-
-	    // The default template engine to use when using `partial()` in an
-	    // `EventContext`. `template_engine` can either be a string that
-	    // corresponds to the name of a method/helper on EventContext or it can be a function
-	    // that takes two arguments, the content of the unrendered partial and an optional
-	    // JS object that contains interpolation data. Template engine is only called/referred
-	    // to if the extension of the partial is null or unknown. See `partial()`
-	    // for more information
-	    template_engine: null,
-
-	    // //=> Sammy.Application: body
-	    toString: function() {
-	      return 'Sammy.Application:' + this.element_selector;
-	    },
-
-	    // returns a jQuery object of the Applications bound element.
-	    $element: function(selector) {
-	      return selector ? $(this.element_selector).find(selector) : $(this.element_selector);
-	    },
-
-	    // `use()` is the entry point for including Sammy plugins.
-	    // The first argument to use should be a function() that is evaluated
-	    // in the context of the current application, just like the `app_function`
-	    // argument to the `Sammy.Application` constructor.
-	    //
-	    // Any additional arguments are passed to the app function sequentially.
-	    //
-	    // For much more detail about plugins, check out:
-	    // [http://sammyjs.org/docs/plugins](http://sammyjs.org/docs/plugins)
-	    //
-	    // ### Example
-	    //
-	    //      var MyPlugin = function(app, prepend) {
-	    //
-	    //        this.helpers({
-	    //          myhelper: function(text) {
-	    //            alert(prepend + " " + text);
-	    //          }
-	    //        });
-	    //
-	    //      };
-	    //
-	    //      var app = $.sammy(function() {
-	    //
-	    //        this.use(MyPlugin, 'This is my plugin');
-	    //
-	    //        this.get('#/', function() {
-	    //          this.myhelper('and dont you forget it!');
-	    //          //=> Alerts: This is my plugin and dont you forget it!
-	    //        });
-	    //
-	    //      });
-	    //
-	    // If plugin is passed as a string it assumes your are trying to load
-	    // Sammy."Plugin". This is the preferred way of loading core Sammy plugins
-	    // as it allows for better error-messaging.
-	    //
-	    // ### Example
-	    //
-	    //      $.sammy(function() {
-	    //        this.use('Mustache'); //=> Sammy.Mustache
-	    //        this.use('Storage'); //=> Sammy.Storage
-	    //      });
-	    //
-	    use: function() {
-	      // flatten the arguments
-	      var args = _makeArray(arguments),
-	          plugin = args.shift(),
-	          plugin_name = plugin || '';
-	      try {
-	        args.unshift(this);
-	        if (typeof plugin == 'string') {
-	          plugin_name = 'Sammy.' + plugin;
-	          plugin = Sammy[plugin];
-	        }
-	        plugin.apply(this, args);
-	      } catch(e) {
-	        if (typeof plugin === 'undefined') {
-	          this.error("Plugin Error: called use() but plugin (" + plugin_name.toString() + ") is not defined", e);
-	        } else if (!_isFunction(plugin)) {
-	          this.error("Plugin Error: called use() but '" + plugin_name.toString() + "' is not a function", e);
-	        } else {
-	          this.error("Plugin Error", e);
-	        }
-	      }
-	      return this;
-	    },
-
-	    // Sets the location proxy for the current app. By default this is set to
-	    // a new `Sammy.DefaultLocationProxy` on initialization. However, you can set
-	    // the location_proxy inside you're app function to give your app a custom
-	    // location mechanism. See `Sammy.DefaultLocationProxy` and `Sammy.DataLocationProxy`
-	    // for examples.
-	    //
-	    // `setLocationProxy()` takes an initialized location proxy.
-	    //
-	    // ### Example
-	    //
-	    //        // to bind to data instead of the default hash;
-	    //        var app = $.sammy(function() {
-	    //          this.setLocationProxy(new Sammy.DataLocationProxy(this));
-	    //        });
-	    //
-	    setLocationProxy: function(new_proxy) {
-	      var original_proxy = this._location_proxy;
-	      this._location_proxy = new_proxy;
-	      if (this.isRunning()) {
-	        if (original_proxy) {
-	          // if there is already a location proxy, unbind it.
-	          original_proxy.unbind();
-	        }
-	        this._location_proxy.bind();
-	      }
-	    },
-
-	    // provide log() override for inside an app that includes the relevant application element_selector
-	    log: function() {
-	      Sammy.log.apply(Sammy, Array.prototype.concat.apply([this.element_selector],arguments));
-	    },
-
-
-	    // `route()` is the main method for defining routes within an application.
-	    // For great detail on routes, check out:
-	    // [http://sammyjs.org/docs/routes](http://sammyjs.org/docs/routes)
-	    //
-	    // This method also has aliases for each of the different verbs (eg. `get()`, `post()`, etc.)
-	    //
-	    // ### Arguments
-	    //
-	    // * `verb` A String in the set of ROUTE_VERBS or 'any'. 'any' will add routes for each
-	    //    of the ROUTE_VERBS. If only two arguments are passed,
-	    //    the first argument is the path, the second is the callback and the verb
-	    //    is assumed to be 'any'.
-	    // * `path` A Regexp or a String representing the path to match to invoke this verb.
-	    // * `callback` A Function that is called/evaluated when the route is run see: `runRoute()`.
-	    //    It is also possible to pass a string as the callback, which is looked up as the name
-	    //    of a method on the application.
-	    //
-	    route: function(verb, path) {
-	      var app = this, param_names = [], add_route, path_match, callback = Array.prototype.slice.call(arguments,2);
-
-	      // if the method signature is just (path, callback)
-	      // assume the verb is 'any'
-	      if (callback.length === 0 && _isFunction(path)) {
-	        callback = [path];
-	        path = verb;
-	        verb = 'any';
-	      }
-
-	      verb = verb.toLowerCase(); // ensure verb is lower case
-
-	      // if path is a string turn it into a regex
-	      if (path.constructor == String) {
-
-	        // Needs to be explicitly set because IE will maintain the index unless NULL is returned,
-	        // which means that with two consecutive routes that contain params, the second set of params will not be found and end up in splat instead of params
-	        // https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/RegExp/lastIndex
-	        PATH_NAME_MATCHER.lastIndex = 0;
-
-	        // find the names
-	        while ((path_match = PATH_NAME_MATCHER.exec(path)) !== null) {
-	          param_names.push(path_match[1]);
-	        }
-	        // replace with the path replacement
-	        path = new RegExp(path.replace(PATH_NAME_MATCHER, PATH_REPLACER) + "$");
-	      }
-	      // lookup callbacks
-	      $.each(callback,function(i,cb){
-	        if (typeof(cb) === 'string') {
-	          callback[i] = app[cb];
-	        }
-	      });
-
-	      add_route = function(with_verb) {
-	        var r = {verb: with_verb, path: path, callback: callback, param_names: param_names};
-	        // add route to routes array
-	        app.routes[with_verb] = app.routes[with_verb] || [];
-	        // place routes in order of definition
-	        app.routes[with_verb].push(r);
-	      };
-
-	      if (verb === 'any') {
-	        $.each(this.ROUTE_VERBS, function(i, v) { add_route(v); });
-	      } else {
-	        add_route(verb);
-	      }
-
-	      // return the app
-	      return this;
-	    },
-
-	    // Alias for route('get', ...)
-	    get: _routeWrapper('get'),
-
-	    // Alias for route('post', ...)
-	    post: _routeWrapper('post'),
-
-	    // Alias for route('put', ...)
-	    put: _routeWrapper('put'),
-
-	    // Alias for route('delete', ...)
-	    del: _routeWrapper('delete'),
-
-	    // Alias for route('any', ...)
-	    any: _routeWrapper('any'),
-
-	    // `mapRoutes` takes an array of arrays, each array being passed to route()
-	    // as arguments, this allows for mass definition of routes. Another benefit is
-	    // this makes it possible/easier to load routes via remote JSON.
-	    //
-	    // ### Example
-	    //
-	    //      var app = $.sammy(function() {
-	    //
-	    //        this.mapRoutes([
-	    //            ['get', '#/', function() { this.log('index'); }],
-	    //            // strings in callbacks are looked up as methods on the app
-	    //            ['post', '#/create', 'addUser'],
-	    //            // No verb assumes 'any' as the verb
-	    //            [/dowhatever/, function() { this.log(this.verb, this.path)}];
-	    //          ]);
-	    //      });
-	    //
-	    mapRoutes: function(route_array) {
-	      var app = this;
-	      $.each(route_array, function(i, route_args) {
-	        app.route.apply(app, route_args);
-	      });
-	      return this;
-	    },
-
-	    // A unique event namespace defined per application.
-	    // All events bound with `bind()` are automatically bound within this space.
-	    eventNamespace: function() {
-	      return ['sammy-app', this.namespace].join('-');
-	    },
-
-	    // Works just like `jQuery.fn.bind()` with a couple notable differences.
-	    //
-	    // * It binds all events to the application element
-	    // * All events are bound within the `eventNamespace()`
-	    // * Events are not actually bound until the application is started with `run()`
-	    // * callbacks are evaluated within the context of a Sammy.EventContext
-	    //
-	    bind: function(name, data, callback) {
-	      var app = this;
-	      // build the callback
-	      // if the arity is 2, callback is the second argument
-	      if (typeof callback == 'undefined') { callback = data; }
-	      var listener_callback =  function() {
-	        // pull off the context from the arguments to the callback
-	        var e, context, data;
-	        e       = arguments[0];
-	        data    = arguments[1];
-	        if (data && data.context) {
-	          context = data.context;
-	          delete data.context;
-	        } else {
-	          context = new app.context_prototype(app, 'bind', e.type, data, e.target);
-	        }
-	        e.cleaned_type = e.type.replace(app.eventNamespace(), '');
-	        callback.apply(context, [e, data]);
-	      };
-
-	      // it could be that the app element doesnt exist yet
-	      // so attach to the listeners array and then run()
-	      // will actually bind the event.
-	      if (!this.listeners[name]) { this.listeners[name] = []; }
-	      this.listeners[name].push(listener_callback);
-	      if (this.isRunning()) {
-	        // if the app is running
-	        // *actually* bind the event to the app element
-	        this._listen(name, listener_callback);
-	      }
-	      return this;
-	    },
-
-	    // Triggers custom events defined with `bind()`
-	    //
-	    // ### Arguments
-	    //
-	    // * `name` The name of the event. Automatically prefixed with the `eventNamespace()`
-	    // * `data` An optional Object that can be passed to the bound callback.
-	    // * `context` An optional context/Object in which to execute the bound callback.
-	    //   If no context is supplied a the context is a new `Sammy.EventContext`
-	    //
-	    trigger: function(name, data) {
-	      this.$element().trigger([name, this.eventNamespace()].join('.'), [data]);
-	      return this;
-	    },
-
-	    // Reruns the current route
-	    refresh: function() {
-	      this.last_location = null;
-	      this.trigger('location-changed');
-	      return this;
-	    },
-
-	    // Takes a single callback that is pushed on to a stack.
-	    // Before any route is run, the callbacks are evaluated in order within
-	    // the current `Sammy.EventContext`
-	    //
-	    // If any of the callbacks explicitly return false, execution of any
-	    // further callbacks and the route itself is halted.
-	    //
-	    // You can also provide a set of options that will define when to run this
-	    // before based on the route it proceeds.
-	    //
-	    // ### Example
-	    //
-	    //      var app = $.sammy(function() {
-	    //
-	    //        // will run at #/route but not at #/
-	    //        this.before('#/route', function() {
-	    //          //...
-	    //        });
-	    //
-	    //        // will run at #/ but not at #/route
-	    //        this.before({except: {path: '#/route'}}, function() {
-	    //          this.log('not before #/route');
-	    //        });
-	    //
-	    //        this.get('#/', function() {});
-	    //
-	    //        this.get('#/route', function() {});
-	    //
-	    //      });
-	    //
-	    // See `contextMatchesOptions()` for a full list of supported options
-	    //
-	    before: function(options, callback) {
-	      if (_isFunction(options)) {
-	        callback = options;
-	        options = {};
-	      }
-	      this.befores.push([options, callback]);
-	      return this;
-	    },
-
-	    // A shortcut for binding a callback to be run after a route is executed.
-	    // After callbacks have no guarunteed order.
-	    after: function(callback) {
-	      return this.bind('event-context-after', callback);
-	    },
-
-
-	    // Adds an around filter to the application. around filters are functions
-	    // that take a single argument `callback` which is the entire route
-	    // execution path wrapped up in a closure. This means you can decide whether
-	    // or not to proceed with execution by not invoking `callback` or,
-	    // more usefully wrapping callback inside the result of an asynchronous execution.
-	    //
-	    // ### Example
-	    //
-	    // The most common use case for around() is calling a _possibly_ async function
-	    // and executing the route within the functions callback:
-	    //
-	    //      var app = $.sammy(function() {
-	    //
-	    //        var current_user = false;
-	    //
-	    //        function checkLoggedIn(callback) {
-	    //          // /session returns a JSON representation of the logged in user
-	    //          // or an empty object
-	    //          if (!current_user) {
-	    //            $.getJSON('/session', function(json) {
-	    //              if (json.login) {
-	    //                // show the user as logged in
-	    //                current_user = json;
-	    //                // execute the route path
-	    //                callback();
-	    //              } else {
-	    //                // show the user as not logged in
-	    //                current_user = false;
-	    //                // the context of aroundFilters is an EventContext
-	    //                this.redirect('#/login');
-	    //              }
-	    //            });
-	    //          } else {
-	    //            // execute the route path
-	    //            callback();
-	    //          }
-	    //        };
-	    //
-	    //        this.around(checkLoggedIn);
-	    //
-	    //      });
-	    //
-	    around: function(callback) {
-	      this.arounds.push(callback);
-	      return this;
-	    },
-
-	    // Adds a onComplete function to the application. onComplete functions are executed
-	    // at the end of a chain of route callbacks, if they call next(). Unlike after,
-	    // which is called as soon as the route is complete, onComplete is like a final next()
-	    // for all routes, and is thus run asynchronously
-	    //
-	    // ### Example
-	    //
-	    //      app.get('/chain',function(context,next) {
-	    //          console.log('chain1');
-	    //          next();
-	    //      },function(context,next) {
-	    //          console.log('chain2');
-	    //          next();
-	    //      });
-	    //
-	    //      app.get('/link',function(context,next) {
-	    //          console.log('link1');
-	    //          next();
-	    //      },function(context,next) {
-	    //          console.log('link2');
-	    //          next();
-	    //      });
-	    //
-	    //      app.onComplete(function() {
-	    //          console.log("Running finally");
-	    //      });
-	    //
-	    // If you go to '/chain', you will get the following messages:
-	    //
-	    //      chain1
-	    //      chain2
-	    //      Running onComplete
-	    //
-	    //
-	    // If you go to /link, you will get the following messages:
-	    //
-	    //      link1
-	    //      link2
-	    //      Running onComplete
-	    //
-	    //
-	    // It really comes to play when doing asynchronous:
-	    //
-	    //      app.get('/chain',function(context,next) {
-	    //        $.get('/my/url',function() {
-	    //          console.log('chain1');
-	    //          next();
-	    //        });
-	    //      },function(context,next) {
-	    //        console.log('chain2');
-	    //        next();
-	    //      });
-	    //
-	    onComplete: function(callback) {
-	      this._onComplete = callback;
-	      return this;
-	    },
-
-	    // Returns `true` if the current application is running.
-	    isRunning: function() {
-	      return this._running;
-	    },
-
-	    // Helpers extends the EventContext prototype specific to this app.
-	    // This allows you to define app specific helper functions that can be used
-	    // whenever you're inside of an event context (templates, routes, bind).
-	    //
-	    // ### Example
-	    //
-	    //     var app = $.sammy(function() {
-	    //
-	    //       helpers({
-	    //         upcase: function(text) {
-	    //          return text.toString().toUpperCase();
-	    //         }
-	    //       });
-	    //
-	    //       get('#/', function() { with(this) {
-	    //         // inside of this context I can use the helpers
-	    //         $('#main').html(upcase($('#main').text());
-	    //       }});
-	    //
-	    //     });
-	    //
-	    //
-	    // ### Arguments
-	    //
-	    // * `extensions` An object collection of functions to extend the context.
-	    //
-	    helpers: function(extensions) {
-	      $.extend(this.context_prototype.prototype, extensions);
-	      return this;
-	    },
-
-	    // Helper extends the event context just like `helpers()` but does it
-	    // a single method at a time. This is especially useful for dynamically named
-	    // helpers
-	    //
-	    // ### Example
-	    //
-	    //     // Trivial example that adds 3 helper methods to the context dynamically
-	    //     var app = $.sammy(function(app) {
-	    //
-	    //       $.each([1,2,3], function(i, num) {
-	    //         app.helper('helper' + num, function() {
-	    //           this.log("I'm helper number " + num);
-	    //         });
-	    //       });
-	    //
-	    //       this.get('#/', function() {
-	    //         this.helper2(); //=> I'm helper number 2
-	    //       });
-	    //     });
-	    //
-	    // ### Arguments
-	    //
-	    // * `name` The name of the method
-	    // * `method` The function to be added to the prototype at `name`
-	    //
-	    helper: function(name, method) {
-	      this.context_prototype.prototype[name] = method;
-	      return this;
-	    },
-
-	    // Actually starts the application's lifecycle. `run()` should be invoked
-	    // within a document.ready block to ensure the DOM exists before binding events, etc.
-	    //
-	    // ### Example
-	    //
-	    //     var app = $.sammy(function() { ... }); // your application
-	    //     $(function() { // document.ready
-	    //        app.run();
-	    //     });
-	    //
-	    // ### Arguments
-	    //
-	    // * `start_url` Optionally, a String can be passed which the App will redirect to
-	    //   after the events/routes have been bound.
-	    run: function(start_url) {
-	      if (this.isRunning()) { return false; }
-	      var app = this;
-
-	      // actually bind all the listeners
-	      $.each(this.listeners.toHash(), function(name, callbacks) {
-	        $.each(callbacks, function(i, listener_callback) {
-	          app._listen(name, listener_callback);
-	        });
-	      });
-
-	      this.trigger('run', {start_url: start_url});
-	      this._running = true;
-	      // set last location
-	      this.last_location = null;
-	      if (!(/\#(.+)/.test(this.getLocation())) && typeof start_url != 'undefined') {
-	        this.setLocation(start_url);
-	      }
-	      // check url
-	      this._checkLocation();
-	      this._location_proxy.bind();
-	      this.bind('location-changed', function() {
-	        app._checkLocation();
-	      });
-
-	      // bind to submit to capture post/put/delete routes
-	      this.bind('submit', function(e) {
-	        if ( !Sammy.targetIsThisWindow(e, 'form') ) { return true; }
-	        var returned = app._checkFormSubmission($(e.target).closest('form'));
-	        return (returned === false) ? e.preventDefault() : false;
-	      });
-
-	      // bind unload to body unload
-	      $(window).bind('unload', function() {
-	        app.unload();
-	      });
-
-	      // trigger html changed
-	      return this.trigger('changed');
-	    },
-
-	    // The opposite of `run()`, un-binds all event listeners and intervals
-	    // `run()` Automatically binds a `onunload` event to run this when
-	    // the document is closed.
-	    unload: function() {
-	      if (!this.isRunning()) { return false; }
-	      var app = this;
-	      this.trigger('unload');
-	      // clear interval
-	      this._location_proxy.unbind();
-	      // unbind form submits
-	      this.$element().unbind('submit').removeClass(app.eventNamespace());
-	      // unbind all events
-	      $.each(this.listeners.toHash() , function(name, listeners) {
-	        $.each(listeners, function(i, listener_callback) {
-	          app._unlisten(name, listener_callback);
-	        });
-	      });
-	      this._running = false;
-	      return this;
-	    },
-
-	    // Not only runs `unbind` but also destroys the app reference.
-	    destroy: function() {
-	      this.unload();
-	      delete Sammy.apps[this.element_selector];
-	      return this;
-	    },
-
-	    // Will bind a single callback function to every event that is already
-	    // being listened to in the app. This includes all the `APP_EVENTS`
-	    // as well as any custom events defined with `bind()`.
-	    //
-	    // Used internally for debug logging.
-	    bindToAllEvents: function(callback) {
-	      var app = this;
-	      // bind to the APP_EVENTS first
-	      $.each(this.APP_EVENTS, function(i, e) {
-	        app.bind(e, callback);
-	      });
-	      // next, bind to listener names (only if they dont exist in APP_EVENTS)
-	      $.each(this.listeners.keys(true), function(i, name) {
-	        if ($.inArray(name, app.APP_EVENTS) == -1) {
-	          app.bind(name, callback);
-	        }
-	      });
-	      return this;
-	    },
-
-	    // Returns a copy of the given path with any query string after the hash
-	    // removed.
-	    routablePath: function(path) {
-	      return path.replace(QUERY_STRING_MATCHER, '');
-	    },
-
-	    // Given a verb and a String path, will return either a route object or false
-	    // if a matching route can be found within the current defined set.
-	    lookupRoute: function(verb, path) {
-	      var app = this, routed = false, i = 0, l, route;
-	      if (typeof this.routes[verb] != 'undefined') {
-	        l = this.routes[verb].length;
-	        for (; i < l; i++) {
-	          route = this.routes[verb][i];
-	          if (app.routablePath(path).match(route.path)) {
-	            routed = route;
-	            break;
-	          }
-	        }
-	      }
-	      return routed;
-	    },
-
-	    // First, invokes `lookupRoute()` and if a route is found, parses the
-	    // possible URL params and then invokes the route's callback within a new
-	    // `Sammy.EventContext`. If the route can not be found, it calls
-	    // `notFound()`. If `raise_errors` is set to `true` and
-	    // the `error()` has not been overridden, it will throw an actual JS
-	    // error.
-	    //
-	    // You probably will never have to call this directly.
-	    //
-	    // ### Arguments
-	    //
-	    // * `verb` A String for the verb.
-	    // * `path` A String path to lookup.
-	    // * `params` An Object of Params pulled from the URI or passed directly.
-	    //
-	    // ### Returns
-	    //
-	    // Either returns the value returned by the route callback or raises a 404 Not Found error.
-	    //
-	    runRoute: function(verb, path, params, target) {
-	      var app = this,
-	          route = this.lookupRoute(verb, path),
-	          context,
-	          wrapped_route,
-	          arounds,
-	          around,
-	          befores,
-	          before,
-	          callback_args,
-	          path_params,
-	          final_returned;
-
-	      if (this.debug) {
-	        this.log('runRoute', [verb, path].join(' '));
-	      }
-
-	      this.trigger('run-route', {verb: verb, path: path, params: params});
-	      if (typeof params == 'undefined') { params = {}; }
-
-	      $.extend(params, this._parseQueryString(path));
-
-	      if (route) {
-	        this.trigger('route-found', {route: route});
-	        // pull out the params from the path
-	        if ((path_params = route.path.exec(this.routablePath(path))) !== null) {
-	          // first match is the full path
-	          path_params.shift();
-	          // for each of the matches
-	          $.each(path_params, function(i, param) {
-	            // if theres a matching param name
-	            if (route.param_names[i]) {
-	              // set the name to the match
-	              params[route.param_names[i]] = _decode(param);
-	            } else {
-	              // initialize 'splat'
-	              if (!params.splat) { params.splat = []; }
-	              params.splat.push(_decode(param));
-	            }
-	          });
-	        }
-
-	        // set event context
-	        context  = new this.context_prototype(this, verb, path, params, target);
-	        // ensure arrays
-	        arounds = this.arounds.slice(0);
-	        befores = this.befores.slice(0);
-	        // set the callback args to the context + contents of the splat
-	        callback_args = [context];
-	        if (params.splat) {
-	          callback_args = callback_args.concat(params.splat);
-	        }
-	        // wrap the route up with the before filters
-	        wrapped_route = function() {
-	          var returned, i, nextRoute;
-	          while (befores.length > 0) {
-	            before = befores.shift();
-	            // check the options
-	            if (app.contextMatchesOptions(context, before[0])) {
-	              returned = before[1].apply(context, [context]);
-	              if (returned === false) { return false; }
-	            }
-	          }
-	          app.last_route = route;
-	          context.trigger('event-context-before', {context: context});
-	          // run multiple callbacks
-	          if (typeof(route.callback) === "function") {
-	            route.callback = [route.callback];
-	          }
-	          if (route.callback && route.callback.length) {
-	            i = -1;
-	            nextRoute = function() {
-	              i++;
-	              if (route.callback[i]) {
-	                returned = route.callback[i].apply(context,callback_args);
-	              } else if (app._onComplete && typeof(app._onComplete === "function")) {
-	                app._onComplete(context);
-	              }
-	            };
-	            callback_args.push(nextRoute);
-	            nextRoute();
-	          }
-	          context.trigger('event-context-after', {context: context});
-	          return returned;
-	        };
-	        $.each(arounds.reverse(), function(i, around) {
-	          var last_wrapped_route = wrapped_route;
-	          wrapped_route = function() { return around.apply(context, [last_wrapped_route]); };
-	        });
-	        try {
-	          final_returned = wrapped_route();
-	        } catch(e) {
-	          this.error(['500 Error', verb, path].join(' '), e);
-	        }
-	        return final_returned;
-	      } else {
-	        return this.notFound(verb, path);
-	      }
-	    },
-
-	    // Matches an object of options against an `EventContext` like object that
-	    // contains `path` and `verb` attributes. Internally Sammy uses this
-	    // for matching `before()` filters against specific options. You can set the
-	    // object to _only_ match certain paths or verbs, or match all paths or verbs _except_
-	    // those that match the options.
-	    //
-	    // ### Example
-	    //
-	    //     var app = $.sammy(),
-	    //         context = {verb: 'get', path: '#/mypath'};
-	    //
-	    //     // match against a path string
-	    //     app.contextMatchesOptions(context, '#/mypath'); //=> true
-	    //     app.contextMatchesOptions(context, '#/otherpath'); //=> false
-	    //     // equivalent to
-	    //     app.contextMatchesOptions(context, {only: {path:'#/mypath'}}); //=> true
-	    //     app.contextMatchesOptions(context, {only: {path:'#/otherpath'}}); //=> false
-	    //     // match against a path regexp
-	    //     app.contextMatchesOptions(context, /path/); //=> true
-	    //     app.contextMatchesOptions(context, /^path/); //=> false
-	    //     // match only a verb
-	    //     app.contextMatchesOptions(context, {only: {verb:'get'}}); //=> true
-	    //     app.contextMatchesOptions(context, {only: {verb:'post'}}); //=> false
-	    //     // match all except a verb
-	    //     app.contextMatchesOptions(context, {except: {verb:'post'}}); //=> true
-	    //     app.contextMatchesOptions(context, {except: {verb:'get'}}); //=> false
-	    //     // match all except a path
-	    //     app.contextMatchesOptions(context, {except: {path:'#/otherpath'}}); //=> true
-	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath'}}); //=> false
-	    //     // match all except a verb and a path
-	    //     app.contextMatchesOptions(context, {except: {path:'#/otherpath', verb:'post'}}); //=> true
-	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath', verb:'post'}}); //=> true
-	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath', verb:'get'}}); //=> false
-	    //     // match multiple paths
-	    //     app.contextMatchesOptions(context, {path: ['#/mypath', '#/otherpath']}); //=> true
-	    //     app.contextMatchesOptions(context, {path: ['#/otherpath', '#/thirdpath']}); //=> false
-	    //     // equivalent to
-	    //     app.contextMatchesOptions(context, {only: {path: ['#/mypath', '#/otherpath']}}); //=> true
-	    //     app.contextMatchesOptions(context, {only: {path: ['#/otherpath', '#/thirdpath']}}); //=> false
-	    //     // match all except multiple paths
-	    //     app.contextMatchesOptions(context, {except: {path: ['#/mypath', '#/otherpath']}}); //=> false
-	    //     app.contextMatchesOptions(context, {except: {path: ['#/otherpath', '#/thirdpath']}}); //=> true
-	    //     // match all except multiple paths and verbs
-	    //     app.contextMatchesOptions(context, {except: {path: ['#/mypath', '#/otherpath'], verb: ['get', 'post']}}); //=> false
-	    //     app.contextMatchesOptions(context, {except: {path: ['#/otherpath', '#/thirdpath'], verb: ['get', 'post']}}); //=> true
-	    //
-	    contextMatchesOptions: function(context, match_options, positive) {
-	      var options = match_options;
-	      // normalize options
-	      if (typeof options === 'string' || _isRegExp(options)) {
-	        options = {path: options};
-	      }
-	      if (typeof positive === 'undefined') {
-	        positive = true;
-	      }
-	      // empty options always match
-	      if ($.isEmptyObject(options)) {
-	        return true;
-	      }
-	      // Do we have to match against multiple paths?
-	      if (_isArray(options.path)){
-	        var results, numopt, opts, len;
-	        results = [];
-	        for (numopt = 0, len = options.path.length; numopt < len; numopt += 1) {
-	          opts = $.extend({}, options, {path: options.path[numopt]});
-	          results.push(this.contextMatchesOptions(context, opts));
-	        }
-	        var matched = $.inArray(true, results) > -1 ? true : false;
-	        return positive ? matched : !matched;
-	      }
-	      if (options.only) {
-	        return this.contextMatchesOptions(context, options.only, true);
-	      } else if (options.except) {
-	        return this.contextMatchesOptions(context, options.except, false);
-	      }
-	      var path_matched = true, verb_matched = true;
-	      if (options.path) {
-	        if (!_isRegExp(options.path)) {
-	          options.path = new RegExp(options.path.toString() + '$');
-	        }
-	        path_matched = options.path.test(context.path);
-	      }
-	      if (options.verb) {
-	        if(typeof options.verb === 'string') {
-	          verb_matched = options.verb === context.verb;
-	        } else {
-	          verb_matched = options.verb.indexOf(context.verb) > -1;
-	        }
-	      }
-	      return positive ? (verb_matched && path_matched) : !(verb_matched && path_matched);
-	    },
-
-
-	    // Delegates to the `location_proxy` to get the current location.
-	    // See `Sammy.DefaultLocationProxy` for more info on location proxies.
-	    getLocation: function() {
-	      return this._location_proxy.getLocation();
-	    },
-
-	    // Delegates to the `location_proxy` to set the current location.
-	    // See `Sammy.DefaultLocationProxy` for more info on location proxies.
-	    //
-	    // ### Arguments
-	    //
-	    // * `new_location` A new location string (e.g. '#/')
-	    //
-	    setLocation: function(new_location) {
-	      return this._location_proxy.setLocation(new_location);
-	    },
-
-	    // Swaps the content of `$element()` with `content`
-	    // You can override this method to provide an alternate swap behavior
-	    // for `EventContext.partial()`.
-	    //
-	    // ### Example
-	    //
-	    //      var app = $.sammy(function() {
-	    //
-	    //        // implements a 'fade out'/'fade in'
-	    //        this.swap = function(content, callback) {
-	    //          var context = this;
-	    //          context.$element().fadeOut('slow', function() {
-	    //            context.$element().html(content);
-	    //            context.$element().fadeIn('slow', function() {
-	    //              if (callback) {
-	    //                callback.apply();
-	    //              }
-	    //            });
-	    //          });
-	    //        };
-	    //
-	    //      });
-	    //
-	    swap: function(content, callback) {
-	      var $el = this.$element().html(content);
-	      if (_isFunction(callback)) { callback(content); }
-	      return $el;
-	    },
-
-	    // a simple global cache for templates. Uses the same semantics as
-	    // `Sammy.Cache` and `Sammy.Storage` so can easily be replaced with
-	    // a persistent storage that lasts beyond the current request.
-	    templateCache: function(key, value) {
-	      if (typeof value != 'undefined') {
-	        return _template_cache[key] = value;
-	      } else {
-	        return _template_cache[key];
-	      }
-	    },
-
-	    // clear the templateCache
-	    clearTemplateCache: function() {
-	      return (_template_cache = {});
-	    },
-
-	    // This throws a '404 Not Found' error by invoking `error()`.
-	    // Override this method or `error()` to provide custom
-	    // 404 behavior (i.e redirecting to / or showing a warning)
-	    notFound: function(verb, path) {
-	      var ret = this.error(['404 Not Found', verb, path].join(' '));
-	      return (verb === 'get') ? ret : true;
-	    },
-
-	    // The base error handler takes a string `message` and an `Error`
-	    // object. If `raise_errors` is set to `true` on the app level,
-	    // this will re-throw the error to the browser. Otherwise it will send the error
-	    // to `log()`. Override this method to provide custom error handling
-	    // e.g logging to a server side component or displaying some feedback to the
-	    // user.
-	    error: function(message, original_error) {
-	      if (!original_error) { original_error = new Error(); }
-	      original_error.message = [message, original_error.message].join(' ');
-	      this.trigger('error', {message: original_error.message, error: original_error});
-	      if (this.raise_errors) {
-	        throw(original_error);
-	      } else {
-	        this.log(original_error.message, original_error);
-	      }
-	    },
-
-	    _checkLocation: function() {
-	      var location, returned;
-	      // get current location
-	      location = this.getLocation();
-	      // compare to see if hash has changed
-	      if (!this.last_location || this.last_location[0] != 'get' || this.last_location[1] != location) {
-	        // reset last location
-	        this.last_location = ['get', location];
-	        // lookup route for current hash
-	        returned = this.runRoute('get', location);
-	      }
-	      return returned;
-	    },
-
-	    _getFormVerb: function(form) {
-	      var $form = $(form), verb, $_method;
-	      $_method = $form.find('input[name="_method"]');
-	      if ($_method.length > 0) { verb = $_method.val(); }
-	      if (!verb) { verb = $form[0].getAttribute('method'); }
-	      if (!verb || verb === '') { verb = 'get'; }
-	      return $.trim(verb.toString().toLowerCase());
-	    },
-
-	    _checkFormSubmission: function(form) {
-	      var $form, path, verb, params, returned;
-	      this.trigger('check-form-submission', {form: form});
-	      $form = $(form);
-	      path  = $form.attr('action') || '';
-	      verb  = this._getFormVerb($form);
-
-	      if (this.debug) {
-	        this.log('_checkFormSubmission', $form, path, verb);
-	      }
-
-	      if (verb === 'get') {
-	        params = this._serializeFormParams($form);
-	        if (params !== '') { path += '?' + params; }
-	        this.setLocation(path);
-	        returned = false;
-	      } else {
-	        params = $.extend({}, this._parseFormParams($form));
-	        returned = this.runRoute(verb, path, params, form.get(0));
-	      }
-	      return (typeof returned == 'undefined') ? false : returned;
-	    },
-
-	    _serializeFormParams: function($form) {
-	       var queryString = "",
-	         fields = $form.serializeArray(),
-	         i;
-	       if (fields.length > 0) {
-	         queryString = this._encodeFormPair(fields[0].name, fields[0].value);
-	         for (i = 1; i < fields.length; i++) {
-	           queryString = queryString + "&" + this._encodeFormPair(fields[i].name, fields[i].value);
-	         }
-	       }
-	       return queryString;
-	    },
-
-	    _encodeFormPair: function(name, value){
-	      return _encode(name) + "=" + _encode(value);
-	    },
-
-	    _parseFormParams: function($form) {
-	      var params = {},
-	          form_fields = $form.serializeArray(),
-	          i;
-	      for (i = 0; i < form_fields.length; i++) {
-	        params = this._parseParamPair(params, form_fields[i].name, form_fields[i].value);
-	      }
-	      return params;
-	    },
-
-	    _parseQueryString: function(path) {
-	      var params = {}, parts, pairs, pair, i;
-
-	      parts = path.match(QUERY_STRING_MATCHER);
-	      if (parts && parts[1]) {
-	        pairs = parts[1].split('&');
-	        for (i = 0; i < pairs.length; i++) {
-	          pair = pairs[i].split('=');
-	          params = this._parseParamPair(params, _decode(pair[0]), _decode(pair[1] || ""));
-	        }
-	      }
-	      return params;
-	    },
-
-	    _parseParamPair: function(params, key, value) {
-	      if (typeof params[key] !== 'undefined') {
-	        if (_isArray(params[key])) {
-	          params[key].push(value);
-	        } else {
-	          params[key] = [params[key], value];
-	        }
-	      } else {
-	        params[key] = value;
-	      }
-	      return params;
-	    },
-
-	    _listen: function(name, callback) {
-	      return this.$element().bind([name, this.eventNamespace()].join('.'), callback);
-	    },
-
-	    _unlisten: function(name, callback) {
-	      return this.$element().unbind([name, this.eventNamespace()].join('.'), callback);
-	    }
-
-	  });
-
-	  // `Sammy.RenderContext` is an object that makes sequential template loading,
-	  // rendering and interpolation seamless even when dealing with asynchronous
-	  // operations.
-	  //
-	  // `RenderContext` objects are not usually created directly, rather they are
-	  // instantiated from an `Sammy.EventContext` by using `render()`, `load()` or
-	  // `partial()` which all return `RenderContext` objects.
-	  //
-	  // `RenderContext` methods always returns a modified `RenderContext`
-	  // for chaining (like jQuery itself).
-	  //
-	  // The core magic is in the `then()` method which puts the callback passed as
-	  // an argument into a queue to be executed once the previous callback is complete.
-	  // All the methods of `RenderContext` are wrapped in `then()` which allows you
-	  // to queue up methods by chaining, but maintaining a guaranteed execution order
-	  // even with remote calls to fetch templates.
-	  //
-	  Sammy.RenderContext = function(event_context) {
-	    this.event_context    = event_context;
-	    this.callbacks        = [];
-	    this.previous_content = null;
-	    this.content          = null;
-	    this.next_engine      = false;
-	    this.waiting          = false;
-	  };
-
-	  Sammy.RenderContext.prototype = $.extend({}, Sammy.Object.prototype, {
-
-	    // The "core" of the `RenderContext` object, adds the `callback` to the
-	    // queue. If the context is `waiting` (meaning an async operation is happening)
-	    // then the callback will be executed in order, once the other operations are
-	    // complete. If there is no currently executing operation, the `callback`
-	    // is executed immediately.
-	    //
-	    // The value returned from the callback is stored in `content` for the
-	    // subsequent operation. If you return `false`, the queue will pause, and
-	    // the next callback in the queue will not be executed until `next()` is
-	    // called. This allows for the guaranteed order of execution while working
-	    // with async operations.
-	    //
-	    // If then() is passed a string instead of a function, the string is looked
-	    // up as a helper method on the event context.
-	    //
-	    // ### Example
-	    //
-	    //      this.get('#/', function() {
-	    //        // initialize the RenderContext
-	    //        // Even though `load()` executes async, the next `then()`
-	    //        // wont execute until the load finishes
-	    //        this.load('myfile.txt')
-	    //            .then(function(content) {
-	    //              // the first argument to then is the content of the
-	    //              // prev operation
-	    //              $('#main').html(content);
-	    //            });
-	    //      });
-	    //
-	    then: function(callback) {
-	      if (!_isFunction(callback)) {
-	        // if a string is passed to then, assume we want to call
-	        // a helper on the event context in its context
-	        if (typeof callback === 'string' && callback in this.event_context) {
-	          var helper = this.event_context[callback];
-	          callback = function(content) {
-	            return helper.apply(this.event_context, [content]);
-	          };
-	        } else {
-	          return this;
-	        }
-	      }
-	      var context = this;
-	      if (this.waiting) {
-	        this.callbacks.push(callback);
-	      } else {
-	        this.wait();
-	        window.setTimeout(function() {
-	          var returned = callback.apply(context, [context.content, context.previous_content]);
-	          if (returned !== false) {
-	            context.next(returned);
-	          }
-	        }, 0);
-	      }
-	      return this;
-	    },
-
-	    // Pause the `RenderContext` queue. Combined with `next()` allows for async
-	    // operations.
-	    //
-	    // ### Example
-	    //
-	    //        this.get('#/', function() {
-	    //          this.load('mytext.json')
-	    //              .then(function(content) {
-	    //                var context = this,
-	    //                    data    = JSON.parse(content);
-	    //                // pause execution
-	    //                context.wait();
-	    //                // post to a url
-	    //                $.post(data.url, {}, function(response) {
-	    //                  context.next(JSON.parse(response));
-	    //                });
-	    //              })
-	    //              .then(function(data) {
-	    //                // data is json from the previous post
-	    //                $('#message').text(data.status);
-	    //              });
-	    //        });
-	    wait: function() {
-	      this.waiting = true;
-	    },
-
-	    // Resume the queue, setting `content` to be used in the next operation.
-	    // See `wait()` for an example.
-	    next: function(content) {
-	      this.waiting = false;
-	      if (typeof content !== 'undefined') {
-	        this.previous_content = this.content;
-	        this.content = content;
-	      }
-	      if (this.callbacks.length > 0) {
-	        this.then(this.callbacks.shift());
-	      }
-	    },
-
-	    // Load a template into the context.
-	    // The `location` can either be a string specifying the remote path to the
-	    // file, a jQuery object, or a DOM element.
-	    //
-	    // No interpolation happens by default, the content is stored in
-	    // `content`.
-	    //
-	    // In the case of a path, unless the option `{cache: false}` is passed the
-	    // data is stored in the app's `templateCache()`.
-	    //
-	    // If a jQuery or DOM object is passed the `innerHTML` of the node is pulled in.
-	    // This is useful for nesting templates as part of the initial page load wrapped
-	    // in invisible elements or `<script>` tags. With template paths, the template
-	    // engine is looked up by the extension. For DOM/jQuery embedded templates,
-	    // this isnt possible, so there are a couple of options:
-	    //
-	    //  * pass an `{engine:}` option.
-	    //  * define the engine in the `data-engine` attribute of the passed node.
-	    //  * just store the raw template data and use `interpolate()` manually
-	    //
-	    // If a `callback` is passed it is executed after the template load.
-	    load: function(location, options, callback) {
-	      var context = this;
-	      return this.then(function() {
-	        var should_cache, cached, is_json, location_array;
-	        if (_isFunction(options)) {
-	          callback = options;
-	          options = {};
-	        } else {
-	          options = $.extend({}, options);
-	        }
-	        if (callback) { this.then(callback); }
-	        if (typeof location === 'string') {
-	          // it's a path
-	          is_json      = (location.match(/\.json(\?|$)/) || options.json);
-	          should_cache = is_json ? options.cache === true : options.cache !== false;
-	          context.next_engine = context.event_context.engineFor(location);
-	          delete options.cache;
-	          delete options.json;
-	          if (options.engine) {
-	            context.next_engine = options.engine;
-	            delete options.engine;
-	          }
-	          if (should_cache && (cached = this.event_context.app.templateCache(location))) {
-	            return cached;
-	          }
-	          this.wait();
-	          $.ajax($.extend({
-	            url: location,
-	            data: {},
-	            dataType: is_json ? 'json' : 'text',
-	            type: 'get',
-	            success: function(data) {
-	              if (should_cache) {
-	                context.event_context.app.templateCache(location, data);
-	              }
-	              context.next(data);
-	            }
-	          }, options));
-	          return false;
-	        } else {
-	          // it's a dom/jQuery
-	          if (location.nodeType) {
-	            return location.innerHTML;
-	          }
-	          if (location.selector) {
-	            // it's a jQuery
-	            context.next_engine = location.attr('data-engine');
-	            if (options.clone === false) {
-	              return location.remove()[0].innerHTML.toString();
-	            } else {
-	              return location[0].innerHTML.toString();
-	            }
-	          }
-	        }
-	      });
-	    },
-
-	    // Load partials
-	    //
-	    // ### Example
-	    //
-	    //      this.loadPartials({mypartial: '/path/to/partial'});
-	    //
-	    loadPartials: function(partials) {
-	      var name;
-	      if(partials) {
-	        this.partials = this.partials || {};
-	        for(name in partials) {
-	          (function(context, name) {
-	            context.load(partials[name])
-	                   .then(function(template) {
-	                     this.partials[name] = template;
-	                   });
-	          })(this, name);
-	        }
-	      }
-	      return this;
-	    },
-
-	    // `load()` a template and then `interpolate()` it with data.
-	    //
-	    // can be called with multiple different signatures:
-	    //
-	    //      this.render(callback);
-	    //      this.render('/location');
-	    //      this.render('/location', {some: data});
-	    //      this.render('/location', callback);
-	    //      this.render('/location', {some: data}, callback);
-	    //      this.render('/location', {some: data}, {my: partials});
-	    //      this.render('/location', callback, {my: partials});
-	    //      this.render('/location', {some: data}, callback, {my: partials});
-	    //
-	    // ### Example
-	    //
-	    //      this.get('#/', function() {
-	    //        this.render('mytemplate.template', {name: 'test'});
-	    //      });
-	    //
-	    render: function(location, data, callback, partials) {
-	      if (_isFunction(location) && !data) {
-	        // invoked as render(callback)
-	        return this.then(location);
-	      } else {
-	        if(_isFunction(data)) {
-	          // invoked as render(location, callback, [partials])
-	          partials = callback;
-	          callback = data;
-	          data = null;
-	        } else if(callback && !_isFunction(callback)) {
-	          // invoked as render(location, data, partials)
-	          partials = callback;
-	          callback = null;
-	        }
-
-	        return this.loadPartials(partials)
-	                   .load(location)
-	                   .interpolate(data, location)
-	                   .then(callback);
-	      }
-	    },
-
-	    // `render()` the `location` with `data` and then `swap()` the
-	    // app's `$element` with the rendered content.
-	    partial: function(location, data, callback, partials) {
-	      if (_isFunction(callback)) {
-	        // invoked as partial(location, data, callback, [partials])
-	        return this.render(location, data, partials).swap(callback);
-	      } else if (_isFunction(data)) {
-	        // invoked as partial(location, callback, [partials])
-	        return this.render(location, {}, callback).swap(data);
-	      } else {
-	        // invoked as partial(location, data, [partials])
-	        return this.render(location, data, callback).swap();
-	      }
-	    },
-
-	    // defers the call of function to occur in order of the render queue.
-	    // The function can accept any number of arguments as long as the last
-	    // argument is a callback function. This is useful for putting arbitrary
-	    // asynchronous functions into the queue. The content passed to the
-	    // callback is passed as `content` to the next item in the queue.
-	    //
-	    // ### Example
-	    //
-	    //     this.send($.getJSON, '/app.json')
-	    //         .then(function(json) {
-	    //           $('#message).text(json['message']);
-	    //          });
-	    //
-	    //
-	    send: function() {
-	      var context = this,
-	          args = _makeArray(arguments),
-	          fun  = args.shift();
-
-	      if (_isArray(args[0])) { args = args[0]; }
-
-	      return this.then(function(content) {
-	        args.push(function(response) { context.next(response); });
-	        context.wait();
-	        fun.apply(fun, args);
-	        return false;
-	      });
-	    },
-
-	    // iterates over an array, applying the callback for each item item. the
-	    // callback takes the same style of arguments as `jQuery.each()` (index, item).
-	    // The return value of each callback is collected as a single string and stored
-	    // as `content` to be used in the next iteration of the `RenderContext`.
-	    collect: function(array, callback, now) {
-	      var context = this;
-	      var coll = function() {
-	        if (_isFunction(array)) {
-	          callback = array;
-	          array = this.content;
-	        }
-	        var contents = [], doms = false;
-	        $.each(array, function(i, item) {
-	          var returned = callback.apply(context, [i, item]);
-	          if (returned.jquery && returned.length == 1) {
-	            returned = returned[0];
-	            doms = true;
-	          }
-	          contents.push(returned);
-	          return returned;
-	        });
-	        return doms ? contents : contents.join('');
-	      };
-	      return now ? coll() : this.then(coll);
-	    },
-
-	    // loads a template, and then interpolates it for each item in the `data`
-	    // array. If a callback is passed, it will call the callback with each
-	    // item in the array _after_ interpolation
-	    renderEach: function(location, name, data, callback) {
-	      if (_isArray(name)) {
-	        callback = data;
-	        data = name;
-	        name = null;
-	      }
-	      return this.load(location).then(function(content) {
-	          var rctx = this;
-	          if (!data) {
-	            data = _isArray(this.previous_content) ? this.previous_content : [];
-	          }
-	          if (callback) {
-	            $.each(data, function(i, value) {
-	              var idata = {}, engine = this.next_engine || location;
-	              if (name) {
-	                idata[name] = value;
-	              } else {
-	                idata = value;
-	              }
-	              callback(value, rctx.event_context.interpolate(content, idata, engine));
-	            });
-	          } else {
-	            return this.collect(data, function(i, value) {
-	              var idata = {}, engine = this.next_engine || location;
-	              if (name) {
-	                idata[name] = value;
-	              } else {
-	                idata = value;
-	              }
-	              return this.event_context.interpolate(content, idata, engine);
-	            }, true);
-	          }
-	      });
-	    },
-
-	    // uses the previous loaded `content` and the `data` object to interpolate
-	    // a template. `engine` defines the templating/interpolation method/engine
-	    // that should be used. If `engine` is not passed, the `next_engine` is
-	    // used. If `retain` is `true`, the final interpolated data is appended to
-	    // the `previous_content` instead of just replacing it.
-	    interpolate: function(data, engine, retain) {
-	      var context = this;
-	      return this.then(function(content, prev) {
-	        if (!data && prev) { data = prev; }
-	        if (this.next_engine) {
-	          engine = this.next_engine;
-	          this.next_engine = false;
-	        }
-	        var rendered = context.event_context.interpolate(content, data, engine, this.partials);
-	        return retain ? prev + rendered : rendered;
-	      });
-	    },
-
-	    // Swap the return contents ensuring order. See `Application#swap`
-	    swap: function(callback) {
-	      return this.then(function(content) {
-	        this.event_context.swap(content, callback);
-	        return content;
-	      }).trigger('changed', {});
-	    },
-
-	    // Same usage as `jQuery.fn.appendTo()` but uses `then()` to ensure order
-	    appendTo: function(selector) {
-	      return this.then(function(content) {
-	        $(selector).append(content);
-	      }).trigger('changed', {});
-	    },
-
-	    // Same usage as `jQuery.fn.prependTo()` but uses `then()` to ensure order
-	    prependTo: function(selector) {
-	      return this.then(function(content) {
-	        $(selector).prepend(content);
-	      }).trigger('changed', {});
-	    },
-
-	    // Replaces the `$(selector)` using `html()` with the previously loaded
-	    // `content`
-	    replace: function(selector) {
-	      return this.then(function(content) {
-	        $(selector).html(content);
-	      }).trigger('changed', {});
-	    },
-
-	    // trigger the event in the order of the event context. Same semantics
-	    // as `Sammy.EventContext#trigger()`. If data is omitted, `content`
-	    // is sent as `{content: content}`
-	    trigger: function(name, data) {
-	      return this.then(function(content) {
-	        if (typeof data == 'undefined') { data = {content: content}; }
-	        this.event_context.trigger(name, data);
-	        return content;
-	      });
-	    }
-
-	  });
-
-	  // `Sammy.EventContext` objects are created every time a route is run or a
-	  // bound event is triggered. The callbacks for these events are evaluated within a `Sammy.EventContext`
-	  // This within these callbacks the special methods of `EventContext` are available.
-	  //
-	  // ### Example
-	  //
-	  //       $.sammy(function() {
-	  //         // The context here is this Sammy.Application
-	  //         this.get('#/:name', function() {
-	  //           // The context here is a new Sammy.EventContext
-	  //           if (this.params['name'] == 'sammy') {
-	  //             this.partial('name.html.erb', {name: 'Sammy'});
-	  //           } else {
-	  //             this.redirect('#/somewhere-else')
-	  //           }
-	  //         });
-	  //       });
-	  //
-	  // Initialize a new EventContext
-	  //
-	  // ### Arguments
-	  //
-	  // * `app` The `Sammy.Application` this event is called within.
-	  // * `verb` The verb invoked to run this context/route.
-	  // * `path` The string path invoked to run this context/route.
-	  // * `params` An Object of optional params to pass to the context. Is converted
-	  //   to a `Sammy.Object`.
-	  // * `target` a DOM element that the event that holds this context originates
-	  //   from. For post, put and del routes, this is the form element that triggered
-	  //   the route.
-	  //
-	  Sammy.EventContext = function(app, verb, path, params, target) {
-	    this.app    = app;
-	    this.verb   = verb;
-	    this.path   = path;
-	    this.params = new Sammy.Object(params);
-	    this.target = target;
-	  };
-
-	  Sammy.EventContext.prototype = $.extend({}, Sammy.Object.prototype, {
-
-	    // A shortcut to the app's `$element()`
-	    $element: function() {
-	      return this.app.$element(_makeArray(arguments).shift());
-	    },
-
-	    // Look up a templating engine within the current app and context.
-	    // `engine` can be one of the following:
-	    //
-	    // * a function: should conform to `function(content, data) { return interpolated; }`
-	    // * a template path: 'template.ejs', looks up the extension to match to
-	    //   the `ejs()` helper
-	    // * a string referring to the helper: "mustache" => `mustache()`
-	    //
-	    // If no engine is found, use the app's default `template_engine`
-	    //
-	    engineFor: function(engine) {
-	      var context = this, engine_match;
-	      // if path is actually an engine function just return it
-	      if (_isFunction(engine)) { return engine; }
-	      // lookup engine name by path extension
-	      engine = (engine || context.app.template_engine).toString();
-	      if ((engine_match = engine.match(/\.([^\.\?\#]+)(\?|$)/))) {
-	        engine = engine_match[1];
-	      }
-	      // set the engine to the default template engine if no match is found
-	      if (engine && _isFunction(context[engine])) {
-	        return context[engine];
-	      }
-
-	      if (context.app.template_engine) {
-	        return this.engineFor(context.app.template_engine);
-	      }
-	      return function(content, data) { return content; };
-	    },
-
-	    // using the template `engine` found with `engineFor()`, interpolate the
-	    // `data` into `content`
-	    interpolate: function(content, data, engine, partials) {
-	      return this.engineFor(engine).apply(this, [content, data, partials]);
-	    },
-
-	    // Create and return a `Sammy.RenderContext` calling `render()` on it.
-	    // Loads the template and interpolate the data, however does not actual
-	    // place it in the DOM.
-	    //
-	    // ### Example
-	    //
-	    //      // mytemplate.mustache <div class="name">{{name}}</div>
-	    //      render('mytemplate.mustache', {name: 'quirkey'});
-	    //      // sets the `content` to <div class="name">quirkey</div>
-	    //      render('mytemplate.mustache', {name: 'quirkey'})
-	    //        .appendTo('ul');
-	    //      // appends the rendered content to $('ul')
-	    //
-	    render: function(location, data, callback, partials) {
-	      return new Sammy.RenderContext(this).render(location, data, callback, partials);
-	    },
-
-	    // Create and return a `Sammy.RenderContext` calling `renderEach()` on it.
-	    // Loads the template and interpolates the data for each item,
-	    // however does not actually place it in the DOM.
-	    //
-	    // `name` is an optional parameter (if it is an array, it is used as `data`,
-	    // and the third parameter used as `callback`, if set).
-	    //
-	    // If `data` is not provided, content from the previous step in the chain
-	    // (if it is an array) is used, and `name` is used as the key for each
-	    // element of the array (useful for referencing in template).
-	    //
-	    // ### Example
-	    //
-	    //      // mytemplate.mustache <div class="name">{{name}}</div>
-	    //      renderEach('mytemplate.mustache', [{name: 'quirkey'}, {name: 'endor'}])
-	    //      // sets the `content` to <div class="name">quirkey</div><div class="name">endor</div>
-	    //      renderEach('mytemplate.mustache', [{name: 'quirkey'}, {name: 'endor'}]).appendTo('ul');
-	    //      // appends the rendered content to $('ul')
-	    //
-	    //      // names.json: ["quirkey", "endor"]
-	    //      this.load('names.json').renderEach('mytemplate.mustache', 'name').appendTo('ul');
-	    //      // uses the template to render each item in the JSON array
-	    //
-	    renderEach: function(location, name, data, callback) {
-	      return new Sammy.RenderContext(this).renderEach(location, name, data, callback);
-	    },
-
-	    // create a new `Sammy.RenderContext` calling `load()` with `location` and
-	    // `options`. Called without interpolation or placement, this allows for
-	    // preloading/caching the templates.
-	    load: function(location, options, callback) {
-	      return new Sammy.RenderContext(this).load(location, options, callback);
-	    },
-
-	    // create a new `Sammy.RenderContext` calling `loadPartials()` with `partials`.
-	    loadPartials: function(partials) {
-	      return new Sammy.RenderContext(this).loadPartials(partials);
-	    },
-
-	    // `render()` the `location` with `data` and then `swap()` the
-	    // app's `$element` with the rendered content.
-	    partial: function(location, data, callback, partials) {
-	      return new Sammy.RenderContext(this).partial(location, data, callback, partials);
-	    },
-
-	    // create a new `Sammy.RenderContext` calling `send()` with an arbitrary
-	    // function
-	    send: function() {
-	      var rctx = new Sammy.RenderContext(this);
-	      return rctx.send.apply(rctx, arguments);
-	    },
-
-	    // Changes the location of the current window. If `to` begins with
-	    // '#' it only changes the document's hash. If passed more than 1 argument
-	    // redirect will join them together with forward slashes.
-	    //
-	    // ### Example
-	    //
-	    //      redirect('#/other/route');
-	    //      // equivalent to
-	    //      redirect('#', 'other', 'route');
-	    //
-	    redirect: function() {
-	      var to, args = _makeArray(arguments),
-	          current_location = this.app.getLocation(),
-	          l = args.length;
-	      if (l > 1) {
-	        var i = 0, paths = [], pairs = [], params = {}, has_params = false;
-	        for (; i < l; i++) {
-	          if (typeof args[i] == 'string') {
-	            paths.push(args[i]);
-	          } else {
-	            $.extend(params, args[i]);
-	            has_params = true;
-	          }
-	        }
-	        to = paths.join('/');
-	        if (has_params) {
-	          for (var k in params) {
-	            pairs.push(this.app._encodeFormPair(k, params[k]));
-	          }
-	          to += '?' + pairs.join('&');
-	        }
-	      } else {
-	        to = args[0];
-	      }
-	      this.trigger('redirect', {to: to});
-	      this.app.last_location = [this.verb, this.path];
-	      this.app.setLocation(to);
-	      if (new RegExp(to).test(current_location)) {
-	        this.app.trigger('location-changed');
-	      }
-	    },
-
-	    // Triggers events on `app` within the current context.
-	    trigger: function(name, data) {
-	      if (typeof data == 'undefined') { data = {}; }
-	      if (!data.context) { data.context = this; }
-	      return this.app.trigger(name, data);
-	    },
-
-	    // A shortcut to app's `eventNamespace()`
-	    eventNamespace: function() {
-	      return this.app.eventNamespace();
-	    },
-
-	    // A shortcut to app's `swap()`
-	    swap: function(contents, callback) {
-	      return this.app.swap(contents, callback);
-	    },
-
-	    // Raises a possible `notFound()` error for the current path.
-	    notFound: function() {
-	      return this.app.notFound(this.verb, this.path);
-	    },
-
-	    // Default JSON parsing uses jQuery's `parseJSON()`. Include `Sammy.JSON`
-	    // plugin for the more conformant "crockford special".
-	    json: function(string) {
-	      return $.parseJSON(string);
-	    },
-
-	    // //=> Sammy.EventContext: get #/ {}
-	    toString: function() {
-	      return "Sammy.EventContext: " + [this.verb, this.path, this.params].join(' ');
-	    }
-
-	  });
-
-	  return Sammy;
-	});
-
-
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Chartist.js 0.7.2
-	 * Copyright © 2015 Gion Kunz
-	 * Free to use under the WTFPL license.
-	 * http://www.wtfpl.net/
-	 */
-
-	!function(a,b){true?!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function(){return a.returnExportsGlobal=b()}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)):"object"==typeof exports?module.exports=b():a.Chartist=b()}(this,function(){var a={version:"0.7.1"};return function(a,b,c){"use strict";c.noop=function(a){return a},c.alphaNumerate=function(a){return String.fromCharCode(97+a%26)},c.extend=function(a){a=a||{};var b=Array.prototype.slice.call(arguments,1);return b.forEach(function(b){for(var d in b)a[d]="object"!=typeof b[d]||b[d]instanceof Array?b[d]:c.extend(a[d],b[d])}),a},c.replaceAll=function(a,b,c){return a.replace(new RegExp(b,"g"),c)},c.stripUnit=function(a){return"string"==typeof a&&(a=a.replace(/[^0-9\+-\.]/g,"")),+a},c.ensureUnit=function(a,b){return"number"==typeof a&&(a+=b),a},c.querySelector=function(a){return a instanceof Node?a:b.querySelector(a)},c.times=function(a){return Array.apply(null,new Array(a))},c.sum=function(a,b){return a+b},c.serialMap=function(a,b){var d=[],e=Math.max.apply(null,a.map(function(a){return a.length}));return c.times(e).forEach(function(c,e){var f=a.map(function(a){return a[e]});d[e]=b.apply(null,f)}),d},c.escapingMap={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"},c.serialize=function(a){return null===a||void 0===a?a:("number"==typeof a?a=""+a:"object"==typeof a&&(a=JSON.stringify({data:a})),Object.keys(c.escapingMap).reduce(function(a,b){return c.replaceAll(a,b,c.escapingMap[b])},a))},c.deserialize=function(a){if("string"!=typeof a)return a;a=Object.keys(c.escapingMap).reduce(function(a,b){return c.replaceAll(a,c.escapingMap[b],b)},a);try{a=JSON.parse(a),a=void 0!==a.data?a.data:a}catch(b){}return a},c.createSvg=function(a,b,d,e){var f;return b=b||"100%",d=d||"100%",Array.prototype.slice.call(a.querySelectorAll("svg")).filter(function(a){return a.getAttribute(c.xmlNs.qualifiedName)}).forEach(function(b){a.removeChild(b)}),f=new c.Svg("svg").attr({width:b,height:d}).addClass(e).attr({style:"width: "+b+"; height: "+d+";"}),a.appendChild(f._node),f},c.reverseData=function(a){a.labels.reverse(),a.series.reverse();for(var b=0;b<a.series.length;b++)"object"==typeof a.series[b]&&void 0!==a.series[b].data?a.series[b].data.reverse():a.series[b].reverse()},c.getDataArray=function(a,b){var d,e,f=[];(b&&!a.reversed||!b&&a.reversed)&&(c.reverseData(a),a.reversed=!a.reversed);for(var g=0;g<a.series.length;g++){e="object"==typeof a.series[g]&&void 0!==a.series[g].data?a.series[g].data:a.series[g],e instanceof Array?(f[g]=[],Array.prototype.push.apply(f[g],e)):f[g]=e;for(var h=0;h<f[g].length;h++)d=f[g][h],d=0===d.value?0:d.value||d,f[g][h]=+d}return f},c.normalizeDataArray=function(a,b){for(var c=0;c<a.length;c++)if(a[c].length!==b)for(var d=a[c].length;b>d;d++)a[c][d]=0;return a},c.getMetaData=function(a,b){var d=a.data?a.data[b]:a[b];return d?c.serialize(d.meta):void 0},c.orderOfMagnitude=function(a){return Math.floor(Math.log(Math.abs(a))/Math.LN10)},c.projectLength=function(a,b,c){return b/c.range*a},c.getAvailableHeight=function(a,b){return Math.max((c.stripUnit(b.height)||a.height())-2*b.chartPadding-b.axisX.offset,0)},c.getHighLow=function(a){var b,c,d={high:-Number.MAX_VALUE,low:Number.MAX_VALUE};for(b=0;b<a.length;b++)for(c=0;c<a[b].length;c++)a[b][c]>d.high&&(d.high=a[b][c]),a[b][c]<d.low&&(d.low=a[b][c]);return d},c.getBounds=function(a,b,d,e){var f,g,h,i={high:b.high,low:b.low};i.high===i.low&&(0===i.low?i.high=1:i.low<0?i.high=0:i.low=0),(e||0===e)&&(i.high=Math.max(e,i.high),i.low=Math.min(e,i.low)),i.valueRange=i.high-i.low,i.oom=c.orderOfMagnitude(i.valueRange),i.min=Math.floor(i.low/Math.pow(10,i.oom))*Math.pow(10,i.oom),i.max=Math.ceil(i.high/Math.pow(10,i.oom))*Math.pow(10,i.oom),i.range=i.max-i.min,i.step=Math.pow(10,i.oom),i.numberOfSteps=Math.round(i.range/i.step);for(var j=c.projectLength(a,i.step,i),k=d>j;;)if(k&&c.projectLength(a,i.step,i)<=d)i.step*=2;else{if(k||!(c.projectLength(a,i.step/2,i)>=d))break;i.step/=2}for(g=i.min,h=i.max,f=i.min;f<=i.max;f+=i.step)f+i.step<i.low&&(g+=i.step),f-i.step>=i.high&&(h-=i.step);for(i.min=g,i.max=h,i.range=i.max-i.min,i.values=[],f=i.min;f<=i.max;f+=i.step)i.values.push(f);return i},c.polarToCartesian=function(a,b,c,d){var e=(d-90)*Math.PI/180;return{x:a+c*Math.cos(e),y:b+c*Math.sin(e)}},c.createChartRect=function(a,b){var d=b.axisY?b.axisY.offset||0:0,e=b.axisX?b.axisX.offset||0:0,f=c.stripUnit(b.width)||a.width(),g=c.stripUnit(b.height)||a.height();return{x1:b.chartPadding+d,y1:Math.max(g-b.chartPadding-e,b.chartPadding),x2:Math.max(f-b.chartPadding,b.chartPadding+d),y2:b.chartPadding,width:function(){return this.x2-this.x1},height:function(){return this.y1-this.y2}}},c.createGrid=function(a,b,d,e,f,g,h,i){var j={};j[d.units.pos+"1"]=a.pos,j[d.units.pos+"2"]=a.pos,j[d.counterUnits.pos+"1"]=e,j[d.counterUnits.pos+"2"]=e+f;var k=g.elem("line",j,h.join(" "));i.emit("draw",c.extend({type:"grid",axis:d.units.pos,index:b,group:g,element:k},j))},c.createLabel=function(a,b,d,e,f,g,h,i,j,k){var l,m={};if(m[e.units.pos]=a.pos+g[e.units.pos],m[e.counterUnits.pos]=g[e.counterUnits.pos],m[e.units.len]=a.len,m[e.counterUnits.len]=f,j){var n='<span class="'+i.join(" ")+'">'+d[b]+"</span>";l=h.foreignObject(n,c.extend({style:"overflow: visible;"},m))}else l=h.elem("text",m,i.join(" ")).text(d[b]);k.emit("draw",c.extend({type:"label",axis:e,index:b,group:h,element:l,text:d[b]},m))},c.createAxis=function(a,b,d,e,f,g,h,i){var j=h["axis"+a.units.pos.toUpperCase()],k=b.map(a.projectValue.bind(a)).map(a.transform),l=b.map(j.labelInterpolationFnc);k.forEach(function(b,k){(l[k]||0===l[k])&&(j.showGrid&&c.createGrid(b,k,a,a.gridOffset,d[a.counterUnits.len](),e,[h.classNames.grid,h.classNames[a.units.dir]],i),j.showLabel&&c.createLabel(b,k,l,a,j.offset,a.labelOffset,f,[h.classNames.label,h.classNames[a.units.dir]],g,i))})},c.optionsProvider=function(b,d,e){function f(){var b=h;if(h=c.extend({},j),d)for(i=0;i<d.length;i++){var f=a.matchMedia(d[i][0]);f.matches&&(h=c.extend(h,d[i][1]))}e&&e.emit("optionsChanged",{previousOptions:b,currentOptions:h})}function g(){k.forEach(function(a){a.removeListener(f)})}var h,i,j=c.extend({},b),k=[];if(!a.matchMedia)throw"window.matchMedia not found! Make sure you're using a polyfill.";if(d)for(i=0;i<d.length;i++){var l=a.matchMedia(d[i][0]);l.addListener(f),k.push(l)}return f(),{get currentOptions(){return c.extend({},h)},removeMediaQueryListeners:g}},c.catmullRom2bezier=function(a,b){for(var c=[],d=0,e=a.length;e-2*!b>d;d+=2){var f=[{x:+a[d-2],y:+a[d-1]},{x:+a[d],y:+a[d+1]},{x:+a[d+2],y:+a[d+3]},{x:+a[d+4],y:+a[d+5]}];b?d?e-4===d?f[3]={x:+a[0],y:+a[1]}:e-2===d&&(f[2]={x:+a[0],y:+a[1]},f[3]={x:+a[2],y:+a[3]}):f[0]={x:+a[e-2],y:+a[e-1]}:e-4===d?f[3]=f[2]:d||(f[0]={x:+a[d],y:+a[d+1]}),c.push([(-f[0].x+6*f[1].x+f[2].x)/6,(-f[0].y+6*f[1].y+f[2].y)/6,(f[1].x+6*f[2].x-f[3].x)/6,(f[1].y+6*f[2].y-f[3].y)/6,f[2].x,f[2].y])}return c}}(window,document,a),function(a,b,c){"use strict";c.Interpolation={},c.Interpolation.none=function(){return function(a){for(var b=(new c.Svg.Path).move(a[0],a[1]),d=3;d<a.length;d+=2)b.line(a[d-1],a[d]);return b}},c.Interpolation.simple=function(a){var b={divisor:2};a=c.extend({},b,a);var d=1/Math.max(1,a.divisor);return function(a){for(var b=(new c.Svg.Path).move(a[0],a[1]),e=2;e<a.length;e+=2){var f=a[e-2],g=a[e-1],h=a[e],i=a[e+1],j=(h-f)*d;b.curve(f+j,g,h-j,i,h,i)}return b}},c.Interpolation.cardinal=function(a){var b={tension:1};a=c.extend({},b,a);var d=Math.min(1,Math.max(0,a.tension)),e=1-d;return function(a){if(a.length<=4)return c.Interpolation.none()(a);for(var b,f=(new c.Svg.Path).move(a[0],a[1]),g=0,h=a.length;h-2*!b>g;g+=2){var i=[{x:+a[g-2],y:+a[g-1]},{x:+a[g],y:+a[g+1]},{x:+a[g+2],y:+a[g+3]},{x:+a[g+4],y:+a[g+5]}];b?g?h-4===g?i[3]={x:+a[0],y:+a[1]}:h-2===g&&(i[2]={x:+a[0],y:+a[1]},i[3]={x:+a[2],y:+a[3]}):i[0]={x:+a[h-2],y:+a[h-1]}:h-4===g?i[3]=i[2]:g||(i[0]={x:+a[g],y:+a[g+1]}),f.curve(d*(-i[0].x+6*i[1].x+i[2].x)/6+e*i[2].x,d*(-i[0].y+6*i[1].y+i[2].y)/6+e*i[2].y,d*(i[1].x+6*i[2].x-i[3].x)/6+e*i[2].x,d*(i[1].y+6*i[2].y-i[3].y)/6+e*i[2].y,i[2].x,i[2].y)}return f}}}(window,document,a),function(a,b,c){"use strict";c.EventEmitter=function(){function a(a,b){d[a]=d[a]||[],d[a].push(b)}function b(a,b){d[a]&&(b?(d[a].splice(d[a].indexOf(b),1),0===d[a].length&&delete d[a]):delete d[a])}function c(a,b){d[a]&&d[a].forEach(function(a){a(b)}),d["*"]&&d["*"].forEach(function(c){c(a,b)})}var d=[];return{addEventHandler:a,removeEventHandler:b,emit:c}}}(window,document,a),function(a,b,c){"use strict";function d(a){var b=[];if(a.length)for(var c=0;c<a.length;c++)b.push(a[c]);return b}function e(a,b){var d=b||this.prototype||c.Class,e=Object.create(d);c.Class.cloneDefinitions(e,a);var f=function(){var a,b=e.constructor||function(){};return a=this===c?Object.create(e):this,b.apply(a,Array.prototype.slice.call(arguments,0)),a};return f.prototype=e,f["super"]=d,f.extend=this.extend,f}function f(){var a=d(arguments),b=a[0];return a.splice(1,a.length-1).forEach(function(a){Object.getOwnPropertyNames(a).forEach(function(c){delete b[c],Object.defineProperty(b,c,Object.getOwnPropertyDescriptor(a,c))})}),b}c.Class={extend:e,cloneDefinitions:f}}(window,document,a),function(a,b,c){"use strict";function d(a,b,d){return a&&(this.data=a,this.eventEmitter.emit("data",{type:"update",data:this.data})),b&&(this.options=c.extend({},d?this.options:{},b),this.initializeTimeoutId||(this.optionsProvider.removeMediaQueryListeners(),this.optionsProvider=c.optionsProvider(this.options,this.responsiveOptions,this.eventEmitter))),this.initializeTimeoutId||this.createChart(this.optionsProvider.currentOptions),this}function e(){return a.removeEventListener("resize",this.resizeListener),this.optionsProvider.removeMediaQueryListeners(),this}function f(a,b){return this.eventEmitter.addEventHandler(a,b),this}function g(a,b){return this.eventEmitter.removeEventHandler(a,b),this}function h(){a.addEventListener("resize",this.resizeListener),this.optionsProvider=c.optionsProvider(this.options,this.responsiveOptions,this.eventEmitter),this.eventEmitter.addEventHandler("optionsChanged",function(){this.update()}.bind(this)),this.options.plugins&&this.options.plugins.forEach(function(a){a instanceof Array?a[0](this,a[1]):a(this)}.bind(this)),this.eventEmitter.emit("data",{type:"initial",data:this.data}),this.createChart(this.optionsProvider.currentOptions),this.initializeTimeoutId=void 0}function i(b,d,e,f){this.container=c.querySelector(b),this.data=d,this.options=e,this.responsiveOptions=f,this.eventEmitter=c.EventEmitter(),this.supportsForeignObject=c.Svg.isSupported("Extensibility"),this.supportsAnimations=c.Svg.isSupported("AnimationEventsAttribute"),this.resizeListener=function(){this.update()}.bind(this),this.container&&(this.container.__chartist__&&(this.container.__chartist__.initializeTimeoutId?a.clearTimeout(this.container.__chartist__.initializeTimeoutId):this.container.__chartist__.detach()),this.container.__chartist__=this),this.initializeTimeoutId=setTimeout(h.bind(this),0)}c.Base=c.Class.extend({constructor:i,optionsProvider:void 0,container:void 0,svg:void 0,eventEmitter:void 0,createChart:function(){throw new Error("Base chart type can't be instantiated!")},update:d,detach:e,on:f,off:g,version:c.version,supportsForeignObject:!1})}(window,document,a),function(a,b,c){"use strict";function d(a,d,e,f,g){a instanceof SVGElement?this._node=a:(this._node=b.createElementNS(y,a),"svg"===a&&this._node.setAttributeNS(z,c.xmlNs.qualifiedName,c.xmlNs.uri),d&&this.attr(d),e&&this.addClass(e),f&&(g&&f._node.firstChild?f._node.insertBefore(this._node,f._node.firstChild):f._node.appendChild(this._node)))}function e(a,b){return"string"==typeof a?b?this._node.getAttributeNS(b,a):this._node.getAttribute(a):(Object.keys(a).forEach(function(d){void 0!==a[d]&&(b?this._node.setAttributeNS(b,[c.xmlNs.prefix,":",d].join(""),a[d]):this._node.setAttribute(d,a[d]))}.bind(this)),this)}function f(a,b,d,e){return new c.Svg(a,b,d,this,e)}function g(){return this._node.parentNode instanceof SVGElement?new c.Svg(this._node.parentNode):null}function h(){for(var a=this._node;"svg"!==a.nodeName;)a=a.parentNode;return new c.Svg(a)}function i(a){var b=this._node.querySelector(a);return b?new c.Svg(b):null}function j(a){var b=this._node.querySelectorAll(a);return b.length?new c.Svg.List(b):null}function k(a,c,d,e){if("string"==typeof a){var f=b.createElement("div");f.innerHTML=a,a=f.firstChild}a.setAttribute("xmlns",A);var g=this.elem("foreignObject",c,d,e);return g._node.appendChild(a),g}function l(a){return this._node.appendChild(b.createTextNode(a)),this}function m(){for(;this._node.firstChild;)this._node.removeChild(this._node.firstChild);return this}function n(){return this._node.parentNode.removeChild(this._node),this.parent()}function o(a){return this._node.parentNode.replaceChild(a._node,this._node),a}function p(a,b){return b&&this._node.firstChild?this._node.insertBefore(a._node,this._node.firstChild):this._node.appendChild(a._node),this}function q(){return this._node.getAttribute("class")?this._node.getAttribute("class").trim().split(/\s+/):[]}function r(a){return this._node.setAttribute("class",this.classes(this._node).concat(a.trim().split(/\s+/)).filter(function(a,b,c){return c.indexOf(a)===b}).join(" ")),this}function s(a){var b=a.trim().split(/\s+/);return this._node.setAttribute("class",this.classes(this._node).filter(function(a){return-1===b.indexOf(a)}).join(" ")),this}function t(){return this._node.setAttribute("class",""),this}function u(){return this._node.clientHeight||Math.round(this._node.getBBox().height)||this._node.parentNode.clientHeight}function v(){return this._node.clientWidth||Math.round(this._node.getBBox().width)||this._node.parentNode.clientWidth}function w(a,b,d){return void 0===b&&(b=!0),Object.keys(a).forEach(function(e){function f(a,b){var f,g,h,i={};a.easing&&(h=a.easing instanceof Array?a.easing:c.Svg.Easing[a.easing],delete a.easing),a.begin=c.ensureUnit(a.begin,"ms"),a.dur=c.ensureUnit(a.dur,"ms"),h&&(a.calcMode="spline",a.keySplines=h.join(" "),a.keyTimes="0;1"),b&&(a.fill="freeze",i[e]=a.from,this.attr(i),g=c.stripUnit(a.begin||0),a.begin="indefinite"),f=this.elem("animate",c.extend({attributeName:e},a)),b&&setTimeout(function(){try{f._node.beginElement()}catch(b){i[e]=a.to,this.attr(i),f.remove()}}.bind(this),g),d&&f._node.addEventListener("beginEvent",function(){d.emit("animationBegin",{element:this,animate:f._node,params:a})}.bind(this)),f._node.addEventListener("endEvent",function(){d&&d.emit("animationEnd",{element:this,animate:f._node,params:a}),b&&(i[e]=a.to,this.attr(i),f.remove())}.bind(this))}a[e]instanceof Array?a[e].forEach(function(a){f.bind(this)(a,!1)}.bind(this)):f.bind(this)(a[e],b)}.bind(this)),this}function x(a){var b=this;this.svgElements=[];for(var d=0;d<a.length;d++)this.svgElements.push(new c.Svg(a[d]));Object.keys(c.Svg.prototype).filter(function(a){return-1===["constructor","parent","querySelector","querySelectorAll","replace","append","classes","height","width"].indexOf(a)}).forEach(function(a){b[a]=function(){var d=Array.prototype.slice.call(arguments,0);return b.svgElements.forEach(function(b){c.Svg.prototype[a].apply(b,d)}),b}})}var y="http://www.w3.org/2000/svg",z="http://www.w3.org/2000/xmlns/",A="http://www.w3.org/1999/xhtml";c.xmlNs={qualifiedName:"xmlns:ct",prefix:"ct",uri:"http://gionkunz.github.com/chartist-js/ct"},c.Svg=c.Class.extend({constructor:d,attr:e,elem:f,parent:g,root:h,querySelector:i,querySelectorAll:j,foreignObject:k,text:l,empty:m,remove:n,replace:o,append:p,classes:q,addClass:r,removeClass:s,removeAllClasses:t,height:u,width:v,animate:w}),c.Svg.isSupported=function(a){return b.implementation.hasFeature("www.http://w3.org/TR/SVG11/feature#"+a,"1.1")};var B={easeInSine:[.47,0,.745,.715],easeOutSine:[.39,.575,.565,1],easeInOutSine:[.445,.05,.55,.95],easeInQuad:[.55,.085,.68,.53],easeOutQuad:[.25,.46,.45,.94],easeInOutQuad:[.455,.03,.515,.955],easeInCubic:[.55,.055,.675,.19],easeOutCubic:[.215,.61,.355,1],easeInOutCubic:[.645,.045,.355,1],easeInQuart:[.895,.03,.685,.22],easeOutQuart:[.165,.84,.44,1],easeInOutQuart:[.77,0,.175,1],easeInQuint:[.755,.05,.855,.06],easeOutQuint:[.23,1,.32,1],easeInOutQuint:[.86,0,.07,1],easeInExpo:[.95,.05,.795,.035],easeOutExpo:[.19,1,.22,1],easeInOutExpo:[1,0,0,1],easeInCirc:[.6,.04,.98,.335],easeOutCirc:[.075,.82,.165,1],easeInOutCirc:[.785,.135,.15,.86],easeInBack:[.6,-.28,.735,.045],easeOutBack:[.175,.885,.32,1.275],easeInOutBack:[.68,-.55,.265,1.55]};c.Svg.Easing=B,c.Svg.List=c.Class.extend({constructor:x})}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){d.splice(e,0,c.extend({command:f?a.toLowerCase():a.toUpperCase()},b))}function e(a,b){a.forEach(function(c,d){r[c.command.toLowerCase()].forEach(function(e,f){b(c,e,d,f,a)})})}function f(a,b){this.pathElements=[],this.pos=0,this.close=a,this.options=c.extend({},s,b)}function g(a){return void 0!==a?(this.pos=Math.max(0,Math.min(this.pathElements.length,a)),this):this.pos}function h(a){return this.pathElements.splice(this.pos,a),this}function i(a,b,c){return d("M",{x:+a,y:+b},this.pathElements,this.pos++,c),this}function j(a,b,c){return d("L",{x:+a,y:+b},this.pathElements,this.pos++,c),this}function k(a,b,c,e,f,g,h){return d("C",{x1:+a,y1:+b,x2:+c,y2:+e,x:+f,y:+g},this.pathElements,this.pos++,h),this}function l(a){var b=a.replace(/([A-Za-z])([0-9])/g,"$1 $2").replace(/([0-9])([A-Za-z])/g,"$1 $2").split(/[\s,]+/).reduce(function(a,b){return b.match(/[A-Za-z]/)&&a.push([]),a[a.length-1].push(b),a},[]);"Z"===b[b.length-1][0].toUpperCase()&&b.pop();var d=b.map(function(a){var b=a.shift(),d=r[b.toLowerCase()];return c.extend({command:b},d.reduce(function(b,c,d){return b[c]=+a[d],b},{}))}),e=[this.pos,0];return Array.prototype.push.apply(e,d),Array.prototype.splice.apply(this.pathElements,e),this.pos+=d.length,this}function m(){var a=Math.pow(10,this.options.accuracy);return this.pathElements.reduce(function(b,c){var d=r[c.command.toLowerCase()].map(function(b){return this.options.accuracy?Math.round(c[b]*a)/a:c[b]}.bind(this));return b+c.command+d.join(",")}.bind(this),"")+(this.close?"Z":"")}function n(a,b){return e(this.pathElements,function(c,d){c[d]*="x"===d[0]?a:b}),this}function o(a,b){return e(this.pathElements,function(c,d){c[d]+="x"===d[0]?a:b}),this}function p(a){return e(this.pathElements,function(b,c,d,e,f){var g=a(b,c,d,e,f);(g||0===g)&&(b[c]=g)}),this}function q(){var a=new c.Svg.Path(this.close);return a.pos=this.pos,a.pathElements=this.pathElements.slice().map(function(a){return c.extend({},a)}),a.options=c.extend({},this.options),a}var r={m:["x","y"],l:["x","y"],c:["x1","y1","x2","y2","x","y"]},s={accuracy:3};c.Svg.Path=c.Class.extend({constructor:f,position:g,remove:h,move:i,line:j,curve:k,scale:n,translate:o,transform:p,parse:l,stringify:m,clone:q}),c.Svg.Path.elementDescriptions=r}(window,document,a),function(a,b,c){"use strict";function d(a,b,c,d,f){this.units=a,this.counterUnits=a===e.x?e.y:e.x,this.chartRect=b,this.axisLength=b[a.rectEnd]-b[a.rectStart],this.gridOffset=b[a.rectOffset],this.transform=c,this.labelOffset=d,this.options=f}var e={x:{pos:"x",len:"width",dir:"horizontal",rectStart:"x1",rectEnd:"x2",rectOffset:"y2"},y:{pos:"y",len:"height",dir:"vertical",rectStart:"y2",rectEnd:"y1",rectOffset:"x1"}};c.Axis=c.Class.extend({constructor:d,projectValue:function(){throw new Error("Base axis can't be instantiated!")}}),c.Axis.units=e}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){c.LinearScaleAxis["super"].constructor.call(this,a,b,d,e,f),this.bounds=c.getBounds(this.axisLength,f.highLow,f.scaleMinSpace,f.referenceValue)}function e(a){return{pos:this.axisLength*(a-this.bounds.min)/(this.bounds.range+this.bounds.step),len:c.projectLength(this.axisLength,this.bounds.step,this.bounds)}}c.LinearScaleAxis=c.Axis.extend({constructor:d,projectValue:e})}(window,document,a),function(a,b,c){"use strict";function d(a,b,d,e,f){c.StepAxis["super"].constructor.call(this,a,b,d,e,f),this.stepLength=this.axisLength/(f.stepCount-(f.stretch?1:0))}function e(a,b){return{pos:this.stepLength*b,len:this.stepLength}}c.StepAxis=c.Axis.extend({constructor:d,projectValue:e})}(window,document,a),function(a,b,c){"use strict";function d(a){var b=[],d=c.normalizeDataArray(c.getDataArray(this.data,a.reverseData),this.data.labels.length);this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart);var e=c.createChartRect(this.svg,a),f=c.getHighLow(d);f.high=+a.high||(0===a.high?0:f.high),f.low=+a.low||(0===a.low?0:f.low);var g=new c.StepAxis(c.Axis.units.x,e,function(a){return a.pos=e.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:e.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{stepCount:this.data.labels.length,stretch:a.fullWidth}),h=new c.LinearScaleAxis(c.Axis.units.y,e,function(a){return a.pos=e.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y+(this.supportsForeignObject?-15:0)},{highLow:f,scaleMinSpace:a.axisY.scaleMinSpace}),i=this.svg.elem("g").addClass(a.classNames.labelGroup),j=this.svg.elem("g").addClass(a.classNames.gridGroup);c.createAxis(g,this.data.labels,e,j,i,this.supportsForeignObject,a,this.eventEmitter),c.createAxis(h,h.bounds.values,e,j,i,this.supportsForeignObject,a,this.eventEmitter),this.data.series.forEach(function(f,i){b[i]=this.svg.elem("g"),b[i].attr({"series-name":f.name,meta:c.serialize(f.meta)},c.xmlNs.uri),b[i].addClass([a.classNames.series,f.className||a.classNames.series+"-"+c.alphaNumerate(i)].join(" "));var j=[];if(d[i].forEach(function(k,l){var m={x:e.x1+g.projectValue(k,l,d[i]).pos,y:e.y1-h.projectValue(k,l,d[i]).pos};if(j.push(m.x,m.y),a.showPoint){var n=b[i].elem("line",{x1:m.x,y1:m.y,x2:m.x+.01,y2:m.y},a.classNames.point).attr({value:k,meta:c.getMetaData(f,l)},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"point",value:k,index:l,group:b[i],element:n,x:m.x,y:m.y})}}.bind(this)),a.showLine||a.showArea){var k="function"==typeof a.lineSmooth?a.lineSmooth:a.lineSmooth?c.Interpolation.cardinal():c.Interpolation.none(),l=k(j);if(a.showLine){var m=b[i].elem("path",{d:l.stringify()},a.classNames.line,!0).attr({values:d[i]},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"line",values:d[i],path:l.clone(),chartRect:e,index:i,group:b[i],element:m})}if(a.showArea){var n=Math.max(Math.min(a.areaBase,h.bounds.max),h.bounds.min),o=e.y1-h.projectValue(n).pos,p=l.clone();p.position(0).remove(1).move(e.x1,o).line(j[0],j[1]).position(p.pathElements.length).line(j[j.length-2],o);var q=b[i].elem("path",{d:p.stringify()},a.classNames.area,!0).attr({values:d[i]},c.xmlNs.uri);this.eventEmitter.emit("draw",{type:"area",values:d[i],path:p.clone(),chartRect:e,index:i,group:b[i],element:q})}}}.bind(this)),this.eventEmitter.emit("created",{bounds:h.bounds,chartRect:e,svg:this.svg,options:a})}function e(a,b,d,e){c.Line["super"].constructor.call(this,a,b,c.extend({},f,d),e)}var f={axisX:{offset:30,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop},axisY:{offset:40,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:20},width:void 0,height:void 0,showLine:!0,showPoint:!0,showArea:!1,areaBase:0,lineSmooth:!0,low:void 0,high:void 0,chartPadding:5,fullWidth:!1,reverseData:!1,classNames:{chart:"ct-chart-line",label:"ct-label",labelGroup:"ct-labels",series:"ct-series",line:"ct-line",point:"ct-point",area:"ct-area",grid:"ct-grid",gridGroup:"ct-grids",vertical:"ct-vertical",horizontal:"ct-horizontal"}};c.Line=c.Base.extend({constructor:e,createChart:d})}(window,document,a),function(a,b,c){"use strict";function d(a){var b,d=[],e=c.normalizeDataArray(c.getDataArray(this.data,a.reverseData),this.data.labels.length);if(this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart),a.stackBars){var f=c.serialMap(e,function(){return Array.prototype.slice.call(arguments).reduce(c.sum,0)});b=c.getHighLow([f])}else b=c.getHighLow(e);b.high=+a.high||(0===a.high?0:b.high),b.low=+a.low||(0===a.low?0:b.low);var g,h,i=c.createChartRect(this.svg,a);a.horizontalBars?(h=new c.StepAxis(c.Axis.units.y,i,function(a){return a.pos=i.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y-i.height()/this.data.labels.length},{stepCount:this.data.labels.length,stretch:a.fullHeight}),g=new c.LinearScaleAxis(c.Axis.units.x,i,function(a){return a.pos=i.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:i.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{highLow:b,scaleMinSpace:a.axisX.scaleMinSpace,referenceValue:0})):(h=new c.StepAxis(c.Axis.units.x,i,function(a){return a.pos=i.x1+a.pos,a},{x:a.axisX.labelOffset.x,y:i.y1+a.axisX.labelOffset.y+(this.supportsForeignObject?5:20)},{stepCount:this.data.labels.length}),g=new c.LinearScaleAxis(c.Axis.units.y,i,function(a){return a.pos=i.y1-a.pos,a},{x:a.chartPadding+a.axisY.labelOffset.x+(this.supportsForeignObject?-10:0),y:a.axisY.labelOffset.y+(this.supportsForeignObject?-15:0)},{highLow:b,scaleMinSpace:a.axisY.scaleMinSpace,referenceValue:0}));var j=this.svg.elem("g").addClass(a.classNames.labelGroup),k=this.svg.elem("g").addClass(a.classNames.gridGroup),l=a.horizontalBars?i.x1+g.projectValue(0).pos:i.y1-g.projectValue(0).pos,m=[];c.createAxis(h,this.data.labels,i,k,j,this.supportsForeignObject,a,this.eventEmitter),c.createAxis(g,g.bounds.values,i,k,j,this.supportsForeignObject,a,this.eventEmitter),this.data.series.forEach(function(b,f){var j=f-(this.data.series.length-1)/2,k=i[h.units.len]()/e[f].length/2;d[f]=this.svg.elem("g"),d[f].attr({"series-name":b.name,meta:c.serialize(b.meta)},c.xmlNs.uri),d[f].addClass([a.classNames.series,b.className||a.classNames.series+"-"+c.alphaNumerate(f)].join(" ")),e[f].forEach(function(n,o){var p,q,r={x:i.x1+(a.horizontalBars?g:h).projectValue(n,o,e[f]).pos,y:i.y1-(a.horizontalBars?h:g).projectValue(n,o,e[f]).pos};r[h.units.pos]+=k*(a.horizontalBars?-1:1),r[h.units.pos]+=a.stackBars?0:j*a.seriesBarDistance*(a.horizontalBars?-1:1),q=m[o]||l,m[o]=q-(l-r[h.counterUnits.pos]);var s={};s[h.units.pos+"1"]=r[h.units.pos],s[h.units.pos+"2"]=r[h.units.pos],s[h.counterUnits.pos+"1"]=a.stackBars?q:l,s[h.counterUnits.pos+"2"]=a.stackBars?m[o]:r[h.counterUnits.pos],p=d[f].elem("line",s,a.classNames.bar).attr({value:n,meta:c.getMetaData(b,o)},c.xmlNs.uri),this.eventEmitter.emit("draw",c.extend({type:"bar",value:n,index:o,chartRect:i,group:d[f],element:p},s))}.bind(this))}.bind(this)),this.eventEmitter.emit("created",{bounds:g.bounds,chartRect:i,svg:this.svg,options:a})}function e(a,b,d,e){c.Bar["super"].constructor.call(this,a,b,c.extend({},f,d),e)}var f={axisX:{offset:30,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:40},axisY:{offset:40,labelOffset:{x:0,y:0},showLabel:!0,showGrid:!0,labelInterpolationFnc:c.noop,scaleMinSpace:20},width:void 0,height:void 0,high:void 0,low:void 0,chartPadding:5,seriesBarDistance:15,stackBars:!1,horizontalBars:!1,reverseData:!1,classNames:{chart:"ct-chart-bar",label:"ct-label",labelGroup:"ct-labels",series:"ct-series",bar:"ct-bar",grid:"ct-grid",gridGroup:"ct-grids",vertical:"ct-vertical",horizontal:"ct-horizontal"}};c.Bar=c.Base.extend({constructor:e,createChart:d})}(window,document,a),function(a,b,c){"use strict";function d(a,b,c){var d=b.x>a.x;return d&&"explode"===c||!d&&"implode"===c?"start":d&&"implode"===c||!d&&"explode"===c?"end":"middle"}function e(a){var b,e,f,g,h=[],i=a.startAngle,j=c.getDataArray(this.data,a.reverseData);this.svg=c.createSvg(this.container,a.width,a.height,a.classNames.chart),b=c.createChartRect(this.svg,a,0,0),e=Math.min(b.width()/2,b.height()/2),g=a.total||j.reduce(function(a,b){return a+b},0),e-=a.donut?a.donutWidth/2:0,f=a.donut?e:e/2,f+=a.labelOffset;for(var k={x:b.x1+b.width()/2,y:b.y2+b.height()/2},l=1===this.data.series.filter(function(a){return 0!==a}).length,m=0;m<this.data.series.length;m++){h[m]=this.svg.elem("g",null,null,!0),this.data.series[m].name&&h[m].attr({"series-name":this.data.series[m].name,meta:c.serialize(this.data.series[m].meta)},c.xmlNs.uri),h[m].addClass([a.classNames.series,this.data.series[m].className||a.classNames.series+"-"+c.alphaNumerate(m)].join(" "));var n=i+j[m]/g*360;n-i===360&&(n-=.01);var o=c.polarToCartesian(k.x,k.y,e,i-(0===m||l?0:.2)),p=c.polarToCartesian(k.x,k.y,e,n),q=180>=n-i?"0":"1",r=["M",p.x,p.y,"A",e,e,0,q,0,o.x,o.y];a.donut===!1&&r.push("L",k.x,k.y);var s=h[m].elem("path",{d:r.join(" ")},a.classNames.slice+(a.donut?" "+a.classNames.donut:""));if(s.attr({value:j[m]},c.xmlNs.uri),a.donut===!0&&s.attr({style:"stroke-width: "+ +a.donutWidth+"px"}),this.eventEmitter.emit("draw",{type:"slice",value:j[m],totalDataSum:g,index:m,group:h[m],element:s,center:k,radius:e,startAngle:i,endAngle:n}),a.showLabel){var t=c.polarToCartesian(k.x,k.y,f,i+(n-i)/2),u=a.labelInterpolationFnc(this.data.labels?this.data.labels[m]:j[m],m),v=h[m].elem("text",{dx:t.x,dy:t.y,"text-anchor":d(k,t,a.labelDirection)},a.classNames.label).text(""+u);this.eventEmitter.emit("draw",{type:"label",index:m,group:h[m],element:v,text:""+u,x:t.x,y:t.y})}i=n}this.eventEmitter.emit("created",{chartRect:b,svg:this.svg,options:a})}function f(a,b,d,e){c.Pie["super"].constructor.call(this,a,b,c.extend({},g,d),e)}var g={width:void 0,height:void 0,chartPadding:5,classNames:{chart:"ct-chart-pie",series:"ct-series",slice:"ct-slice",donut:"ct-donut",label:"ct-label"},startAngle:0,total:void 0,donut:!1,donutWidth:60,showLabel:!0,labelOffset:0,labelInterpolationFnc:c.noop,labelDirection:"neutral",reverseData:!1};c.Pie=c.Base.extend({constructor:f,createChart:e,determineAnchorPosition:d})}(window,document,a),a});
-	//# sourceMappingURL=chartist.min.js.map
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function($) {/**
-	 * Created by simena on 25.02.2015.
-	 */
-
-	var api = __webpack_require__(1);
-
-	module.exports = {
-	  getStock: function(theUrl, data) {
-	    $.ajax({
-	      url: theUrl,
-	      data: { ticker: data }
-	    }).success(function(data) {
-	        //console.log(JSON.parse(data));
-	        document.getElementById("stockName").innerHTML = JSON.parse(data).query.results.quote.Name;
-	        document.getElementById("stockValue").innerHTML = JSON.parse(data).query.results.quote.Bid;
-	        document.getElementById("stockChange").innerHTML = JSON.parse(data).query.results.quote.Change;
-	        document.getElementById("stockPercentChange").innerHTML = JSON.parse(data).query.results.quote.PercentChange;
-	      });
-	  }
-	};
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(jQuery) {/*!
@@ -14199,19 +15295,2181 @@
 
 	}(jQuery);
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 16 */
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// name: sammy
+	// version: 0.7.6
+
+	// Sammy.js / http://sammyjs.org
+
+	(function(factory){
+	  // Support module loading scenarios
+	  if (true){
+	    // AMD Anonymous Module
+	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(9)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	  } else {
+	    // No module loader (plain <script> tag) - put directly in global namespace
+	    jQuery.sammy = window.Sammy = factory(jQuery);
+	  }
+	})(function($){
+
+	  var Sammy,
+	      PATH_REPLACER = "([^\/]+)",
+	      PATH_NAME_MATCHER = /:([\w\d]+)/g,
+	      QUERY_STRING_MATCHER = /\?([^#]*)?$/,
+	      // mainly for making `arguments` an Array
+	      _makeArray = function(nonarray) { return Array.prototype.slice.call(nonarray); },
+	      // borrowed from jQuery
+	      _isFunction = function( obj ) { return Object.prototype.toString.call(obj) === "[object Function]"; },
+	      _isArray = function( obj ) { return Object.prototype.toString.call(obj) === "[object Array]"; },
+	      _isRegExp = function( obj ) { return Object.prototype.toString.call(obj) === "[object RegExp]"; },
+	      _decode = function( str ) { return decodeURIComponent((str || '').replace(/\+/g, ' ')); },
+	      _encode = encodeURIComponent,
+	      _escapeHTML = function(s) {
+	        return String(s).replace(/&(?!\w+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	      },
+	      _routeWrapper = function(verb) {
+	        return function() {
+	          return this.route.apply(this, [verb].concat(Array.prototype.slice.call(arguments)));
+	        };
+	      },
+	      _template_cache = {},
+	      _has_history = !!(window.history && history.pushState),
+	      loggers = [];
+
+
+	  // `Sammy` (also aliased as $.sammy) is not only the namespace for a
+	  // number of prototypes, its also a top level method that allows for easy
+	  // creation/management of `Sammy.Application` instances. There are a
+	  // number of different forms for `Sammy()` but each returns an instance
+	  // of `Sammy.Application`. When a new instance is created using
+	  // `Sammy` it is added to an Object called `Sammy.apps`. This
+	  // provides for an easy way to get at existing Sammy applications. Only one
+	  // instance is allowed per `element_selector` so when calling
+	  // `Sammy('selector')` multiple times, the first time will create
+	  // the application and the following times will extend the application
+	  // already added to that selector.
+	  //
+	  // ### Example
+	  //
+	  //      // returns the app at #main or a new app
+	  //      Sammy('#main')
+	  //
+	  //      // equivalent to "new Sammy.Application", except appends to apps
+	  //      Sammy();
+	  //      Sammy(function() { ... });
+	  //
+	  //      // extends the app at '#main' with function.
+	  //      Sammy('#main', function() { ... });
+	  //
+	  Sammy = function() {
+	    var args = _makeArray(arguments),
+	        app, selector;
+	    Sammy.apps = Sammy.apps || {};
+	    if (args.length === 0 || args[0] && _isFunction(args[0])) { // Sammy()
+	      return Sammy.apply(Sammy, ['body'].concat(args));
+	    } else if (typeof (selector = args.shift()) == 'string') { // Sammy('#main')
+	      app = Sammy.apps[selector] || new Sammy.Application();
+	      app.element_selector = selector;
+	      if (args.length > 0) {
+	        $.each(args, function(i, plugin) {
+	          app.use(plugin);
+	        });
+	      }
+	      // if the selector changes make sure the reference in Sammy.apps changes
+	      if (app.element_selector != selector) {
+	        delete Sammy.apps[selector];
+	      }
+	      Sammy.apps[app.element_selector] = app;
+	      return app;
+	    }
+	  };
+
+	  Sammy.VERSION = '0.7.6';
+
+	  // Add to the global logger pool. Takes a function that accepts an
+	  // unknown number of arguments and should print them or send them somewhere
+	  // The first argument is always a timestamp.
+	  Sammy.addLogger = function(logger) {
+	    loggers.push(logger);
+	  };
+
+	  // Sends a log message to each logger listed in the global
+	  // loggers pool. Can take any number of arguments.
+	  // Also prefixes the arguments with a timestamp.
+	  Sammy.log = function()  {
+	    var args = _makeArray(arguments);
+	    args.unshift("[" + Date() + "]");
+	    $.each(loggers, function(i, logger) {
+	      logger.apply(Sammy, args);
+	    });
+	  };
+
+	  if (typeof window.console != 'undefined') {
+	    if (typeof window.console.log === 'function' && _isFunction(window.console.log.apply)) {
+	      Sammy.addLogger(function() {
+	        window.console.log.apply(window.console, arguments);
+	      });
+	    } else {
+	      Sammy.addLogger(function() {
+	        window.console.log(arguments);
+	      });
+	    }
+	  } else if (typeof console != 'undefined') {
+	    Sammy.addLogger(function() {
+	      console.log.apply(console, arguments);
+	    });
+	  }
+
+	  $.extend(Sammy, {
+	    makeArray: _makeArray,
+	    isFunction: _isFunction,
+	    isArray: _isArray
+	  });
+
+	  // Sammy.Object is the base for all other Sammy classes. It provides some useful
+	  // functionality, including cloning, iterating, etc.
+	  Sammy.Object = function(obj) { // constructor
+	    return $.extend(this, obj || {});
+	  };
+
+	  $.extend(Sammy.Object.prototype, {
+
+	    // Escape HTML in string, use in templates to prevent script injection.
+	    // Also aliased as `h()`
+	    escapeHTML: _escapeHTML,
+	    h: _escapeHTML,
+
+	    // Returns a copy of the object with Functions removed.
+	    toHash: function() {
+	      var json = {};
+	      $.each(this, function(k,v) {
+	        if (!_isFunction(v)) {
+	          json[k] = v;
+	        }
+	      });
+	      return json;
+	    },
+
+	    // Renders a simple HTML version of this Objects attributes.
+	    // Does not render functions.
+	    // For example. Given this Sammy.Object:
+	    //
+	    //     var s = new Sammy.Object({first_name: 'Sammy', last_name: 'Davis Jr.'});
+	    //     s.toHTML()
+	    //     //=> '<strong>first_name</strong> Sammy<br /><strong>last_name</strong> Davis Jr.<br />'
+	    //
+	    toHTML: function() {
+	      var display = "";
+	      $.each(this, function(k, v) {
+	        if (!_isFunction(v)) {
+	          display += "<strong>" + k + "</strong> " + v + "<br />";
+	        }
+	      });
+	      return display;
+	    },
+
+	    // Returns an array of keys for this object. If `attributes_only`
+	    // is true will not return keys that map to a `function()`
+	    keys: function(attributes_only) {
+	      var keys = [];
+	      for (var property in this) {
+	        if (!_isFunction(this[property]) || !attributes_only) {
+	          keys.push(property);
+	        }
+	      }
+	      return keys;
+	    },
+
+	    // Checks if the object has a value at `key` and that the value is not empty
+	    has: function(key) {
+	      return this[key] && $.trim(this[key].toString()) !== '';
+	    },
+
+	    // convenience method to join as many arguments as you want
+	    // by the first argument - useful for making paths
+	    join: function() {
+	      var args = _makeArray(arguments);
+	      var delimiter = args.shift();
+	      return args.join(delimiter);
+	    },
+
+	    // Shortcut to Sammy.log
+	    log: function() {
+	      Sammy.log.apply(Sammy, arguments);
+	    },
+
+	    // Returns a string representation of this object.
+	    // if `include_functions` is true, it will also toString() the
+	    // methods of this object. By default only prints the attributes.
+	    toString: function(include_functions) {
+	      var s = [];
+	      $.each(this, function(k, v) {
+	        if (!_isFunction(v) || include_functions) {
+	          s.push('"' + k + '": ' + v.toString());
+	        }
+	      });
+	      return "Sammy.Object: {" + s.join(',') + "}";
+	    }
+	  });
+
+
+	  // Return whether the event targets this window.
+	  Sammy.targetIsThisWindow = function targetIsThisWindow(event, tagName) {
+	    var targetElement = $(event.target).closest(tagName);
+	    if (targetElement.length === 0) { return true; }
+
+	    var targetWindow = targetElement.attr('target');
+	    if (!targetWindow || targetWindow === window.name || targetWindow === '_self') { return true; }
+	    if (targetWindow === '_blank') { return false; }
+	    if (targetWindow === 'top' && window === window.top) { return true; }
+	    return false;
+	  };
+
+
+	  // The DefaultLocationProxy is the default location proxy for all Sammy applications.
+	  // A location proxy is a prototype that conforms to a simple interface. The purpose
+	  // of a location proxy is to notify the Sammy.Application its bound to when the location
+	  // or 'external state' changes.
+	  //
+	  // The `DefaultLocationProxy` watches for changes to the path of the current window and
+	  // is also able to set the path based on changes in the application. It does this by
+	  // using different methods depending on what is available in the current browser. In
+	  // the latest and greatest browsers it used the HTML5 History API and the `pushState`
+	  // `popState` events/methods. This allows you to use Sammy to serve a site behind normal
+	  // URI paths as opposed to the older default of hash (#) based routing. Because the server
+	  // can interpret the changed path on a refresh or re-entry, though, it requires additional
+	  // support on the server side. If you'd like to force disable HTML5 history support, please
+	  // use the `disable_push_state` setting on `Sammy.Application`. If pushState support
+	  // is enabled, `DefaultLocationProxy` also binds to all links on the page. If a link is clicked
+	  // that matches the current set of routes, the URL is changed using pushState instead of
+	  // fully setting the location and the app is notified of the change.
+	  //
+	  // If the browser does not have support for HTML5 History, `DefaultLocationProxy` automatically
+	  // falls back to the older hash based routing. The newest browsers (IE, Safari > 4, FF >= 3.6)
+	  // support a 'onhashchange' DOM event, thats fired whenever the location.hash changes.
+	  // In this situation the DefaultLocationProxy just binds to this event and delegates it to
+	  // the application. In the case of older browsers a poller is set up to track changes to the
+	  // hash.
+	  Sammy.DefaultLocationProxy = function(app, run_interval_every) {
+	    this.app = app;
+	    // set is native to false and start the poller immediately
+	    this.is_native = false;
+	    this.has_history = _has_history;
+	    this._startPolling(run_interval_every);
+	  };
+
+	  Sammy.DefaultLocationProxy.fullPath = function(location_obj) {
+	   // Bypass the `window.location.hash` attribute.  If a question mark
+	    // appears in the hash IE6 will strip it and all of the following
+	    // characters from `window.location.hash`.
+	    var matches = location_obj.toString().match(/^[^#]*(#.+)$/);
+	    var hash = matches ? matches[1] : '';
+	    return [location_obj.pathname, location_obj.search, hash].join('');
+	  };
+	$.extend(Sammy.DefaultLocationProxy.prototype , {
+	    // bind the proxy events to the current app.
+	    bind: function() {
+	      var proxy = this, app = this.app, lp = Sammy.DefaultLocationProxy;
+	      $(window).bind('hashchange.' + this.app.eventNamespace(), function(e, non_native) {
+	        // if we receive a native hash change event, set the proxy accordingly
+	        // and stop polling
+	        if (proxy.is_native === false && !non_native) {
+	          proxy.is_native = true;
+	          window.clearInterval(lp._interval);
+	          lp._interval = null;
+	        }
+	        app.trigger('location-changed');
+	      });
+	      if (_has_history && !app.disable_push_state) {
+	        // bind to popstate
+	        $(window).bind('popstate.' + this.app.eventNamespace(), function(e) {
+	          app.trigger('location-changed');
+	        });
+	        // bind to link clicks that have routes
+	        $(document).delegate('a', 'click.history-' + this.app.eventNamespace(), function (e) {
+	          if (e.isDefaultPrevented() || e.metaKey || e.ctrlKey) {
+	            return;
+	          }
+	          var full_path = lp.fullPath(this),
+	            // Get anchor's host name in a cross browser compatible way.
+	            // IE looses hostname property when setting href in JS
+	            // with a relative URL, e.g. a.setAttribute('href',"/whatever").
+	            // Circumvent this problem by creating a new link with given URL and
+	            // querying that for a hostname.
+	            hostname = this.hostname ? this.hostname : function (a) {
+	              var l = document.createElement("a");
+	              l.href = a.href;
+	              return l.hostname;
+	            }(this);
+
+	          if (hostname == window.location.hostname &&
+	              app.lookupRoute('get', full_path) &&
+	              Sammy.targetIsThisWindow(e, 'a')) {
+	            e.preventDefault();
+	            proxy.setLocation(full_path);
+	            return false;
+	          }
+	        });
+	      }
+	      if (!lp._bindings) {
+	        lp._bindings = 0;
+	      }
+	      lp._bindings++;
+	    },
+
+	    // unbind the proxy events from the current app
+	    unbind: function() {
+	      $(window).unbind('hashchange.' + this.app.eventNamespace());
+	      $(window).unbind('popstate.' + this.app.eventNamespace());
+	      $(document).undelegate('a', 'click.history-' + this.app.eventNamespace());
+	      Sammy.DefaultLocationProxy._bindings--;
+	      if (Sammy.DefaultLocationProxy._bindings <= 0) {
+	        window.clearInterval(Sammy.DefaultLocationProxy._interval);
+	        Sammy.DefaultLocationProxy._interval = null;
+	      }
+	    },
+
+	    // get the current location from the hash.
+	    getLocation: function() {
+	      return Sammy.DefaultLocationProxy.fullPath(window.location);
+	    },
+
+	    // set the current location to `new_location`
+	    setLocation: function(new_location) {
+	      if (/^([^#\/]|$)/.test(new_location)) { // non-prefixed url
+	        if (_has_history && !this.app.disable_push_state) {
+	          new_location = '/' + new_location;
+	        } else {
+	          new_location = '#!/' + new_location;
+	        }
+	      }
+	      if (new_location != this.getLocation()) {
+	        // HTML5 History exists and new_location is a full path
+	        if (_has_history && !this.app.disable_push_state && /^\//.test(new_location)) {
+	          history.pushState({ path: new_location }, window.title, new_location);
+	          this.app.trigger('location-changed');
+	        } else {
+	          return (window.location = new_location);
+	        }
+	      }
+	    },
+
+	    _startPolling: function(every) {
+	      // set up interval
+	      var proxy = this;
+	      if (!Sammy.DefaultLocationProxy._interval) {
+	        if (!every) { every = 10; }
+	        var hashCheck = function() {
+	          var current_location = proxy.getLocation();
+	          if (typeof Sammy.DefaultLocationProxy._last_location == 'undefined' ||
+	            current_location != Sammy.DefaultLocationProxy._last_location) {
+	            window.setTimeout(function() {
+	              $(window).trigger('hashchange', [true]);
+	            }, 0);
+	          }
+	          Sammy.DefaultLocationProxy._last_location = current_location;
+	        };
+	        hashCheck();
+	        Sammy.DefaultLocationProxy._interval = window.setInterval(hashCheck, every);
+	      }
+	    }
+	  });
+
+
+	  // Sammy.Application is the Base prototype for defining 'applications'.
+	  // An 'application' is a collection of 'routes' and bound events that is
+	  // attached to an element when `run()` is called.
+	  // The only argument an 'app_function' is evaluated within the context of the application.
+	  Sammy.Application = function(app_function) {
+	    var app = this;
+	    this.routes            = {};
+	    this.listeners         = new Sammy.Object({});
+	    this.arounds           = [];
+	    this.befores           = [];
+	    // generate a unique namespace
+	    this.namespace         = (new Date()).getTime() + '-' + parseInt(Math.random() * 1000, 10);
+	    this.context_prototype = function() { Sammy.EventContext.apply(this, arguments); };
+	    this.context_prototype.prototype = new Sammy.EventContext();
+
+	    if (_isFunction(app_function)) {
+	      app_function.apply(this, [this]);
+	    }
+	    // set the location proxy if not defined to the default (DefaultLocationProxy)
+	    if (!this._location_proxy) {
+	      this.setLocationProxy(new Sammy.DefaultLocationProxy(this, this.run_interval_every));
+	    }
+	    if (this.debug) {
+	      this.bindToAllEvents(function(e, data) {
+	        app.log(app.toString(), e.cleaned_type, data || {});
+	      });
+	    }
+	  };
+
+	  Sammy.Application.prototype = $.extend({}, Sammy.Object.prototype, {
+
+	    // the four route verbs
+	    ROUTE_VERBS: ['get','post','put','delete'],
+
+	    // An array of the default events triggered by the
+	    // application during its lifecycle
+	    APP_EVENTS: ['run', 'unload', 'lookup-route', 'run-route', 'route-found', 'event-context-before', 'event-context-after', 'changed', 'error', 'check-form-submission', 'redirect', 'location-changed'],
+
+	    _last_route: null,
+	    _location_proxy: null,
+	    _running: false,
+
+	    // Defines what element the application is bound to. Provide a selector
+	    // (parseable by `jQuery()`) and this will be used by `$element()`
+	    element_selector: 'body',
+
+	    // When set to true, logs all of the default events using `log()`
+	    debug: false,
+
+	    // When set to true, and the error() handler is not overridden, will actually
+	    // raise JS errors in routes (500) and when routes can't be found (404)
+	    raise_errors: false,
+
+	    // The time in milliseconds that the URL is queried for changes
+	    run_interval_every: 50,
+
+	    // if using the `DefaultLocationProxy` setting this to true will force the app to use
+	    // traditional hash based routing as opposed to the new HTML5 PushState support
+	    disable_push_state: false,
+
+	    // The default template engine to use when using `partial()` in an
+	    // `EventContext`. `template_engine` can either be a string that
+	    // corresponds to the name of a method/helper on EventContext or it can be a function
+	    // that takes two arguments, the content of the unrendered partial and an optional
+	    // JS object that contains interpolation data. Template engine is only called/referred
+	    // to if the extension of the partial is null or unknown. See `partial()`
+	    // for more information
+	    template_engine: null,
+
+	    // //=> Sammy.Application: body
+	    toString: function() {
+	      return 'Sammy.Application:' + this.element_selector;
+	    },
+
+	    // returns a jQuery object of the Applications bound element.
+	    $element: function(selector) {
+	      return selector ? $(this.element_selector).find(selector) : $(this.element_selector);
+	    },
+
+	    // `use()` is the entry point for including Sammy plugins.
+	    // The first argument to use should be a function() that is evaluated
+	    // in the context of the current application, just like the `app_function`
+	    // argument to the `Sammy.Application` constructor.
+	    //
+	    // Any additional arguments are passed to the app function sequentially.
+	    //
+	    // For much more detail about plugins, check out:
+	    // [http://sammyjs.org/docs/plugins](http://sammyjs.org/docs/plugins)
+	    //
+	    // ### Example
+	    //
+	    //      var MyPlugin = function(app, prepend) {
+	    //
+	    //        this.helpers({
+	    //          myhelper: function(text) {
+	    //            alert(prepend + " " + text);
+	    //          }
+	    //        });
+	    //
+	    //      };
+	    //
+	    //      var app = $.sammy(function() {
+	    //
+	    //        this.use(MyPlugin, 'This is my plugin');
+	    //
+	    //        this.get('#/', function() {
+	    //          this.myhelper('and dont you forget it!');
+	    //          //=> Alerts: This is my plugin and dont you forget it!
+	    //        });
+	    //
+	    //      });
+	    //
+	    // If plugin is passed as a string it assumes your are trying to load
+	    // Sammy."Plugin". This is the preferred way of loading core Sammy plugins
+	    // as it allows for better error-messaging.
+	    //
+	    // ### Example
+	    //
+	    //      $.sammy(function() {
+	    //        this.use('Mustache'); //=> Sammy.Mustache
+	    //        this.use('Storage'); //=> Sammy.Storage
+	    //      });
+	    //
+	    use: function() {
+	      // flatten the arguments
+	      var args = _makeArray(arguments),
+	          plugin = args.shift(),
+	          plugin_name = plugin || '';
+	      try {
+	        args.unshift(this);
+	        if (typeof plugin == 'string') {
+	          plugin_name = 'Sammy.' + plugin;
+	          plugin = Sammy[plugin];
+	        }
+	        plugin.apply(this, args);
+	      } catch(e) {
+	        if (typeof plugin === 'undefined') {
+	          this.error("Plugin Error: called use() but plugin (" + plugin_name.toString() + ") is not defined", e);
+	        } else if (!_isFunction(plugin)) {
+	          this.error("Plugin Error: called use() but '" + plugin_name.toString() + "' is not a function", e);
+	        } else {
+	          this.error("Plugin Error", e);
+	        }
+	      }
+	      return this;
+	    },
+
+	    // Sets the location proxy for the current app. By default this is set to
+	    // a new `Sammy.DefaultLocationProxy` on initialization. However, you can set
+	    // the location_proxy inside you're app function to give your app a custom
+	    // location mechanism. See `Sammy.DefaultLocationProxy` and `Sammy.DataLocationProxy`
+	    // for examples.
+	    //
+	    // `setLocationProxy()` takes an initialized location proxy.
+	    //
+	    // ### Example
+	    //
+	    //        // to bind to data instead of the default hash;
+	    //        var app = $.sammy(function() {
+	    //          this.setLocationProxy(new Sammy.DataLocationProxy(this));
+	    //        });
+	    //
+	    setLocationProxy: function(new_proxy) {
+	      var original_proxy = this._location_proxy;
+	      this._location_proxy = new_proxy;
+	      if (this.isRunning()) {
+	        if (original_proxy) {
+	          // if there is already a location proxy, unbind it.
+	          original_proxy.unbind();
+	        }
+	        this._location_proxy.bind();
+	      }
+	    },
+
+	    // provide log() override for inside an app that includes the relevant application element_selector
+	    log: function() {
+	      Sammy.log.apply(Sammy, Array.prototype.concat.apply([this.element_selector],arguments));
+	    },
+
+
+	    // `route()` is the main method for defining routes within an application.
+	    // For great detail on routes, check out:
+	    // [http://sammyjs.org/docs/routes](http://sammyjs.org/docs/routes)
+	    //
+	    // This method also has aliases for each of the different verbs (eg. `get()`, `post()`, etc.)
+	    //
+	    // ### Arguments
+	    //
+	    // * `verb` A String in the set of ROUTE_VERBS or 'any'. 'any' will add routes for each
+	    //    of the ROUTE_VERBS. If only two arguments are passed,
+	    //    the first argument is the path, the second is the callback and the verb
+	    //    is assumed to be 'any'.
+	    // * `path` A Regexp or a String representing the path to match to invoke this verb.
+	    // * `callback` A Function that is called/evaluated when the route is run see: `runRoute()`.
+	    //    It is also possible to pass a string as the callback, which is looked up as the name
+	    //    of a method on the application.
+	    //
+	    route: function(verb, path) {
+	      var app = this, param_names = [], add_route, path_match, callback = Array.prototype.slice.call(arguments,2);
+
+	      // if the method signature is just (path, callback)
+	      // assume the verb is 'any'
+	      if (callback.length === 0 && _isFunction(path)) {
+	        callback = [path];
+	        path = verb;
+	        verb = 'any';
+	      }
+
+	      verb = verb.toLowerCase(); // ensure verb is lower case
+
+	      // if path is a string turn it into a regex
+	      if (path.constructor == String) {
+
+	        // Needs to be explicitly set because IE will maintain the index unless NULL is returned,
+	        // which means that with two consecutive routes that contain params, the second set of params will not be found and end up in splat instead of params
+	        // https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/RegExp/lastIndex
+	        PATH_NAME_MATCHER.lastIndex = 0;
+
+	        // find the names
+	        while ((path_match = PATH_NAME_MATCHER.exec(path)) !== null) {
+	          param_names.push(path_match[1]);
+	        }
+	        // replace with the path replacement
+	        path = new RegExp(path.replace(PATH_NAME_MATCHER, PATH_REPLACER) + "$");
+	      }
+	      // lookup callbacks
+	      $.each(callback,function(i,cb){
+	        if (typeof(cb) === 'string') {
+	          callback[i] = app[cb];
+	        }
+	      });
+
+	      add_route = function(with_verb) {
+	        var r = {verb: with_verb, path: path, callback: callback, param_names: param_names};
+	        // add route to routes array
+	        app.routes[with_verb] = app.routes[with_verb] || [];
+	        // place routes in order of definition
+	        app.routes[with_verb].push(r);
+	      };
+
+	      if (verb === 'any') {
+	        $.each(this.ROUTE_VERBS, function(i, v) { add_route(v); });
+	      } else {
+	        add_route(verb);
+	      }
+
+	      // return the app
+	      return this;
+	    },
+
+	    // Alias for route('get', ...)
+	    get: _routeWrapper('get'),
+
+	    // Alias for route('post', ...)
+	    post: _routeWrapper('post'),
+
+	    // Alias for route('put', ...)
+	    put: _routeWrapper('put'),
+
+	    // Alias for route('delete', ...)
+	    del: _routeWrapper('delete'),
+
+	    // Alias for route('any', ...)
+	    any: _routeWrapper('any'),
+
+	    // `mapRoutes` takes an array of arrays, each array being passed to route()
+	    // as arguments, this allows for mass definition of routes. Another benefit is
+	    // this makes it possible/easier to load routes via remote JSON.
+	    //
+	    // ### Example
+	    //
+	    //      var app = $.sammy(function() {
+	    //
+	    //        this.mapRoutes([
+	    //            ['get', '#/', function() { this.log('index'); }],
+	    //            // strings in callbacks are looked up as methods on the app
+	    //            ['post', '#/create', 'addUser'],
+	    //            // No verb assumes 'any' as the verb
+	    //            [/dowhatever/, function() { this.log(this.verb, this.path)}];
+	    //          ]);
+	    //      });
+	    //
+	    mapRoutes: function(route_array) {
+	      var app = this;
+	      $.each(route_array, function(i, route_args) {
+	        app.route.apply(app, route_args);
+	      });
+	      return this;
+	    },
+
+	    // A unique event namespace defined per application.
+	    // All events bound with `bind()` are automatically bound within this space.
+	    eventNamespace: function() {
+	      return ['sammy-app', this.namespace].join('-');
+	    },
+
+	    // Works just like `jQuery.fn.bind()` with a couple notable differences.
+	    //
+	    // * It binds all events to the application element
+	    // * All events are bound within the `eventNamespace()`
+	    // * Events are not actually bound until the application is started with `run()`
+	    // * callbacks are evaluated within the context of a Sammy.EventContext
+	    //
+	    bind: function(name, data, callback) {
+	      var app = this;
+	      // build the callback
+	      // if the arity is 2, callback is the second argument
+	      if (typeof callback == 'undefined') { callback = data; }
+	      var listener_callback =  function() {
+	        // pull off the context from the arguments to the callback
+	        var e, context, data;
+	        e       = arguments[0];
+	        data    = arguments[1];
+	        if (data && data.context) {
+	          context = data.context;
+	          delete data.context;
+	        } else {
+	          context = new app.context_prototype(app, 'bind', e.type, data, e.target);
+	        }
+	        e.cleaned_type = e.type.replace(app.eventNamespace(), '');
+	        callback.apply(context, [e, data]);
+	      };
+
+	      // it could be that the app element doesnt exist yet
+	      // so attach to the listeners array and then run()
+	      // will actually bind the event.
+	      if (!this.listeners[name]) { this.listeners[name] = []; }
+	      this.listeners[name].push(listener_callback);
+	      if (this.isRunning()) {
+	        // if the app is running
+	        // *actually* bind the event to the app element
+	        this._listen(name, listener_callback);
+	      }
+	      return this;
+	    },
+
+	    // Triggers custom events defined with `bind()`
+	    //
+	    // ### Arguments
+	    //
+	    // * `name` The name of the event. Automatically prefixed with the `eventNamespace()`
+	    // * `data` An optional Object that can be passed to the bound callback.
+	    // * `context` An optional context/Object in which to execute the bound callback.
+	    //   If no context is supplied a the context is a new `Sammy.EventContext`
+	    //
+	    trigger: function(name, data) {
+	      this.$element().trigger([name, this.eventNamespace()].join('.'), [data]);
+	      return this;
+	    },
+
+	    // Reruns the current route
+	    refresh: function() {
+	      this.last_location = null;
+	      this.trigger('location-changed');
+	      return this;
+	    },
+
+	    // Takes a single callback that is pushed on to a stack.
+	    // Before any route is run, the callbacks are evaluated in order within
+	    // the current `Sammy.EventContext`
+	    //
+	    // If any of the callbacks explicitly return false, execution of any
+	    // further callbacks and the route itself is halted.
+	    //
+	    // You can also provide a set of options that will define when to run this
+	    // before based on the route it proceeds.
+	    //
+	    // ### Example
+	    //
+	    //      var app = $.sammy(function() {
+	    //
+	    //        // will run at #/route but not at #/
+	    //        this.before('#/route', function() {
+	    //          //...
+	    //        });
+	    //
+	    //        // will run at #/ but not at #/route
+	    //        this.before({except: {path: '#/route'}}, function() {
+	    //          this.log('not before #/route');
+	    //        });
+	    //
+	    //        this.get('#/', function() {});
+	    //
+	    //        this.get('#/route', function() {});
+	    //
+	    //      });
+	    //
+	    // See `contextMatchesOptions()` for a full list of supported options
+	    //
+	    before: function(options, callback) {
+	      if (_isFunction(options)) {
+	        callback = options;
+	        options = {};
+	      }
+	      this.befores.push([options, callback]);
+	      return this;
+	    },
+
+	    // A shortcut for binding a callback to be run after a route is executed.
+	    // After callbacks have no guarunteed order.
+	    after: function(callback) {
+	      return this.bind('event-context-after', callback);
+	    },
+
+
+	    // Adds an around filter to the application. around filters are functions
+	    // that take a single argument `callback` which is the entire route
+	    // execution path wrapped up in a closure. This means you can decide whether
+	    // or not to proceed with execution by not invoking `callback` or,
+	    // more usefully wrapping callback inside the result of an asynchronous execution.
+	    //
+	    // ### Example
+	    //
+	    // The most common use case for around() is calling a _possibly_ async function
+	    // and executing the route within the functions callback:
+	    //
+	    //      var app = $.sammy(function() {
+	    //
+	    //        var current_user = false;
+	    //
+	    //        function checkLoggedIn(callback) {
+	    //          // /session returns a JSON representation of the logged in user
+	    //          // or an empty object
+	    //          if (!current_user) {
+	    //            $.getJSON('/session', function(json) {
+	    //              if (json.login) {
+	    //                // show the user as logged in
+	    //                current_user = json;
+	    //                // execute the route path
+	    //                callback();
+	    //              } else {
+	    //                // show the user as not logged in
+	    //                current_user = false;
+	    //                // the context of aroundFilters is an EventContext
+	    //                this.redirect('#/login');
+	    //              }
+	    //            });
+	    //          } else {
+	    //            // execute the route path
+	    //            callback();
+	    //          }
+	    //        };
+	    //
+	    //        this.around(checkLoggedIn);
+	    //
+	    //      });
+	    //
+	    around: function(callback) {
+	      this.arounds.push(callback);
+	      return this;
+	    },
+
+	    // Adds a onComplete function to the application. onComplete functions are executed
+	    // at the end of a chain of route callbacks, if they call next(). Unlike after,
+	    // which is called as soon as the route is complete, onComplete is like a final next()
+	    // for all routes, and is thus run asynchronously
+	    //
+	    // ### Example
+	    //
+	    //      app.get('/chain',function(context,next) {
+	    //          console.log('chain1');
+	    //          next();
+	    //      },function(context,next) {
+	    //          console.log('chain2');
+	    //          next();
+	    //      });
+	    //
+	    //      app.get('/link',function(context,next) {
+	    //          console.log('link1');
+	    //          next();
+	    //      },function(context,next) {
+	    //          console.log('link2');
+	    //          next();
+	    //      });
+	    //
+	    //      app.onComplete(function() {
+	    //          console.log("Running finally");
+	    //      });
+	    //
+	    // If you go to '/chain', you will get the following messages:
+	    //
+	    //      chain1
+	    //      chain2
+	    //      Running onComplete
+	    //
+	    //
+	    // If you go to /link, you will get the following messages:
+	    //
+	    //      link1
+	    //      link2
+	    //      Running onComplete
+	    //
+	    //
+	    // It really comes to play when doing asynchronous:
+	    //
+	    //      app.get('/chain',function(context,next) {
+	    //        $.get('/my/url',function() {
+	    //          console.log('chain1');
+	    //          next();
+	    //        });
+	    //      },function(context,next) {
+	    //        console.log('chain2');
+	    //        next();
+	    //      });
+	    //
+	    onComplete: function(callback) {
+	      this._onComplete = callback;
+	      return this;
+	    },
+
+	    // Returns `true` if the current application is running.
+	    isRunning: function() {
+	      return this._running;
+	    },
+
+	    // Helpers extends the EventContext prototype specific to this app.
+	    // This allows you to define app specific helper functions that can be used
+	    // whenever you're inside of an event context (templates, routes, bind).
+	    //
+	    // ### Example
+	    //
+	    //     var app = $.sammy(function() {
+	    //
+	    //       helpers({
+	    //         upcase: function(text) {
+	    //          return text.toString().toUpperCase();
+	    //         }
+	    //       });
+	    //
+	    //       get('#/', function() { with(this) {
+	    //         // inside of this context I can use the helpers
+	    //         $('#main').html(upcase($('#main').text());
+	    //       }});
+	    //
+	    //     });
+	    //
+	    //
+	    // ### Arguments
+	    //
+	    // * `extensions` An object collection of functions to extend the context.
+	    //
+	    helpers: function(extensions) {
+	      $.extend(this.context_prototype.prototype, extensions);
+	      return this;
+	    },
+
+	    // Helper extends the event context just like `helpers()` but does it
+	    // a single method at a time. This is especially useful for dynamically named
+	    // helpers
+	    //
+	    // ### Example
+	    //
+	    //     // Trivial example that adds 3 helper methods to the context dynamically
+	    //     var app = $.sammy(function(app) {
+	    //
+	    //       $.each([1,2,3], function(i, num) {
+	    //         app.helper('helper' + num, function() {
+	    //           this.log("I'm helper number " + num);
+	    //         });
+	    //       });
+	    //
+	    //       this.get('#/', function() {
+	    //         this.helper2(); //=> I'm helper number 2
+	    //       });
+	    //     });
+	    //
+	    // ### Arguments
+	    //
+	    // * `name` The name of the method
+	    // * `method` The function to be added to the prototype at `name`
+	    //
+	    helper: function(name, method) {
+	      this.context_prototype.prototype[name] = method;
+	      return this;
+	    },
+
+	    // Actually starts the application's lifecycle. `run()` should be invoked
+	    // within a document.ready block to ensure the DOM exists before binding events, etc.
+	    //
+	    // ### Example
+	    //
+	    //     var app = $.sammy(function() { ... }); // your application
+	    //     $(function() { // document.ready
+	    //        app.run();
+	    //     });
+	    //
+	    // ### Arguments
+	    //
+	    // * `start_url` Optionally, a String can be passed which the App will redirect to
+	    //   after the events/routes have been bound.
+	    run: function(start_url) {
+	      if (this.isRunning()) { return false; }
+	      var app = this;
+
+	      // actually bind all the listeners
+	      $.each(this.listeners.toHash(), function(name, callbacks) {
+	        $.each(callbacks, function(i, listener_callback) {
+	          app._listen(name, listener_callback);
+	        });
+	      });
+
+	      this.trigger('run', {start_url: start_url});
+	      this._running = true;
+	      // set last location
+	      this.last_location = null;
+	      if (!(/\#(.+)/.test(this.getLocation())) && typeof start_url != 'undefined') {
+	        this.setLocation(start_url);
+	      }
+	      // check url
+	      this._checkLocation();
+	      this._location_proxy.bind();
+	      this.bind('location-changed', function() {
+	        app._checkLocation();
+	      });
+
+	      // bind to submit to capture post/put/delete routes
+	      this.bind('submit', function(e) {
+	        if ( !Sammy.targetIsThisWindow(e, 'form') ) { return true; }
+	        var returned = app._checkFormSubmission($(e.target).closest('form'));
+	        return (returned === false) ? e.preventDefault() : false;
+	      });
+
+	      // bind unload to body unload
+	      $(window).bind('unload', function() {
+	        app.unload();
+	      });
+
+	      // trigger html changed
+	      return this.trigger('changed');
+	    },
+
+	    // The opposite of `run()`, un-binds all event listeners and intervals
+	    // `run()` Automatically binds a `onunload` event to run this when
+	    // the document is closed.
+	    unload: function() {
+	      if (!this.isRunning()) { return false; }
+	      var app = this;
+	      this.trigger('unload');
+	      // clear interval
+	      this._location_proxy.unbind();
+	      // unbind form submits
+	      this.$element().unbind('submit').removeClass(app.eventNamespace());
+	      // unbind all events
+	      $.each(this.listeners.toHash() , function(name, listeners) {
+	        $.each(listeners, function(i, listener_callback) {
+	          app._unlisten(name, listener_callback);
+	        });
+	      });
+	      this._running = false;
+	      return this;
+	    },
+
+	    // Not only runs `unbind` but also destroys the app reference.
+	    destroy: function() {
+	      this.unload();
+	      delete Sammy.apps[this.element_selector];
+	      return this;
+	    },
+
+	    // Will bind a single callback function to every event that is already
+	    // being listened to in the app. This includes all the `APP_EVENTS`
+	    // as well as any custom events defined with `bind()`.
+	    //
+	    // Used internally for debug logging.
+	    bindToAllEvents: function(callback) {
+	      var app = this;
+	      // bind to the APP_EVENTS first
+	      $.each(this.APP_EVENTS, function(i, e) {
+	        app.bind(e, callback);
+	      });
+	      // next, bind to listener names (only if they dont exist in APP_EVENTS)
+	      $.each(this.listeners.keys(true), function(i, name) {
+	        if ($.inArray(name, app.APP_EVENTS) == -1) {
+	          app.bind(name, callback);
+	        }
+	      });
+	      return this;
+	    },
+
+	    // Returns a copy of the given path with any query string after the hash
+	    // removed.
+	    routablePath: function(path) {
+	      return path.replace(QUERY_STRING_MATCHER, '');
+	    },
+
+	    // Given a verb and a String path, will return either a route object or false
+	    // if a matching route can be found within the current defined set.
+	    lookupRoute: function(verb, path) {
+	      var app = this, routed = false, i = 0, l, route;
+	      if (typeof this.routes[verb] != 'undefined') {
+	        l = this.routes[verb].length;
+	        for (; i < l; i++) {
+	          route = this.routes[verb][i];
+	          if (app.routablePath(path).match(route.path)) {
+	            routed = route;
+	            break;
+	          }
+	        }
+	      }
+	      return routed;
+	    },
+
+	    // First, invokes `lookupRoute()` and if a route is found, parses the
+	    // possible URL params and then invokes the route's callback within a new
+	    // `Sammy.EventContext`. If the route can not be found, it calls
+	    // `notFound()`. If `raise_errors` is set to `true` and
+	    // the `error()` has not been overridden, it will throw an actual JS
+	    // error.
+	    //
+	    // You probably will never have to call this directly.
+	    //
+	    // ### Arguments
+	    //
+	    // * `verb` A String for the verb.
+	    // * `path` A String path to lookup.
+	    // * `params` An Object of Params pulled from the URI or passed directly.
+	    //
+	    // ### Returns
+	    //
+	    // Either returns the value returned by the route callback or raises a 404 Not Found error.
+	    //
+	    runRoute: function(verb, path, params, target) {
+	      var app = this,
+	          route = this.lookupRoute(verb, path),
+	          context,
+	          wrapped_route,
+	          arounds,
+	          around,
+	          befores,
+	          before,
+	          callback_args,
+	          path_params,
+	          final_returned;
+
+	      if (this.debug) {
+	        this.log('runRoute', [verb, path].join(' '));
+	      }
+
+	      this.trigger('run-route', {verb: verb, path: path, params: params});
+	      if (typeof params == 'undefined') { params = {}; }
+
+	      $.extend(params, this._parseQueryString(path));
+
+	      if (route) {
+	        this.trigger('route-found', {route: route});
+	        // pull out the params from the path
+	        if ((path_params = route.path.exec(this.routablePath(path))) !== null) {
+	          // first match is the full path
+	          path_params.shift();
+	          // for each of the matches
+	          $.each(path_params, function(i, param) {
+	            // if theres a matching param name
+	            if (route.param_names[i]) {
+	              // set the name to the match
+	              params[route.param_names[i]] = _decode(param);
+	            } else {
+	              // initialize 'splat'
+	              if (!params.splat) { params.splat = []; }
+	              params.splat.push(_decode(param));
+	            }
+	          });
+	        }
+
+	        // set event context
+	        context  = new this.context_prototype(this, verb, path, params, target);
+	        // ensure arrays
+	        arounds = this.arounds.slice(0);
+	        befores = this.befores.slice(0);
+	        // set the callback args to the context + contents of the splat
+	        callback_args = [context];
+	        if (params.splat) {
+	          callback_args = callback_args.concat(params.splat);
+	        }
+	        // wrap the route up with the before filters
+	        wrapped_route = function() {
+	          var returned, i, nextRoute;
+	          while (befores.length > 0) {
+	            before = befores.shift();
+	            // check the options
+	            if (app.contextMatchesOptions(context, before[0])) {
+	              returned = before[1].apply(context, [context]);
+	              if (returned === false) { return false; }
+	            }
+	          }
+	          app.last_route = route;
+	          context.trigger('event-context-before', {context: context});
+	          // run multiple callbacks
+	          if (typeof(route.callback) === "function") {
+	            route.callback = [route.callback];
+	          }
+	          if (route.callback && route.callback.length) {
+	            i = -1;
+	            nextRoute = function() {
+	              i++;
+	              if (route.callback[i]) {
+	                returned = route.callback[i].apply(context,callback_args);
+	              } else if (app._onComplete && typeof(app._onComplete === "function")) {
+	                app._onComplete(context);
+	              }
+	            };
+	            callback_args.push(nextRoute);
+	            nextRoute();
+	          }
+	          context.trigger('event-context-after', {context: context});
+	          return returned;
+	        };
+	        $.each(arounds.reverse(), function(i, around) {
+	          var last_wrapped_route = wrapped_route;
+	          wrapped_route = function() { return around.apply(context, [last_wrapped_route]); };
+	        });
+	        try {
+	          final_returned = wrapped_route();
+	        } catch(e) {
+	          this.error(['500 Error', verb, path].join(' '), e);
+	        }
+	        return final_returned;
+	      } else {
+	        return this.notFound(verb, path);
+	      }
+	    },
+
+	    // Matches an object of options against an `EventContext` like object that
+	    // contains `path` and `verb` attributes. Internally Sammy uses this
+	    // for matching `before()` filters against specific options. You can set the
+	    // object to _only_ match certain paths or verbs, or match all paths or verbs _except_
+	    // those that match the options.
+	    //
+	    // ### Example
+	    //
+	    //     var app = $.sammy(),
+	    //         context = {verb: 'get', path: '#/mypath'};
+	    //
+	    //     // match against a path string
+	    //     app.contextMatchesOptions(context, '#/mypath'); //=> true
+	    //     app.contextMatchesOptions(context, '#/otherpath'); //=> false
+	    //     // equivalent to
+	    //     app.contextMatchesOptions(context, {only: {path:'#/mypath'}}); //=> true
+	    //     app.contextMatchesOptions(context, {only: {path:'#/otherpath'}}); //=> false
+	    //     // match against a path regexp
+	    //     app.contextMatchesOptions(context, /path/); //=> true
+	    //     app.contextMatchesOptions(context, /^path/); //=> false
+	    //     // match only a verb
+	    //     app.contextMatchesOptions(context, {only: {verb:'get'}}); //=> true
+	    //     app.contextMatchesOptions(context, {only: {verb:'post'}}); //=> false
+	    //     // match all except a verb
+	    //     app.contextMatchesOptions(context, {except: {verb:'post'}}); //=> true
+	    //     app.contextMatchesOptions(context, {except: {verb:'get'}}); //=> false
+	    //     // match all except a path
+	    //     app.contextMatchesOptions(context, {except: {path:'#/otherpath'}}); //=> true
+	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath'}}); //=> false
+	    //     // match all except a verb and a path
+	    //     app.contextMatchesOptions(context, {except: {path:'#/otherpath', verb:'post'}}); //=> true
+	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath', verb:'post'}}); //=> true
+	    //     app.contextMatchesOptions(context, {except: {path:'#/mypath', verb:'get'}}); //=> false
+	    //     // match multiple paths
+	    //     app.contextMatchesOptions(context, {path: ['#/mypath', '#/otherpath']}); //=> true
+	    //     app.contextMatchesOptions(context, {path: ['#/otherpath', '#/thirdpath']}); //=> false
+	    //     // equivalent to
+	    //     app.contextMatchesOptions(context, {only: {path: ['#/mypath', '#/otherpath']}}); //=> true
+	    //     app.contextMatchesOptions(context, {only: {path: ['#/otherpath', '#/thirdpath']}}); //=> false
+	    //     // match all except multiple paths
+	    //     app.contextMatchesOptions(context, {except: {path: ['#/mypath', '#/otherpath']}}); //=> false
+	    //     app.contextMatchesOptions(context, {except: {path: ['#/otherpath', '#/thirdpath']}}); //=> true
+	    //     // match all except multiple paths and verbs
+	    //     app.contextMatchesOptions(context, {except: {path: ['#/mypath', '#/otherpath'], verb: ['get', 'post']}}); //=> false
+	    //     app.contextMatchesOptions(context, {except: {path: ['#/otherpath', '#/thirdpath'], verb: ['get', 'post']}}); //=> true
+	    //
+	    contextMatchesOptions: function(context, match_options, positive) {
+	      var options = match_options;
+	      // normalize options
+	      if (typeof options === 'string' || _isRegExp(options)) {
+	        options = {path: options};
+	      }
+	      if (typeof positive === 'undefined') {
+	        positive = true;
+	      }
+	      // empty options always match
+	      if ($.isEmptyObject(options)) {
+	        return true;
+	      }
+	      // Do we have to match against multiple paths?
+	      if (_isArray(options.path)){
+	        var results, numopt, opts, len;
+	        results = [];
+	        for (numopt = 0, len = options.path.length; numopt < len; numopt += 1) {
+	          opts = $.extend({}, options, {path: options.path[numopt]});
+	          results.push(this.contextMatchesOptions(context, opts));
+	        }
+	        var matched = $.inArray(true, results) > -1 ? true : false;
+	        return positive ? matched : !matched;
+	      }
+	      if (options.only) {
+	        return this.contextMatchesOptions(context, options.only, true);
+	      } else if (options.except) {
+	        return this.contextMatchesOptions(context, options.except, false);
+	      }
+	      var path_matched = true, verb_matched = true;
+	      if (options.path) {
+	        if (!_isRegExp(options.path)) {
+	          options.path = new RegExp(options.path.toString() + '$');
+	        }
+	        path_matched = options.path.test(context.path);
+	      }
+	      if (options.verb) {
+	        if(typeof options.verb === 'string') {
+	          verb_matched = options.verb === context.verb;
+	        } else {
+	          verb_matched = options.verb.indexOf(context.verb) > -1;
+	        }
+	      }
+	      return positive ? (verb_matched && path_matched) : !(verb_matched && path_matched);
+	    },
+
+
+	    // Delegates to the `location_proxy` to get the current location.
+	    // See `Sammy.DefaultLocationProxy` for more info on location proxies.
+	    getLocation: function() {
+	      return this._location_proxy.getLocation();
+	    },
+
+	    // Delegates to the `location_proxy` to set the current location.
+	    // See `Sammy.DefaultLocationProxy` for more info on location proxies.
+	    //
+	    // ### Arguments
+	    //
+	    // * `new_location` A new location string (e.g. '#/')
+	    //
+	    setLocation: function(new_location) {
+	      return this._location_proxy.setLocation(new_location);
+	    },
+
+	    // Swaps the content of `$element()` with `content`
+	    // You can override this method to provide an alternate swap behavior
+	    // for `EventContext.partial()`.
+	    //
+	    // ### Example
+	    //
+	    //      var app = $.sammy(function() {
+	    //
+	    //        // implements a 'fade out'/'fade in'
+	    //        this.swap = function(content, callback) {
+	    //          var context = this;
+	    //          context.$element().fadeOut('slow', function() {
+	    //            context.$element().html(content);
+	    //            context.$element().fadeIn('slow', function() {
+	    //              if (callback) {
+	    //                callback.apply();
+	    //              }
+	    //            });
+	    //          });
+	    //        };
+	    //
+	    //      });
+	    //
+	    swap: function(content, callback) {
+	      var $el = this.$element().html(content);
+	      if (_isFunction(callback)) { callback(content); }
+	      return $el;
+	    },
+
+	    // a simple global cache for templates. Uses the same semantics as
+	    // `Sammy.Cache` and `Sammy.Storage` so can easily be replaced with
+	    // a persistent storage that lasts beyond the current request.
+	    templateCache: function(key, value) {
+	      if (typeof value != 'undefined') {
+	        return _template_cache[key] = value;
+	      } else {
+	        return _template_cache[key];
+	      }
+	    },
+
+	    // clear the templateCache
+	    clearTemplateCache: function() {
+	      return (_template_cache = {});
+	    },
+
+	    // This throws a '404 Not Found' error by invoking `error()`.
+	    // Override this method or `error()` to provide custom
+	    // 404 behavior (i.e redirecting to / or showing a warning)
+	    notFound: function(verb, path) {
+	      var ret = this.error(['404 Not Found', verb, path].join(' '));
+	      return (verb === 'get') ? ret : true;
+	    },
+
+	    // The base error handler takes a string `message` and an `Error`
+	    // object. If `raise_errors` is set to `true` on the app level,
+	    // this will re-throw the error to the browser. Otherwise it will send the error
+	    // to `log()`. Override this method to provide custom error handling
+	    // e.g logging to a server side component or displaying some feedback to the
+	    // user.
+	    error: function(message, original_error) {
+	      if (!original_error) { original_error = new Error(); }
+	      original_error.message = [message, original_error.message].join(' ');
+	      this.trigger('error', {message: original_error.message, error: original_error});
+	      if (this.raise_errors) {
+	        throw(original_error);
+	      } else {
+	        this.log(original_error.message, original_error);
+	      }
+	    },
+
+	    _checkLocation: function() {
+	      var location, returned;
+	      // get current location
+	      location = this.getLocation();
+	      // compare to see if hash has changed
+	      if (!this.last_location || this.last_location[0] != 'get' || this.last_location[1] != location) {
+	        // reset last location
+	        this.last_location = ['get', location];
+	        // lookup route for current hash
+	        returned = this.runRoute('get', location);
+	      }
+	      return returned;
+	    },
+
+	    _getFormVerb: function(form) {
+	      var $form = $(form), verb, $_method;
+	      $_method = $form.find('input[name="_method"]');
+	      if ($_method.length > 0) { verb = $_method.val(); }
+	      if (!verb) { verb = $form[0].getAttribute('method'); }
+	      if (!verb || verb === '') { verb = 'get'; }
+	      return $.trim(verb.toString().toLowerCase());
+	    },
+
+	    _checkFormSubmission: function(form) {
+	      var $form, path, verb, params, returned;
+	      this.trigger('check-form-submission', {form: form});
+	      $form = $(form);
+	      path  = $form.attr('action') || '';
+	      verb  = this._getFormVerb($form);
+
+	      if (this.debug) {
+	        this.log('_checkFormSubmission', $form, path, verb);
+	      }
+
+	      if (verb === 'get') {
+	        params = this._serializeFormParams($form);
+	        if (params !== '') { path += '?' + params; }
+	        this.setLocation(path);
+	        returned = false;
+	      } else {
+	        params = $.extend({}, this._parseFormParams($form));
+	        returned = this.runRoute(verb, path, params, form.get(0));
+	      }
+	      return (typeof returned == 'undefined') ? false : returned;
+	    },
+
+	    _serializeFormParams: function($form) {
+	       var queryString = "",
+	         fields = $form.serializeArray(),
+	         i;
+	       if (fields.length > 0) {
+	         queryString = this._encodeFormPair(fields[0].name, fields[0].value);
+	         for (i = 1; i < fields.length; i++) {
+	           queryString = queryString + "&" + this._encodeFormPair(fields[i].name, fields[i].value);
+	         }
+	       }
+	       return queryString;
+	    },
+
+	    _encodeFormPair: function(name, value){
+	      return _encode(name) + "=" + _encode(value);
+	    },
+
+	    _parseFormParams: function($form) {
+	      var params = {},
+	          form_fields = $form.serializeArray(),
+	          i;
+	      for (i = 0; i < form_fields.length; i++) {
+	        params = this._parseParamPair(params, form_fields[i].name, form_fields[i].value);
+	      }
+	      return params;
+	    },
+
+	    _parseQueryString: function(path) {
+	      var params = {}, parts, pairs, pair, i;
+
+	      parts = path.match(QUERY_STRING_MATCHER);
+	      if (parts && parts[1]) {
+	        pairs = parts[1].split('&');
+	        for (i = 0; i < pairs.length; i++) {
+	          pair = pairs[i].split('=');
+	          params = this._parseParamPair(params, _decode(pair[0]), _decode(pair[1] || ""));
+	        }
+	      }
+	      return params;
+	    },
+
+	    _parseParamPair: function(params, key, value) {
+	      if (typeof params[key] !== 'undefined') {
+	        if (_isArray(params[key])) {
+	          params[key].push(value);
+	        } else {
+	          params[key] = [params[key], value];
+	        }
+	      } else {
+	        params[key] = value;
+	      }
+	      return params;
+	    },
+
+	    _listen: function(name, callback) {
+	      return this.$element().bind([name, this.eventNamespace()].join('.'), callback);
+	    },
+
+	    _unlisten: function(name, callback) {
+	      return this.$element().unbind([name, this.eventNamespace()].join('.'), callback);
+	    }
+
+	  });
+
+	  // `Sammy.RenderContext` is an object that makes sequential template loading,
+	  // rendering and interpolation seamless even when dealing with asynchronous
+	  // operations.
+	  //
+	  // `RenderContext` objects are not usually created directly, rather they are
+	  // instantiated from an `Sammy.EventContext` by using `render()`, `load()` or
+	  // `partial()` which all return `RenderContext` objects.
+	  //
+	  // `RenderContext` methods always returns a modified `RenderContext`
+	  // for chaining (like jQuery itself).
+	  //
+	  // The core magic is in the `then()` method which puts the callback passed as
+	  // an argument into a queue to be executed once the previous callback is complete.
+	  // All the methods of `RenderContext` are wrapped in `then()` which allows you
+	  // to queue up methods by chaining, but maintaining a guaranteed execution order
+	  // even with remote calls to fetch templates.
+	  //
+	  Sammy.RenderContext = function(event_context) {
+	    this.event_context    = event_context;
+	    this.callbacks        = [];
+	    this.previous_content = null;
+	    this.content          = null;
+	    this.next_engine      = false;
+	    this.waiting          = false;
+	  };
+
+	  Sammy.RenderContext.prototype = $.extend({}, Sammy.Object.prototype, {
+
+	    // The "core" of the `RenderContext` object, adds the `callback` to the
+	    // queue. If the context is `waiting` (meaning an async operation is happening)
+	    // then the callback will be executed in order, once the other operations are
+	    // complete. If there is no currently executing operation, the `callback`
+	    // is executed immediately.
+	    //
+	    // The value returned from the callback is stored in `content` for the
+	    // subsequent operation. If you return `false`, the queue will pause, and
+	    // the next callback in the queue will not be executed until `next()` is
+	    // called. This allows for the guaranteed order of execution while working
+	    // with async operations.
+	    //
+	    // If then() is passed a string instead of a function, the string is looked
+	    // up as a helper method on the event context.
+	    //
+	    // ### Example
+	    //
+	    //      this.get('#/', function() {
+	    //        // initialize the RenderContext
+	    //        // Even though `load()` executes async, the next `then()`
+	    //        // wont execute until the load finishes
+	    //        this.load('myfile.txt')
+	    //            .then(function(content) {
+	    //              // the first argument to then is the content of the
+	    //              // prev operation
+	    //              $('#main').html(content);
+	    //            });
+	    //      });
+	    //
+	    then: function(callback) {
+	      if (!_isFunction(callback)) {
+	        // if a string is passed to then, assume we want to call
+	        // a helper on the event context in its context
+	        if (typeof callback === 'string' && callback in this.event_context) {
+	          var helper = this.event_context[callback];
+	          callback = function(content) {
+	            return helper.apply(this.event_context, [content]);
+	          };
+	        } else {
+	          return this;
+	        }
+	      }
+	      var context = this;
+	      if (this.waiting) {
+	        this.callbacks.push(callback);
+	      } else {
+	        this.wait();
+	        window.setTimeout(function() {
+	          var returned = callback.apply(context, [context.content, context.previous_content]);
+	          if (returned !== false) {
+	            context.next(returned);
+	          }
+	        }, 0);
+	      }
+	      return this;
+	    },
+
+	    // Pause the `RenderContext` queue. Combined with `next()` allows for async
+	    // operations.
+	    //
+	    // ### Example
+	    //
+	    //        this.get('#/', function() {
+	    //          this.load('mytext.json')
+	    //              .then(function(content) {
+	    //                var context = this,
+	    //                    data    = JSON.parse(content);
+	    //                // pause execution
+	    //                context.wait();
+	    //                // post to a url
+	    //                $.post(data.url, {}, function(response) {
+	    //                  context.next(JSON.parse(response));
+	    //                });
+	    //              })
+	    //              .then(function(data) {
+	    //                // data is json from the previous post
+	    //                $('#message').text(data.status);
+	    //              });
+	    //        });
+	    wait: function() {
+	      this.waiting = true;
+	    },
+
+	    // Resume the queue, setting `content` to be used in the next operation.
+	    // See `wait()` for an example.
+	    next: function(content) {
+	      this.waiting = false;
+	      if (typeof content !== 'undefined') {
+	        this.previous_content = this.content;
+	        this.content = content;
+	      }
+	      if (this.callbacks.length > 0) {
+	        this.then(this.callbacks.shift());
+	      }
+	    },
+
+	    // Load a template into the context.
+	    // The `location` can either be a string specifying the remote path to the
+	    // file, a jQuery object, or a DOM element.
+	    //
+	    // No interpolation happens by default, the content is stored in
+	    // `content`.
+	    //
+	    // In the case of a path, unless the option `{cache: false}` is passed the
+	    // data is stored in the app's `templateCache()`.
+	    //
+	    // If a jQuery or DOM object is passed the `innerHTML` of the node is pulled in.
+	    // This is useful for nesting templates as part of the initial page load wrapped
+	    // in invisible elements or `<script>` tags. With template paths, the template
+	    // engine is looked up by the extension. For DOM/jQuery embedded templates,
+	    // this isnt possible, so there are a couple of options:
+	    //
+	    //  * pass an `{engine:}` option.
+	    //  * define the engine in the `data-engine` attribute of the passed node.
+	    //  * just store the raw template data and use `interpolate()` manually
+	    //
+	    // If a `callback` is passed it is executed after the template load.
+	    load: function(location, options, callback) {
+	      var context = this;
+	      return this.then(function() {
+	        var should_cache, cached, is_json, location_array;
+	        if (_isFunction(options)) {
+	          callback = options;
+	          options = {};
+	        } else {
+	          options = $.extend({}, options);
+	        }
+	        if (callback) { this.then(callback); }
+	        if (typeof location === 'string') {
+	          // it's a path
+	          is_json      = (location.match(/\.json(\?|$)/) || options.json);
+	          should_cache = is_json ? options.cache === true : options.cache !== false;
+	          context.next_engine = context.event_context.engineFor(location);
+	          delete options.cache;
+	          delete options.json;
+	          if (options.engine) {
+	            context.next_engine = options.engine;
+	            delete options.engine;
+	          }
+	          if (should_cache && (cached = this.event_context.app.templateCache(location))) {
+	            return cached;
+	          }
+	          this.wait();
+	          $.ajax($.extend({
+	            url: location,
+	            data: {},
+	            dataType: is_json ? 'json' : 'text',
+	            type: 'get',
+	            success: function(data) {
+	              if (should_cache) {
+	                context.event_context.app.templateCache(location, data);
+	              }
+	              context.next(data);
+	            }
+	          }, options));
+	          return false;
+	        } else {
+	          // it's a dom/jQuery
+	          if (location.nodeType) {
+	            return location.innerHTML;
+	          }
+	          if (location.selector) {
+	            // it's a jQuery
+	            context.next_engine = location.attr('data-engine');
+	            if (options.clone === false) {
+	              return location.remove()[0].innerHTML.toString();
+	            } else {
+	              return location[0].innerHTML.toString();
+	            }
+	          }
+	        }
+	      });
+	    },
+
+	    // Load partials
+	    //
+	    // ### Example
+	    //
+	    //      this.loadPartials({mypartial: '/path/to/partial'});
+	    //
+	    loadPartials: function(partials) {
+	      var name;
+	      if(partials) {
+	        this.partials = this.partials || {};
+	        for(name in partials) {
+	          (function(context, name) {
+	            context.load(partials[name])
+	                   .then(function(template) {
+	                     this.partials[name] = template;
+	                   });
+	          })(this, name);
+	        }
+	      }
+	      return this;
+	    },
+
+	    // `load()` a template and then `interpolate()` it with data.
+	    //
+	    // can be called with multiple different signatures:
+	    //
+	    //      this.render(callback);
+	    //      this.render('/location');
+	    //      this.render('/location', {some: data});
+	    //      this.render('/location', callback);
+	    //      this.render('/location', {some: data}, callback);
+	    //      this.render('/location', {some: data}, {my: partials});
+	    //      this.render('/location', callback, {my: partials});
+	    //      this.render('/location', {some: data}, callback, {my: partials});
+	    //
+	    // ### Example
+	    //
+	    //      this.get('#/', function() {
+	    //        this.render('mytemplate.template', {name: 'test'});
+	    //      });
+	    //
+	    render: function(location, data, callback, partials) {
+	      if (_isFunction(location) && !data) {
+	        // invoked as render(callback)
+	        return this.then(location);
+	      } else {
+	        if(_isFunction(data)) {
+	          // invoked as render(location, callback, [partials])
+	          partials = callback;
+	          callback = data;
+	          data = null;
+	        } else if(callback && !_isFunction(callback)) {
+	          // invoked as render(location, data, partials)
+	          partials = callback;
+	          callback = null;
+	        }
+
+	        return this.loadPartials(partials)
+	                   .load(location)
+	                   .interpolate(data, location)
+	                   .then(callback);
+	      }
+	    },
+
+	    // `render()` the `location` with `data` and then `swap()` the
+	    // app's `$element` with the rendered content.
+	    partial: function(location, data, callback, partials) {
+	      if (_isFunction(callback)) {
+	        // invoked as partial(location, data, callback, [partials])
+	        return this.render(location, data, partials).swap(callback);
+	      } else if (_isFunction(data)) {
+	        // invoked as partial(location, callback, [partials])
+	        return this.render(location, {}, callback).swap(data);
+	      } else {
+	        // invoked as partial(location, data, [partials])
+	        return this.render(location, data, callback).swap();
+	      }
+	    },
+
+	    // defers the call of function to occur in order of the render queue.
+	    // The function can accept any number of arguments as long as the last
+	    // argument is a callback function. This is useful for putting arbitrary
+	    // asynchronous functions into the queue. The content passed to the
+	    // callback is passed as `content` to the next item in the queue.
+	    //
+	    // ### Example
+	    //
+	    //     this.send($.getJSON, '/app.json')
+	    //         .then(function(json) {
+	    //           $('#message).text(json['message']);
+	    //          });
+	    //
+	    //
+	    send: function() {
+	      var context = this,
+	          args = _makeArray(arguments),
+	          fun  = args.shift();
+
+	      if (_isArray(args[0])) { args = args[0]; }
+
+	      return this.then(function(content) {
+	        args.push(function(response) { context.next(response); });
+	        context.wait();
+	        fun.apply(fun, args);
+	        return false;
+	      });
+	    },
+
+	    // iterates over an array, applying the callback for each item item. the
+	    // callback takes the same style of arguments as `jQuery.each()` (index, item).
+	    // The return value of each callback is collected as a single string and stored
+	    // as `content` to be used in the next iteration of the `RenderContext`.
+	    collect: function(array, callback, now) {
+	      var context = this;
+	      var coll = function() {
+	        if (_isFunction(array)) {
+	          callback = array;
+	          array = this.content;
+	        }
+	        var contents = [], doms = false;
+	        $.each(array, function(i, item) {
+	          var returned = callback.apply(context, [i, item]);
+	          if (returned.jquery && returned.length == 1) {
+	            returned = returned[0];
+	            doms = true;
+	          }
+	          contents.push(returned);
+	          return returned;
+	        });
+	        return doms ? contents : contents.join('');
+	      };
+	      return now ? coll() : this.then(coll);
+	    },
+
+	    // loads a template, and then interpolates it for each item in the `data`
+	    // array. If a callback is passed, it will call the callback with each
+	    // item in the array _after_ interpolation
+	    renderEach: function(location, name, data, callback) {
+	      if (_isArray(name)) {
+	        callback = data;
+	        data = name;
+	        name = null;
+	      }
+	      return this.load(location).then(function(content) {
+	          var rctx = this;
+	          if (!data) {
+	            data = _isArray(this.previous_content) ? this.previous_content : [];
+	          }
+	          if (callback) {
+	            $.each(data, function(i, value) {
+	              var idata = {}, engine = this.next_engine || location;
+	              if (name) {
+	                idata[name] = value;
+	              } else {
+	                idata = value;
+	              }
+	              callback(value, rctx.event_context.interpolate(content, idata, engine));
+	            });
+	          } else {
+	            return this.collect(data, function(i, value) {
+	              var idata = {}, engine = this.next_engine || location;
+	              if (name) {
+	                idata[name] = value;
+	              } else {
+	                idata = value;
+	              }
+	              return this.event_context.interpolate(content, idata, engine);
+	            }, true);
+	          }
+	      });
+	    },
+
+	    // uses the previous loaded `content` and the `data` object to interpolate
+	    // a template. `engine` defines the templating/interpolation method/engine
+	    // that should be used. If `engine` is not passed, the `next_engine` is
+	    // used. If `retain` is `true`, the final interpolated data is appended to
+	    // the `previous_content` instead of just replacing it.
+	    interpolate: function(data, engine, retain) {
+	      var context = this;
+	      return this.then(function(content, prev) {
+	        if (!data && prev) { data = prev; }
+	        if (this.next_engine) {
+	          engine = this.next_engine;
+	          this.next_engine = false;
+	        }
+	        var rendered = context.event_context.interpolate(content, data, engine, this.partials);
+	        return retain ? prev + rendered : rendered;
+	      });
+	    },
+
+	    // Swap the return contents ensuring order. See `Application#swap`
+	    swap: function(callback) {
+	      return this.then(function(content) {
+	        this.event_context.swap(content, callback);
+	        return content;
+	      }).trigger('changed', {});
+	    },
+
+	    // Same usage as `jQuery.fn.appendTo()` but uses `then()` to ensure order
+	    appendTo: function(selector) {
+	      return this.then(function(content) {
+	        $(selector).append(content);
+	      }).trigger('changed', {});
+	    },
+
+	    // Same usage as `jQuery.fn.prependTo()` but uses `then()` to ensure order
+	    prependTo: function(selector) {
+	      return this.then(function(content) {
+	        $(selector).prepend(content);
+	      }).trigger('changed', {});
+	    },
+
+	    // Replaces the `$(selector)` using `html()` with the previously loaded
+	    // `content`
+	    replace: function(selector) {
+	      return this.then(function(content) {
+	        $(selector).html(content);
+	      }).trigger('changed', {});
+	    },
+
+	    // trigger the event in the order of the event context. Same semantics
+	    // as `Sammy.EventContext#trigger()`. If data is omitted, `content`
+	    // is sent as `{content: content}`
+	    trigger: function(name, data) {
+	      return this.then(function(content) {
+	        if (typeof data == 'undefined') { data = {content: content}; }
+	        this.event_context.trigger(name, data);
+	        return content;
+	      });
+	    }
+
+	  });
+
+	  // `Sammy.EventContext` objects are created every time a route is run or a
+	  // bound event is triggered. The callbacks for these events are evaluated within a `Sammy.EventContext`
+	  // This within these callbacks the special methods of `EventContext` are available.
+	  //
+	  // ### Example
+	  //
+	  //       $.sammy(function() {
+	  //         // The context here is this Sammy.Application
+	  //         this.get('#/:name', function() {
+	  //           // The context here is a new Sammy.EventContext
+	  //           if (this.params['name'] == 'sammy') {
+	  //             this.partial('name.html.erb', {name: 'Sammy'});
+	  //           } else {
+	  //             this.redirect('#/somewhere-else')
+	  //           }
+	  //         });
+	  //       });
+	  //
+	  // Initialize a new EventContext
+	  //
+	  // ### Arguments
+	  //
+	  // * `app` The `Sammy.Application` this event is called within.
+	  // * `verb` The verb invoked to run this context/route.
+	  // * `path` The string path invoked to run this context/route.
+	  // * `params` An Object of optional params to pass to the context. Is converted
+	  //   to a `Sammy.Object`.
+	  // * `target` a DOM element that the event that holds this context originates
+	  //   from. For post, put and del routes, this is the form element that triggered
+	  //   the route.
+	  //
+	  Sammy.EventContext = function(app, verb, path, params, target) {
+	    this.app    = app;
+	    this.verb   = verb;
+	    this.path   = path;
+	    this.params = new Sammy.Object(params);
+	    this.target = target;
+	  };
+
+	  Sammy.EventContext.prototype = $.extend({}, Sammy.Object.prototype, {
+
+	    // A shortcut to the app's `$element()`
+	    $element: function() {
+	      return this.app.$element(_makeArray(arguments).shift());
+	    },
+
+	    // Look up a templating engine within the current app and context.
+	    // `engine` can be one of the following:
+	    //
+	    // * a function: should conform to `function(content, data) { return interpolated; }`
+	    // * a template path: 'template.ejs', looks up the extension to match to
+	    //   the `ejs()` helper
+	    // * a string referring to the helper: "mustache" => `mustache()`
+	    //
+	    // If no engine is found, use the app's default `template_engine`
+	    //
+	    engineFor: function(engine) {
+	      var context = this, engine_match;
+	      // if path is actually an engine function just return it
+	      if (_isFunction(engine)) { return engine; }
+	      // lookup engine name by path extension
+	      engine = (engine || context.app.template_engine).toString();
+	      if ((engine_match = engine.match(/\.([^\.\?\#]+)(\?|$)/))) {
+	        engine = engine_match[1];
+	      }
+	      // set the engine to the default template engine if no match is found
+	      if (engine && _isFunction(context[engine])) {
+	        return context[engine];
+	      }
+
+	      if (context.app.template_engine) {
+	        return this.engineFor(context.app.template_engine);
+	      }
+	      return function(content, data) { return content; };
+	    },
+
+	    // using the template `engine` found with `engineFor()`, interpolate the
+	    // `data` into `content`
+	    interpolate: function(content, data, engine, partials) {
+	      return this.engineFor(engine).apply(this, [content, data, partials]);
+	    },
+
+	    // Create and return a `Sammy.RenderContext` calling `render()` on it.
+	    // Loads the template and interpolate the data, however does not actual
+	    // place it in the DOM.
+	    //
+	    // ### Example
+	    //
+	    //      // mytemplate.mustache <div class="name">{{name}}</div>
+	    //      render('mytemplate.mustache', {name: 'quirkey'});
+	    //      // sets the `content` to <div class="name">quirkey</div>
+	    //      render('mytemplate.mustache', {name: 'quirkey'})
+	    //        .appendTo('ul');
+	    //      // appends the rendered content to $('ul')
+	    //
+	    render: function(location, data, callback, partials) {
+	      return new Sammy.RenderContext(this).render(location, data, callback, partials);
+	    },
+
+	    // Create and return a `Sammy.RenderContext` calling `renderEach()` on it.
+	    // Loads the template and interpolates the data for each item,
+	    // however does not actually place it in the DOM.
+	    //
+	    // `name` is an optional parameter (if it is an array, it is used as `data`,
+	    // and the third parameter used as `callback`, if set).
+	    //
+	    // If `data` is not provided, content from the previous step in the chain
+	    // (if it is an array) is used, and `name` is used as the key for each
+	    // element of the array (useful for referencing in template).
+	    //
+	    // ### Example
+	    //
+	    //      // mytemplate.mustache <div class="name">{{name}}</div>
+	    //      renderEach('mytemplate.mustache', [{name: 'quirkey'}, {name: 'endor'}])
+	    //      // sets the `content` to <div class="name">quirkey</div><div class="name">endor</div>
+	    //      renderEach('mytemplate.mustache', [{name: 'quirkey'}, {name: 'endor'}]).appendTo('ul');
+	    //      // appends the rendered content to $('ul')
+	    //
+	    //      // names.json: ["quirkey", "endor"]
+	    //      this.load('names.json').renderEach('mytemplate.mustache', 'name').appendTo('ul');
+	    //      // uses the template to render each item in the JSON array
+	    //
+	    renderEach: function(location, name, data, callback) {
+	      return new Sammy.RenderContext(this).renderEach(location, name, data, callback);
+	    },
+
+	    // create a new `Sammy.RenderContext` calling `load()` with `location` and
+	    // `options`. Called without interpolation or placement, this allows for
+	    // preloading/caching the templates.
+	    load: function(location, options, callback) {
+	      return new Sammy.RenderContext(this).load(location, options, callback);
+	    },
+
+	    // create a new `Sammy.RenderContext` calling `loadPartials()` with `partials`.
+	    loadPartials: function(partials) {
+	      return new Sammy.RenderContext(this).loadPartials(partials);
+	    },
+
+	    // `render()` the `location` with `data` and then `swap()` the
+	    // app's `$element` with the rendered content.
+	    partial: function(location, data, callback, partials) {
+	      return new Sammy.RenderContext(this).partial(location, data, callback, partials);
+	    },
+
+	    // create a new `Sammy.RenderContext` calling `send()` with an arbitrary
+	    // function
+	    send: function() {
+	      var rctx = new Sammy.RenderContext(this);
+	      return rctx.send.apply(rctx, arguments);
+	    },
+
+	    // Changes the location of the current window. If `to` begins with
+	    // '#' it only changes the document's hash. If passed more than 1 argument
+	    // redirect will join them together with forward slashes.
+	    //
+	    // ### Example
+	    //
+	    //      redirect('#/other/route');
+	    //      // equivalent to
+	    //      redirect('#', 'other', 'route');
+	    //
+	    redirect: function() {
+	      var to, args = _makeArray(arguments),
+	          current_location = this.app.getLocation(),
+	          l = args.length;
+	      if (l > 1) {
+	        var i = 0, paths = [], pairs = [], params = {}, has_params = false;
+	        for (; i < l; i++) {
+	          if (typeof args[i] == 'string') {
+	            paths.push(args[i]);
+	          } else {
+	            $.extend(params, args[i]);
+	            has_params = true;
+	          }
+	        }
+	        to = paths.join('/');
+	        if (has_params) {
+	          for (var k in params) {
+	            pairs.push(this.app._encodeFormPair(k, params[k]));
+	          }
+	          to += '?' + pairs.join('&');
+	        }
+	      } else {
+	        to = args[0];
+	      }
+	      this.trigger('redirect', {to: to});
+	      this.app.last_location = [this.verb, this.path];
+	      this.app.setLocation(to);
+	      if (new RegExp(to).test(current_location)) {
+	        this.app.trigger('location-changed');
+	      }
+	    },
+
+	    // Triggers events on `app` within the current context.
+	    trigger: function(name, data) {
+	      if (typeof data == 'undefined') { data = {}; }
+	      if (!data.context) { data.context = this; }
+	      return this.app.trigger(name, data);
+	    },
+
+	    // A shortcut to app's `eventNamespace()`
+	    eventNamespace: function() {
+	      return this.app.eventNamespace();
+	    },
+
+	    // A shortcut to app's `swap()`
+	    swap: function(contents, callback) {
+	      return this.app.swap(contents, callback);
+	    },
+
+	    // Raises a possible `notFound()` error for the current path.
+	    notFound: function() {
+	      return this.app.notFound(this.verb, this.path);
+	    },
+
+	    // Default JSON parsing uses jQuery's `parseJSON()`. Include `Sammy.JSON`
+	    // plugin for the more conformant "crockford special".
+	    json: function(string) {
+	      return $.parseJSON(string);
+	    },
+
+	    // //=> Sammy.EventContext: get #/ {}
+	    toString: function() {
+	      return "Sammy.EventContext: " + [this.verb, this.path, this.params].join(' ');
+	    }
+
+	  });
+
+	  return Sammy;
+	});
+
+
+/***/ },
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(17);
+	var content = __webpack_require__(20);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(18)(content, {});
+	var update = __webpack_require__(13)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
@@ -14225,219 +17483,23 @@
 	}
 
 /***/ },
-/* 17 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(21)();
+	exports = module.exports = __webpack_require__(23)();
 	exports.push([module.id, "/* Chartist.js 0.7.2\n * Copyright © 2015 Gion Kunz\n * Free to use under the WTFPL license.\n * http://www.wtfpl.net/\n */\n\n.ct-chart .ct-label,.ct-chart .ct-label.ct-horizontal{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:left}.ct-chart .ct-label.ct-vertical{display:block;width:100%;height:100%;fill:rgba(0,0,0,.4);color:rgba(0,0,0,.4);font-size:.75rem;text-align:right}.ct-chart .ct-grid{stroke:rgba(0,0,0,.2);stroke-width:1px;stroke-dasharray:2px}.ct-chart .ct-point{stroke-width:10px;stroke-linecap:round}.ct-chart .ct-line{fill:none;stroke-width:4px}.ct-chart .ct-area{stroke:none;fill-opacity:.1}.ct-chart .ct-bar{fill:none;stroke-width:10px}.ct-chart .ct-slice.ct-donut{fill:none;stroke-width:60px}.ct-chart .ct-series.ct-series-a .ct-bar,.ct-chart .ct-series.ct-series-a .ct-line,.ct-chart .ct-series.ct-series-a .ct-point,.ct-chart .ct-series.ct-series-a .ct-slice.ct-donut{stroke:#d70206}.ct-chart .ct-series.ct-series-a .ct-area,.ct-chart .ct-series.ct-series-a .ct-slice:not(.ct-donut){fill:#d70206}.ct-chart .ct-series.ct-series-b .ct-bar,.ct-chart .ct-series.ct-series-b .ct-line,.ct-chart .ct-series.ct-series-b .ct-point,.ct-chart .ct-series.ct-series-b .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-b .ct-area,.ct-chart .ct-series.ct-series-b .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-c .ct-bar,.ct-chart .ct-series.ct-series-c .ct-line,.ct-chart .ct-series.ct-series-c .ct-point,.ct-chart .ct-series.ct-series-c .ct-slice.ct-donut{stroke:#f4c63d}.ct-chart .ct-series.ct-series-c .ct-area,.ct-chart .ct-series.ct-series-c .ct-slice:not(.ct-donut){fill:#f4c63d}.ct-chart .ct-series.ct-series-d .ct-bar,.ct-chart .ct-series.ct-series-d .ct-line,.ct-chart .ct-series.ct-series-d .ct-point,.ct-chart .ct-series.ct-series-d .ct-slice.ct-donut{stroke:#d17905}.ct-chart .ct-series.ct-series-d .ct-area,.ct-chart .ct-series.ct-series-d .ct-slice:not(.ct-donut){fill:#d17905}.ct-chart .ct-series.ct-series-e .ct-bar,.ct-chart .ct-series.ct-series-e .ct-line,.ct-chart .ct-series.ct-series-e .ct-point,.ct-chart .ct-series.ct-series-e .ct-slice.ct-donut{stroke:#453d3f}.ct-chart .ct-series.ct-series-e .ct-area,.ct-chart .ct-series.ct-series-e .ct-slice:not(.ct-donut){fill:#453d3f}.ct-chart .ct-series.ct-series-f .ct-bar,.ct-chart .ct-series.ct-series-f .ct-line,.ct-chart .ct-series.ct-series-f .ct-point,.ct-chart .ct-series.ct-series-f .ct-slice.ct-donut{stroke:#59922b}.ct-chart .ct-series.ct-series-f .ct-area,.ct-chart .ct-series.ct-series-f .ct-slice:not(.ct-donut){fill:#59922b}.ct-chart .ct-series.ct-series-g .ct-bar,.ct-chart .ct-series.ct-series-g .ct-line,.ct-chart .ct-series.ct-series-g .ct-point,.ct-chart .ct-series.ct-series-g .ct-slice.ct-donut{stroke:#0544d3}.ct-chart .ct-series.ct-series-g .ct-area,.ct-chart .ct-series.ct-series-g .ct-slice:not(.ct-donut){fill:#0544d3}.ct-chart .ct-series.ct-series-h .ct-bar,.ct-chart .ct-series.ct-series-h .ct-line,.ct-chart .ct-series.ct-series-h .ct-point,.ct-chart .ct-series.ct-series-h .ct-slice.ct-donut{stroke:#6b0392}.ct-chart .ct-series.ct-series-h .ct-area,.ct-chart .ct-series.ct-series-h .ct-slice:not(.ct-donut){fill:#6b0392}.ct-chart .ct-series.ct-series-i .ct-bar,.ct-chart .ct-series.ct-series-i .ct-line,.ct-chart .ct-series.ct-series-i .ct-point,.ct-chart .ct-series.ct-series-i .ct-slice.ct-donut{stroke:#f05b4f}.ct-chart .ct-series.ct-series-i .ct-area,.ct-chart .ct-series.ct-series-i .ct-slice:not(.ct-donut){fill:#f05b4f}.ct-chart .ct-series.ct-series-j .ct-bar,.ct-chart .ct-series.ct-series-j .ct-line,.ct-chart .ct-series.ct-series-j .ct-point,.ct-chart .ct-series.ct-series-j .ct-slice.ct-donut{stroke:#dda458}.ct-chart .ct-series.ct-series-j .ct-area,.ct-chart .ct-series.ct-series-j .ct-slice:not(.ct-donut){fill:#dda458}.ct-chart .ct-series.ct-series-k .ct-bar,.ct-chart .ct-series.ct-series-k .ct-line,.ct-chart .ct-series.ct-series-k .ct-point,.ct-chart .ct-series.ct-series-k .ct-slice.ct-donut{stroke:#eacf7d}.ct-chart .ct-series.ct-series-k .ct-area,.ct-chart .ct-series.ct-series-k .ct-slice:not(.ct-donut){fill:#eacf7d}.ct-chart .ct-series.ct-series-l .ct-bar,.ct-chart .ct-series.ct-series-l .ct-line,.ct-chart .ct-series.ct-series-l .ct-point,.ct-chart .ct-series.ct-series-l .ct-slice.ct-donut{stroke:#86797d}.ct-chart .ct-series.ct-series-l .ct-area,.ct-chart .ct-series.ct-series-l .ct-slice:not(.ct-donut){fill:#86797d}.ct-chart .ct-series.ct-series-m .ct-bar,.ct-chart .ct-series.ct-series-m .ct-line,.ct-chart .ct-series.ct-series-m .ct-point,.ct-chart .ct-series.ct-series-m .ct-slice.ct-donut{stroke:#b2c326}.ct-chart .ct-series.ct-series-m .ct-area,.ct-chart .ct-series.ct-series-m .ct-slice:not(.ct-donut){fill:#b2c326}.ct-chart .ct-series.ct-series-n .ct-bar,.ct-chart .ct-series.ct-series-n .ct-line,.ct-chart .ct-series.ct-series-n .ct-point,.ct-chart .ct-series.ct-series-n .ct-slice.ct-donut{stroke:#6188e2}.ct-chart .ct-series.ct-series-n .ct-area,.ct-chart .ct-series.ct-series-n .ct-slice:not(.ct-donut){fill:#6188e2}.ct-chart .ct-series.ct-series-o .ct-bar,.ct-chart .ct-series.ct-series-o .ct-line,.ct-chart .ct-series.ct-series-o .ct-point,.ct-chart .ct-series.ct-series-o .ct-slice.ct-donut{stroke:#a748ca}.ct-chart .ct-series.ct-series-o .ct-area,.ct-chart .ct-series.ct-series-o .ct-slice:not(.ct-donut){fill:#a748ca}.ct-chart.ct-square{display:block;position:relative;width:100%}.ct-chart.ct-square:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:100%}.ct-chart.ct-square:after{content:\"\";display:table;clear:both}.ct-chart.ct-square>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-second{display:block;position:relative;width:100%}.ct-chart.ct-minor-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:93.75%}.ct-chart.ct-minor-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-second{display:block;position:relative;width:100%}.ct-chart.ct-major-second:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:88.8888888889%}.ct-chart.ct-major-second:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-second>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-third{display:block;position:relative;width:100%}.ct-chart.ct-minor-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:83.3333333333%}.ct-chart.ct-minor-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-third{display:block;position:relative;width:100%}.ct-chart.ct-major-third:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:80%}.ct-chart.ct-major-third:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-third>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fourth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fourth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:75%}.ct-chart.ct-perfect-fourth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fourth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-perfect-fifth{display:block;position:relative;width:100%}.ct-chart.ct-perfect-fifth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:66.6666666667%}.ct-chart.ct-perfect-fifth:after{content:\"\";display:table;clear:both}.ct-chart.ct-perfect-fifth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-sixth{display:block;position:relative;width:100%}.ct-chart.ct-minor-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:62.5%}.ct-chart.ct-minor-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-golden-section{display:block;position:relative;width:100%}.ct-chart.ct-golden-section:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:61.804697157%}.ct-chart.ct-golden-section:after{content:\"\";display:table;clear:both}.ct-chart.ct-golden-section>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-sixth{display:block;position:relative;width:100%}.ct-chart.ct-major-sixth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:60%}.ct-chart.ct-major-sixth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-sixth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-minor-seventh{display:block;position:relative;width:100%}.ct-chart.ct-minor-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:56.25%}.ct-chart.ct-minor-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-minor-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-seventh{display:block;position:relative;width:100%}.ct-chart.ct-major-seventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:53.3333333333%}.ct-chart.ct-major-seventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-seventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-octave{display:block;position:relative;width:100%}.ct-chart.ct-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:50%}.ct-chart.ct-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-octave>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-tenth{display:block;position:relative;width:100%}.ct-chart.ct-major-tenth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:40%}.ct-chart.ct-major-tenth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-tenth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-eleventh{display:block;position:relative;width:100%}.ct-chart.ct-major-eleventh:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:37.5%}.ct-chart.ct-major-eleventh:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-eleventh>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-major-twelfth{display:block;position:relative;width:100%}.ct-chart.ct-major-twelfth:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:33.3333333333%}.ct-chart.ct-major-twelfth:after{content:\"\";display:table;clear:both}.ct-chart.ct-major-twelfth>svg{display:block;position:absolute;top:0;left:0}.ct-chart.ct-double-octave{display:block;position:relative;width:100%}.ct-chart.ct-double-octave:before{display:block;float:left;content:\"\";width:0;height:0;padding-bottom:25%}.ct-chart.ct-double-octave:after{content:\"\";display:table;clear:both}.ct-chart.ct-double-octave>svg{display:block;position:absolute;top:0;left:0}", ""]);
 
 /***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	var stylesInDom = {},
-		memoize = function(fn) {
-			var memo;
-			return function () {
-				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-				return memo;
-			};
-		},
-		isIE9 = memoize(function() {
-			return /msie 9\b/.test(window.navigator.userAgent.toLowerCase());
-		}),
-		getHeadElement = memoize(function () {
-			return document.head || document.getElementsByTagName("head")[0];
-		}),
-		singletonElement = null,
-		singletonCounter = 0;
-
-	module.exports = function(list, options) {
-		if(false) {
-			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-		}
-
-		options = options || {};
-		// Force single-tag solution on IE9, which has a hard limit on the # of <style>
-		// tags it will allow on a page
-		if (typeof options.singleton === "undefined") options.singleton = isIE9();
-
-		var styles = listToStyles(list);
-		addStylesToDom(styles, options);
-
-		return function update(newList) {
-			var mayRemove = [];
-			for(var i = 0; i < styles.length; i++) {
-				var item = styles[i];
-				var domStyle = stylesInDom[item.id];
-				domStyle.refs--;
-				mayRemove.push(domStyle);
-			}
-			if(newList) {
-				var newStyles = listToStyles(newList);
-				addStylesToDom(newStyles, options);
-			}
-			for(var i = 0; i < mayRemove.length; i++) {
-				var domStyle = mayRemove[i];
-				if(domStyle.refs === 0) {
-					for(var j = 0; j < domStyle.parts.length; j++)
-						domStyle.parts[j]();
-					delete stylesInDom[domStyle.id];
-				}
-			}
-		};
-	}
-
-	function addStylesToDom(styles, options) {
-		for(var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-			if(domStyle) {
-				domStyle.refs++;
-				for(var j = 0; j < domStyle.parts.length; j++) {
-					domStyle.parts[j](item.parts[j]);
-				}
-				for(; j < item.parts.length; j++) {
-					domStyle.parts.push(addStyle(item.parts[j], options));
-				}
-			} else {
-				var parts = [];
-				for(var j = 0; j < item.parts.length; j++) {
-					parts.push(addStyle(item.parts[j], options));
-				}
-				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-			}
-		}
-	}
-
-	function listToStyles(list) {
-		var styles = [];
-		var newStyles = {};
-		for(var i = 0; i < list.length; i++) {
-			var item = list[i];
-			var id = item[0];
-			var css = item[1];
-			var media = item[2];
-			var sourceMap = item[3];
-			var part = {css: css, media: media, sourceMap: sourceMap};
-			if(!newStyles[id])
-				styles.push(newStyles[id] = {id: id, parts: [part]});
-			else
-				newStyles[id].parts.push(part);
-		}
-		return styles;
-	}
-
-	function createStyleElement() {
-		var styleElement = document.createElement("style");
-		var head = getHeadElement();
-		styleElement.type = "text/css";
-		head.appendChild(styleElement);
-		return styleElement;
-	}
-
-	function addStyle(obj, options) {
-		var styleElement, update, remove;
-
-		if (options.singleton) {
-			var styleIndex = singletonCounter++;
-			styleElement = singletonElement || (singletonElement = createStyleElement());
-			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
-			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
-		} else {
-			styleElement = createStyleElement();
-			update = applyToTag.bind(null, styleElement);
-			remove = function () {
-				styleElement.parentNode.removeChild(styleElement);
-			};
-		}
-
-		update(obj);
-
-		return function updateStyle(newObj) {
-			if(newObj) {
-				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
-					return;
-				update(obj = newObj);
-			} else {
-				remove();
-			}
-		};
-	}
-
-	function replaceText(source, id, replacement) {
-		var boundaries = ["/** >>" + id + " **/", "/** " + id + "<< **/"];
-		var start = source.lastIndexOf(boundaries[0]);
-		var wrappedReplacement = replacement
-			? (boundaries[0] + replacement + boundaries[1])
-			: "";
-		if (source.lastIndexOf(boundaries[0]) >= 0) {
-			var end = source.lastIndexOf(boundaries[1]) + boundaries[1].length;
-			return source.slice(0, start) + wrappedReplacement + source.slice(end);
-		} else {
-			return source + wrappedReplacement;
-		}
-	}
-
-	function applyToSingletonTag(styleElement, index, remove, obj) {
-		var css = remove ? "" : obj.css;
-
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = replaceText(styleElement.styleSheet.cssText, index, css);
-		} else {
-			var cssNode = document.createTextNode(css);
-			var childNodes = styleElement.childNodes;
-			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
-			if (childNodes.length) {
-				styleElement.insertBefore(cssNode, childNodes[index]);
-			} else {
-				styleElement.appendChild(cssNode);
-			}
-		}
-	}
-
-	function applyToTag(styleElement, obj) {
-		var css = obj.css;
-		var media = obj.media;
-		var sourceMap = obj.sourceMap;
-
-		if(sourceMap && typeof btoa === "function") {
-			try {
-				css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
-				css = "@import url(\"data:text/css;base64," + btoa(css) + "\")";
-			} catch(e) {}
-		}
-
-		if(media) {
-			styleElement.setAttribute("media", media)
-		}
-
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = css;
-		} else {
-			while(styleElement.firstChild) {
-				styleElement.removeChild(styleElement.firstChild);
-			}
-			styleElement.appendChild(document.createTextNode(css));
-		}
-	}
-
-
-/***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(20);
+	var content = __webpack_require__(22);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(18)(content, {});
+	var update = __webpack_require__(13)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
@@ -14451,14 +17513,14 @@
 	}
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(21)();
-	exports.push([module.id, "/*!\n * Bootstrap v3.3.2 (http://getbootstrap.com)\n * Copyright 2011-2015 Twitter, Inc.\n * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)\n */\n\n/*! normalize.css v3.0.2 | MIT License | git.io/normalize */\nhtml {\n  font-family: sans-serif;\n  -webkit-text-size-adjust: 100%;\n      -ms-text-size-adjust: 100%;\n}\nbody {\n  margin: 0;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmain,\nmenu,\nnav,\nsection,\nsummary {\n  display: block;\n}\naudio,\ncanvas,\nprogress,\nvideo {\n  display: inline-block;\n  vertical-align: baseline;\n}\naudio:not([controls]) {\n  display: none;\n  height: 0;\n}\n[hidden],\ntemplate {\n  display: none;\n}\na {\n  background-color: transparent;\n}\na:active,\na:hover {\n  outline: 0;\n}\nabbr[title] {\n  border-bottom: 1px dotted;\n}\nb,\nstrong {\n  font-weight: bold;\n}\ndfn {\n  font-style: italic;\n}\nh1 {\n  margin: .67em 0;\n  font-size: 2em;\n}\nmark {\n  color: #000;\n  background: #ff0;\n}\nsmall {\n  font-size: 80%;\n}\nsub,\nsup {\n  position: relative;\n  font-size: 75%;\n  line-height: 0;\n  vertical-align: baseline;\n}\nsup {\n  top: -.5em;\n}\nsub {\n  bottom: -.25em;\n}\nimg {\n  border: 0;\n}\nsvg:not(:root) {\n  overflow: hidden;\n}\nfigure {\n  margin: 1em 40px;\n}\nhr {\n  height: 0;\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n}\npre {\n  overflow: auto;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n  margin: 0;\n  font: inherit;\n  color: inherit;\n}\nbutton {\n  overflow: visible;\n}\nbutton,\nselect {\n  text-transform: none;\n}\nbutton,\nhtml input[type=\"button\"],\ninput[type=\"reset\"],\ninput[type=\"submit\"] {\n  -webkit-appearance: button;\n  cursor: pointer;\n}\nbutton[disabled],\nhtml input[disabled] {\n  cursor: default;\n}\nbutton::-moz-focus-inner,\ninput::-moz-focus-inner {\n  padding: 0;\n  border: 0;\n}\ninput {\n  line-height: normal;\n}\ninput[type=\"checkbox\"],\ninput[type=\"radio\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n  padding: 0;\n}\ninput[type=\"number\"]::-webkit-inner-spin-button,\ninput[type=\"number\"]::-webkit-outer-spin-button {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n  -webkit-appearance: textfield;\n}\ninput[type=\"search\"]::-webkit-search-cancel-button,\ninput[type=\"search\"]::-webkit-search-decoration {\n  -webkit-appearance: none;\n}\nfieldset {\n  padding: .35em .625em .75em;\n  margin: 0 2px;\n  border: 1px solid #c0c0c0;\n}\nlegend {\n  padding: 0;\n  border: 0;\n}\ntextarea {\n  overflow: auto;\n}\noptgroup {\n  font-weight: bold;\n}\ntable {\n  border-spacing: 0;\n  border-collapse: collapse;\n}\ntd,\nth {\n  padding: 0;\n}\n/*! Source: https://github.com/h5bp/html5-boilerplate/blob/master/src/css/main.css */\n@media print {\n  *,\n  *:before,\n  *:after {\n    color: #000 !important;\n    text-shadow: none !important;\n    background: transparent !important;\n    -webkit-box-shadow: none !important;\n            box-shadow: none !important;\n  }\n  a,\n  a:visited {\n    text-decoration: underline;\n  }\n  a[href]:after {\n    content: \" (\" attr(href) \")\";\n  }\n  abbr[title]:after {\n    content: \" (\" attr(title) \")\";\n  }\n  a[href^=\"#\"]:after,\n  a[href^=\"javascript:\"]:after {\n    content: \"\";\n  }\n  pre,\n  blockquote {\n    border: 1px solid #999;\n\n    page-break-inside: avoid;\n  }\n  thead {\n    display: table-header-group;\n  }\n  tr,\n  img {\n    page-break-inside: avoid;\n  }\n  img {\n    max-width: 100% !important;\n  }\n  p,\n  h2,\n  h3 {\n    orphans: 3;\n    widows: 3;\n  }\n  h2,\n  h3 {\n    page-break-after: avoid;\n  }\n  select {\n    background: #fff !important;\n  }\n  .navbar {\n    display: none;\n  }\n  .btn > .caret,\n  .dropup > .btn > .caret {\n    border-top-color: #000 !important;\n  }\n  .label {\n    border: 1px solid #000;\n  }\n  .table {\n    border-collapse: collapse !important;\n  }\n  .table td,\n  .table th {\n    background-color: #fff !important;\n  }\n  .table-bordered th,\n  .table-bordered td {\n    border: 1px solid #ddd !important;\n  }\n}\n@font-face {\n  font-family: 'Glyphicons Halflings';\n\n  src: url("+__webpack_require__(23)+");\n  src: url("+__webpack_require__(23)+"?#iefix) format('embedded-opentype'), url("+__webpack_require__(29)+") format('woff2'), url("+__webpack_require__(26)+") format('woff'), url("+__webpack_require__(25)+") format('truetype'), url("+__webpack_require__(24)+"#glyphicons_halflingsregular) format('svg');\n}\n.glyphicon {\n  position: relative;\n  top: 1px;\n  display: inline-block;\n  font-family: 'Glyphicons Halflings';\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1;\n\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n.glyphicon-asterisk:before {\n  content: \"\\2a\";\n}\n.glyphicon-plus:before {\n  content: \"\\2b\";\n}\n.glyphicon-euro:before,\n.glyphicon-eur:before {\n  content: \"\\20ac\";\n}\n.glyphicon-minus:before {\n  content: \"\\2212\";\n}\n.glyphicon-cloud:before {\n  content: \"\\2601\";\n}\n.glyphicon-envelope:before {\n  content: \"\\2709\";\n}\n.glyphicon-pencil:before {\n  content: \"\\270f\";\n}\n.glyphicon-glass:before {\n  content: \"\\e001\";\n}\n.glyphicon-music:before {\n  content: \"\\e002\";\n}\n.glyphicon-search:before {\n  content: \"\\e003\";\n}\n.glyphicon-heart:before {\n  content: \"\\e005\";\n}\n.glyphicon-star:before {\n  content: \"\\e006\";\n}\n.glyphicon-star-empty:before {\n  content: \"\\e007\";\n}\n.glyphicon-user:before {\n  content: \"\\e008\";\n}\n.glyphicon-film:before {\n  content: \"\\e009\";\n}\n.glyphicon-th-large:before {\n  content: \"\\e010\";\n}\n.glyphicon-th:before {\n  content: \"\\e011\";\n}\n.glyphicon-th-list:before {\n  content: \"\\e012\";\n}\n.glyphicon-ok:before {\n  content: \"\\e013\";\n}\n.glyphicon-remove:before {\n  content: \"\\e014\";\n}\n.glyphicon-zoom-in:before {\n  content: \"\\e015\";\n}\n.glyphicon-zoom-out:before {\n  content: \"\\e016\";\n}\n.glyphicon-off:before {\n  content: \"\\e017\";\n}\n.glyphicon-signal:before {\n  content: \"\\e018\";\n}\n.glyphicon-cog:before {\n  content: \"\\e019\";\n}\n.glyphicon-trash:before {\n  content: \"\\e020\";\n}\n.glyphicon-home:before {\n  content: \"\\e021\";\n}\n.glyphicon-file:before {\n  content: \"\\e022\";\n}\n.glyphicon-time:before {\n  content: \"\\e023\";\n}\n.glyphicon-road:before {\n  content: \"\\e024\";\n}\n.glyphicon-download-alt:before {\n  content: \"\\e025\";\n}\n.glyphicon-download:before {\n  content: \"\\e026\";\n}\n.glyphicon-upload:before {\n  content: \"\\e027\";\n}\n.glyphicon-inbox:before {\n  content: \"\\e028\";\n}\n.glyphicon-play-circle:before {\n  content: \"\\e029\";\n}\n.glyphicon-repeat:before {\n  content: \"\\e030\";\n}\n.glyphicon-refresh:before {\n  content: \"\\e031\";\n}\n.glyphicon-list-alt:before {\n  content: \"\\e032\";\n}\n.glyphicon-lock:before {\n  content: \"\\e033\";\n}\n.glyphicon-flag:before {\n  content: \"\\e034\";\n}\n.glyphicon-headphones:before {\n  content: \"\\e035\";\n}\n.glyphicon-volume-off:before {\n  content: \"\\e036\";\n}\n.glyphicon-volume-down:before {\n  content: \"\\e037\";\n}\n.glyphicon-volume-up:before {\n  content: \"\\e038\";\n}\n.glyphicon-qrcode:before {\n  content: \"\\e039\";\n}\n.glyphicon-barcode:before {\n  content: \"\\e040\";\n}\n.glyphicon-tag:before {\n  content: \"\\e041\";\n}\n.glyphicon-tags:before {\n  content: \"\\e042\";\n}\n.glyphicon-book:before {\n  content: \"\\e043\";\n}\n.glyphicon-bookmark:before {\n  content: \"\\e044\";\n}\n.glyphicon-print:before {\n  content: \"\\e045\";\n}\n.glyphicon-camera:before {\n  content: \"\\e046\";\n}\n.glyphicon-font:before {\n  content: \"\\e047\";\n}\n.glyphicon-bold:before {\n  content: \"\\e048\";\n}\n.glyphicon-italic:before {\n  content: \"\\e049\";\n}\n.glyphicon-text-height:before {\n  content: \"\\e050\";\n}\n.glyphicon-text-width:before {\n  content: \"\\e051\";\n}\n.glyphicon-align-left:before {\n  content: \"\\e052\";\n}\n.glyphicon-align-center:before {\n  content: \"\\e053\";\n}\n.glyphicon-align-right:before {\n  content: \"\\e054\";\n}\n.glyphicon-align-justify:before {\n  content: \"\\e055\";\n}\n.glyphicon-list:before {\n  content: \"\\e056\";\n}\n.glyphicon-indent-left:before {\n  content: \"\\e057\";\n}\n.glyphicon-indent-right:before {\n  content: \"\\e058\";\n}\n.glyphicon-facetime-video:before {\n  content: \"\\e059\";\n}\n.glyphicon-picture:before {\n  content: \"\\e060\";\n}\n.glyphicon-map-marker:before {\n  content: \"\\e062\";\n}\n.glyphicon-adjust:before {\n  content: \"\\e063\";\n}\n.glyphicon-tint:before {\n  content: \"\\e064\";\n}\n.glyphicon-edit:before {\n  content: \"\\e065\";\n}\n.glyphicon-share:before {\n  content: \"\\e066\";\n}\n.glyphicon-check:before {\n  content: \"\\e067\";\n}\n.glyphicon-move:before {\n  content: \"\\e068\";\n}\n.glyphicon-step-backward:before {\n  content: \"\\e069\";\n}\n.glyphicon-fast-backward:before {\n  content: \"\\e070\";\n}\n.glyphicon-backward:before {\n  content: \"\\e071\";\n}\n.glyphicon-play:before {\n  content: \"\\e072\";\n}\n.glyphicon-pause:before {\n  content: \"\\e073\";\n}\n.glyphicon-stop:before {\n  content: \"\\e074\";\n}\n.glyphicon-forward:before {\n  content: \"\\e075\";\n}\n.glyphicon-fast-forward:before {\n  content: \"\\e076\";\n}\n.glyphicon-step-forward:before {\n  content: \"\\e077\";\n}\n.glyphicon-eject:before {\n  content: \"\\e078\";\n}\n.glyphicon-chevron-left:before {\n  content: \"\\e079\";\n}\n.glyphicon-chevron-right:before {\n  content: \"\\e080\";\n}\n.glyphicon-plus-sign:before {\n  content: \"\\e081\";\n}\n.glyphicon-minus-sign:before {\n  content: \"\\e082\";\n}\n.glyphicon-remove-sign:before {\n  content: \"\\e083\";\n}\n.glyphicon-ok-sign:before {\n  content: \"\\e084\";\n}\n.glyphicon-question-sign:before {\n  content: \"\\e085\";\n}\n.glyphicon-info-sign:before {\n  content: \"\\e086\";\n}\n.glyphicon-screenshot:before {\n  content: \"\\e087\";\n}\n.glyphicon-remove-circle:before {\n  content: \"\\e088\";\n}\n.glyphicon-ok-circle:before {\n  content: \"\\e089\";\n}\n.glyphicon-ban-circle:before {\n  content: \"\\e090\";\n}\n.glyphicon-arrow-left:before {\n  content: \"\\e091\";\n}\n.glyphicon-arrow-right:before {\n  content: \"\\e092\";\n}\n.glyphicon-arrow-up:before {\n  content: \"\\e093\";\n}\n.glyphicon-arrow-down:before {\n  content: \"\\e094\";\n}\n.glyphicon-share-alt:before {\n  content: \"\\e095\";\n}\n.glyphicon-resize-full:before {\n  content: \"\\e096\";\n}\n.glyphicon-resize-small:before {\n  content: \"\\e097\";\n}\n.glyphicon-exclamation-sign:before {\n  content: \"\\e101\";\n}\n.glyphicon-gift:before {\n  content: \"\\e102\";\n}\n.glyphicon-leaf:before {\n  content: \"\\e103\";\n}\n.glyphicon-fire:before {\n  content: \"\\e104\";\n}\n.glyphicon-eye-open:before {\n  content: \"\\e105\";\n}\n.glyphicon-eye-close:before {\n  content: \"\\e106\";\n}\n.glyphicon-warning-sign:before {\n  content: \"\\e107\";\n}\n.glyphicon-plane:before {\n  content: \"\\e108\";\n}\n.glyphicon-calendar:before {\n  content: \"\\e109\";\n}\n.glyphicon-random:before {\n  content: \"\\e110\";\n}\n.glyphicon-comment:before {\n  content: \"\\e111\";\n}\n.glyphicon-magnet:before {\n  content: \"\\e112\";\n}\n.glyphicon-chevron-up:before {\n  content: \"\\e113\";\n}\n.glyphicon-chevron-down:before {\n  content: \"\\e114\";\n}\n.glyphicon-retweet:before {\n  content: \"\\e115\";\n}\n.glyphicon-shopping-cart:before {\n  content: \"\\e116\";\n}\n.glyphicon-folder-close:before {\n  content: \"\\e117\";\n}\n.glyphicon-folder-open:before {\n  content: \"\\e118\";\n}\n.glyphicon-resize-vertical:before {\n  content: \"\\e119\";\n}\n.glyphicon-resize-horizontal:before {\n  content: \"\\e120\";\n}\n.glyphicon-hdd:before {\n  content: \"\\e121\";\n}\n.glyphicon-bullhorn:before {\n  content: \"\\e122\";\n}\n.glyphicon-bell:before {\n  content: \"\\e123\";\n}\n.glyphicon-certificate:before {\n  content: \"\\e124\";\n}\n.glyphicon-thumbs-up:before {\n  content: \"\\e125\";\n}\n.glyphicon-thumbs-down:before {\n  content: \"\\e126\";\n}\n.glyphicon-hand-right:before {\n  content: \"\\e127\";\n}\n.glyphicon-hand-left:before {\n  content: \"\\e128\";\n}\n.glyphicon-hand-up:before {\n  content: \"\\e129\";\n}\n.glyphicon-hand-down:before {\n  content: \"\\e130\";\n}\n.glyphicon-circle-arrow-right:before {\n  content: \"\\e131\";\n}\n.glyphicon-circle-arrow-left:before {\n  content: \"\\e132\";\n}\n.glyphicon-circle-arrow-up:before {\n  content: \"\\e133\";\n}\n.glyphicon-circle-arrow-down:before {\n  content: \"\\e134\";\n}\n.glyphicon-globe:before {\n  content: \"\\e135\";\n}\n.glyphicon-wrench:before {\n  content: \"\\e136\";\n}\n.glyphicon-tasks:before {\n  content: \"\\e137\";\n}\n.glyphicon-filter:before {\n  content: \"\\e138\";\n}\n.glyphicon-briefcase:before {\n  content: \"\\e139\";\n}\n.glyphicon-fullscreen:before {\n  content: \"\\e140\";\n}\n.glyphicon-dashboard:before {\n  content: \"\\e141\";\n}\n.glyphicon-paperclip:before {\n  content: \"\\e142\";\n}\n.glyphicon-heart-empty:before {\n  content: \"\\e143\";\n}\n.glyphicon-link:before {\n  content: \"\\e144\";\n}\n.glyphicon-phone:before {\n  content: \"\\e145\";\n}\n.glyphicon-pushpin:before {\n  content: \"\\e146\";\n}\n.glyphicon-usd:before {\n  content: \"\\e148\";\n}\n.glyphicon-gbp:before {\n  content: \"\\e149\";\n}\n.glyphicon-sort:before {\n  content: \"\\e150\";\n}\n.glyphicon-sort-by-alphabet:before {\n  content: \"\\e151\";\n}\n.glyphicon-sort-by-alphabet-alt:before {\n  content: \"\\e152\";\n}\n.glyphicon-sort-by-order:before {\n  content: \"\\e153\";\n}\n.glyphicon-sort-by-order-alt:before {\n  content: \"\\e154\";\n}\n.glyphicon-sort-by-attributes:before {\n  content: \"\\e155\";\n}\n.glyphicon-sort-by-attributes-alt:before {\n  content: \"\\e156\";\n}\n.glyphicon-unchecked:before {\n  content: \"\\e157\";\n}\n.glyphicon-expand:before {\n  content: \"\\e158\";\n}\n.glyphicon-collapse-down:before {\n  content: \"\\e159\";\n}\n.glyphicon-collapse-up:before {\n  content: \"\\e160\";\n}\n.glyphicon-log-in:before {\n  content: \"\\e161\";\n}\n.glyphicon-flash:before {\n  content: \"\\e162\";\n}\n.glyphicon-log-out:before {\n  content: \"\\e163\";\n}\n.glyphicon-new-window:before {\n  content: \"\\e164\";\n}\n.glyphicon-record:before {\n  content: \"\\e165\";\n}\n.glyphicon-save:before {\n  content: \"\\e166\";\n}\n.glyphicon-open:before {\n  content: \"\\e167\";\n}\n.glyphicon-saved:before {\n  content: \"\\e168\";\n}\n.glyphicon-import:before {\n  content: \"\\e169\";\n}\n.glyphicon-export:before {\n  content: \"\\e170\";\n}\n.glyphicon-send:before {\n  content: \"\\e171\";\n}\n.glyphicon-floppy-disk:before {\n  content: \"\\e172\";\n}\n.glyphicon-floppy-saved:before {\n  content: \"\\e173\";\n}\n.glyphicon-floppy-remove:before {\n  content: \"\\e174\";\n}\n.glyphicon-floppy-save:before {\n  content: \"\\e175\";\n}\n.glyphicon-floppy-open:before {\n  content: \"\\e176\";\n}\n.glyphicon-credit-card:before {\n  content: \"\\e177\";\n}\n.glyphicon-transfer:before {\n  content: \"\\e178\";\n}\n.glyphicon-cutlery:before {\n  content: \"\\e179\";\n}\n.glyphicon-header:before {\n  content: \"\\e180\";\n}\n.glyphicon-compressed:before {\n  content: \"\\e181\";\n}\n.glyphicon-earphone:before {\n  content: \"\\e182\";\n}\n.glyphicon-phone-alt:before {\n  content: \"\\e183\";\n}\n.glyphicon-tower:before {\n  content: \"\\e184\";\n}\n.glyphicon-stats:before {\n  content: \"\\e185\";\n}\n.glyphicon-sd-video:before {\n  content: \"\\e186\";\n}\n.glyphicon-hd-video:before {\n  content: \"\\e187\";\n}\n.glyphicon-subtitles:before {\n  content: \"\\e188\";\n}\n.glyphicon-sound-stereo:before {\n  content: \"\\e189\";\n}\n.glyphicon-sound-dolby:before {\n  content: \"\\e190\";\n}\n.glyphicon-sound-5-1:before {\n  content: \"\\e191\";\n}\n.glyphicon-sound-6-1:before {\n  content: \"\\e192\";\n}\n.glyphicon-sound-7-1:before {\n  content: \"\\e193\";\n}\n.glyphicon-copyright-mark:before {\n  content: \"\\e194\";\n}\n.glyphicon-registration-mark:before {\n  content: \"\\e195\";\n}\n.glyphicon-cloud-download:before {\n  content: \"\\e197\";\n}\n.glyphicon-cloud-upload:before {\n  content: \"\\e198\";\n}\n.glyphicon-tree-conifer:before {\n  content: \"\\e199\";\n}\n.glyphicon-tree-deciduous:before {\n  content: \"\\e200\";\n}\n.glyphicon-cd:before {\n  content: \"\\e201\";\n}\n.glyphicon-save-file:before {\n  content: \"\\e202\";\n}\n.glyphicon-open-file:before {\n  content: \"\\e203\";\n}\n.glyphicon-level-up:before {\n  content: \"\\e204\";\n}\n.glyphicon-copy:before {\n  content: \"\\e205\";\n}\n.glyphicon-paste:before {\n  content: \"\\e206\";\n}\n.glyphicon-alert:before {\n  content: \"\\e209\";\n}\n.glyphicon-equalizer:before {\n  content: \"\\e210\";\n}\n.glyphicon-king:before {\n  content: \"\\e211\";\n}\n.glyphicon-queen:before {\n  content: \"\\e212\";\n}\n.glyphicon-pawn:before {\n  content: \"\\e213\";\n}\n.glyphicon-bishop:before {\n  content: \"\\e214\";\n}\n.glyphicon-knight:before {\n  content: \"\\e215\";\n}\n.glyphicon-baby-formula:before {\n  content: \"\\e216\";\n}\n.glyphicon-tent:before {\n  content: \"\\26fa\";\n}\n.glyphicon-blackboard:before {\n  content: \"\\e218\";\n}\n.glyphicon-bed:before {\n  content: \"\\e219\";\n}\n.glyphicon-apple:before {\n  content: \"\\f8ff\";\n}\n.glyphicon-erase:before {\n  content: \"\\e221\";\n}\n.glyphicon-hourglass:before {\n  content: \"\\231b\";\n}\n.glyphicon-lamp:before {\n  content: \"\\e223\";\n}\n.glyphicon-duplicate:before {\n  content: \"\\e224\";\n}\n.glyphicon-piggy-bank:before {\n  content: \"\\e225\";\n}\n.glyphicon-scissors:before {\n  content: \"\\e226\";\n}\n.glyphicon-bitcoin:before {\n  content: \"\\e227\";\n}\n.glyphicon-yen:before {\n  content: \"\\00a5\";\n}\n.glyphicon-ruble:before {\n  content: \"\\20bd\";\n}\n.glyphicon-scale:before {\n  content: \"\\e230\";\n}\n.glyphicon-ice-lolly:before {\n  content: \"\\e231\";\n}\n.glyphicon-ice-lolly-tasted:before {\n  content: \"\\e232\";\n}\n.glyphicon-education:before {\n  content: \"\\e233\";\n}\n.glyphicon-option-horizontal:before {\n  content: \"\\e234\";\n}\n.glyphicon-option-vertical:before {\n  content: \"\\e235\";\n}\n.glyphicon-menu-hamburger:before {\n  content: \"\\e236\";\n}\n.glyphicon-modal-window:before {\n  content: \"\\e237\";\n}\n.glyphicon-oil:before {\n  content: \"\\e238\";\n}\n.glyphicon-grain:before {\n  content: \"\\e239\";\n}\n.glyphicon-sunglasses:before {\n  content: \"\\e240\";\n}\n.glyphicon-text-size:before {\n  content: \"\\e241\";\n}\n.glyphicon-text-color:before {\n  content: \"\\e242\";\n}\n.glyphicon-text-background:before {\n  content: \"\\e243\";\n}\n.glyphicon-object-align-top:before {\n  content: \"\\e244\";\n}\n.glyphicon-object-align-bottom:before {\n  content: \"\\e245\";\n}\n.glyphicon-object-align-horizontal:before {\n  content: \"\\e246\";\n}\n.glyphicon-object-align-left:before {\n  content: \"\\e247\";\n}\n.glyphicon-object-align-vertical:before {\n  content: \"\\e248\";\n}\n.glyphicon-object-align-right:before {\n  content: \"\\e249\";\n}\n.glyphicon-triangle-right:before {\n  content: \"\\e250\";\n}\n.glyphicon-triangle-left:before {\n  content: \"\\e251\";\n}\n.glyphicon-triangle-bottom:before {\n  content: \"\\e252\";\n}\n.glyphicon-triangle-top:before {\n  content: \"\\e253\";\n}\n.glyphicon-console:before {\n  content: \"\\e254\";\n}\n.glyphicon-superscript:before {\n  content: \"\\e255\";\n}\n.glyphicon-subscript:before {\n  content: \"\\e256\";\n}\n.glyphicon-menu-left:before {\n  content: \"\\e257\";\n}\n.glyphicon-menu-right:before {\n  content: \"\\e258\";\n}\n.glyphicon-menu-down:before {\n  content: \"\\e259\";\n}\n.glyphicon-menu-up:before {\n  content: \"\\e260\";\n}\n* {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\n*:before,\n*:after {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\nhtml {\n  font-size: 10px;\n\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n}\nbody {\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #333;\n  background-color: #fff;\n}\ninput,\nbutton,\nselect,\ntextarea {\n  font-family: inherit;\n  font-size: inherit;\n  line-height: inherit;\n}\na {\n  color: #337ab7;\n  text-decoration: none;\n}\na:hover,\na:focus {\n  color: #23527c;\n  text-decoration: underline;\n}\na:focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\nfigure {\n  margin: 0;\n}\nimg {\n  vertical-align: middle;\n}\n.img-responsive,\n.thumbnail > img,\n.thumbnail a > img,\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  display: block;\n  max-width: 100%;\n  height: auto;\n}\n.img-rounded {\n  border-radius: 6px;\n}\n.img-thumbnail {\n  display: inline-block;\n  max-width: 100%;\n  height: auto;\n  padding: 4px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: all .2s ease-in-out;\n       -o-transition: all .2s ease-in-out;\n          transition: all .2s ease-in-out;\n}\n.img-circle {\n  border-radius: 50%;\n}\nhr {\n  margin-top: 20px;\n  margin-bottom: 20px;\n  border: 0;\n  border-top: 1px solid #eee;\n}\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  border: 0;\n}\n.sr-only-focusable:active,\n.sr-only-focusable:focus {\n  position: static;\n  width: auto;\n  height: auto;\n  margin: 0;\n  overflow: visible;\n  clip: auto;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\n.h1,\n.h2,\n.h3,\n.h4,\n.h5,\n.h6 {\n  font-family: inherit;\n  font-weight: 500;\n  line-height: 1.1;\n  color: inherit;\n}\nh1 small,\nh2 small,\nh3 small,\nh4 small,\nh5 small,\nh6 small,\n.h1 small,\n.h2 small,\n.h3 small,\n.h4 small,\n.h5 small,\n.h6 small,\nh1 .small,\nh2 .small,\nh3 .small,\nh4 .small,\nh5 .small,\nh6 .small,\n.h1 .small,\n.h2 .small,\n.h3 .small,\n.h4 .small,\n.h5 .small,\n.h6 .small {\n  font-weight: normal;\n  line-height: 1;\n  color: #777;\n}\nh1,\n.h1,\nh2,\n.h2,\nh3,\n.h3 {\n  margin-top: 20px;\n  margin-bottom: 10px;\n}\nh1 small,\n.h1 small,\nh2 small,\n.h2 small,\nh3 small,\n.h3 small,\nh1 .small,\n.h1 .small,\nh2 .small,\n.h2 .small,\nh3 .small,\n.h3 .small {\n  font-size: 65%;\n}\nh4,\n.h4,\nh5,\n.h5,\nh6,\n.h6 {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\nh4 small,\n.h4 small,\nh5 small,\n.h5 small,\nh6 small,\n.h6 small,\nh4 .small,\n.h4 .small,\nh5 .small,\n.h5 .small,\nh6 .small,\n.h6 .small {\n  font-size: 75%;\n}\nh1,\n.h1 {\n  font-size: 36px;\n}\nh2,\n.h2 {\n  font-size: 30px;\n}\nh3,\n.h3 {\n  font-size: 24px;\n}\nh4,\n.h4 {\n  font-size: 18px;\n}\nh5,\n.h5 {\n  font-size: 14px;\n}\nh6,\n.h6 {\n  font-size: 12px;\n}\np {\n  margin: 0 0 10px;\n}\n.lead {\n  margin-bottom: 20px;\n  font-size: 16px;\n  font-weight: 300;\n  line-height: 1.4;\n}\n@media (min-width: 768px) {\n  .lead {\n    font-size: 21px;\n  }\n}\nsmall,\n.small {\n  font-size: 85%;\n}\nmark,\n.mark {\n  padding: .2em;\n  background-color: #fcf8e3;\n}\n.text-left {\n  text-align: left;\n}\n.text-right {\n  text-align: right;\n}\n.text-center {\n  text-align: center;\n}\n.text-justify {\n  text-align: justify;\n}\n.text-nowrap {\n  white-space: nowrap;\n}\n.text-lowercase {\n  text-transform: lowercase;\n}\n.text-uppercase {\n  text-transform: uppercase;\n}\n.text-capitalize {\n  text-transform: capitalize;\n}\n.text-muted {\n  color: #777;\n}\n.text-primary {\n  color: #337ab7;\n}\na.text-primary:hover {\n  color: #286090;\n}\n.text-success {\n  color: #3c763d;\n}\na.text-success:hover {\n  color: #2b542c;\n}\n.text-info {\n  color: #31708f;\n}\na.text-info:hover {\n  color: #245269;\n}\n.text-warning {\n  color: #8a6d3b;\n}\na.text-warning:hover {\n  color: #66512c;\n}\n.text-danger {\n  color: #a94442;\n}\na.text-danger:hover {\n  color: #843534;\n}\n.bg-primary {\n  color: #fff;\n  background-color: #337ab7;\n}\na.bg-primary:hover {\n  background-color: #286090;\n}\n.bg-success {\n  background-color: #dff0d8;\n}\na.bg-success:hover {\n  background-color: #c1e2b3;\n}\n.bg-info {\n  background-color: #d9edf7;\n}\na.bg-info:hover {\n  background-color: #afd9ee;\n}\n.bg-warning {\n  background-color: #fcf8e3;\n}\na.bg-warning:hover {\n  background-color: #f7ecb5;\n}\n.bg-danger {\n  background-color: #f2dede;\n}\na.bg-danger:hover {\n  background-color: #e4b9b9;\n}\n.page-header {\n  padding-bottom: 9px;\n  margin: 40px 0 20px;\n  border-bottom: 1px solid #eee;\n}\nul,\nol {\n  margin-top: 0;\n  margin-bottom: 10px;\n}\nul ul,\nol ul,\nul ol,\nol ol {\n  margin-bottom: 0;\n}\n.list-unstyled {\n  padding-left: 0;\n  list-style: none;\n}\n.list-inline {\n  padding-left: 0;\n  margin-left: -5px;\n  list-style: none;\n}\n.list-inline > li {\n  display: inline-block;\n  padding-right: 5px;\n  padding-left: 5px;\n}\ndl {\n  margin-top: 0;\n  margin-bottom: 20px;\n}\ndt,\ndd {\n  line-height: 1.42857143;\n}\ndt {\n  font-weight: bold;\n}\ndd {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .dl-horizontal dt {\n    float: left;\n    width: 160px;\n    overflow: hidden;\n    clear: left;\n    text-align: right;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n  .dl-horizontal dd {\n    margin-left: 180px;\n  }\n}\nabbr[title],\nabbr[data-original-title] {\n  cursor: help;\n  border-bottom: 1px dotted #777;\n}\n.initialism {\n  font-size: 90%;\n  text-transform: uppercase;\n}\nblockquote {\n  padding: 10px 20px;\n  margin: 0 0 20px;\n  font-size: 17.5px;\n  border-left: 5px solid #eee;\n}\nblockquote p:last-child,\nblockquote ul:last-child,\nblockquote ol:last-child {\n  margin-bottom: 0;\n}\nblockquote footer,\nblockquote small,\nblockquote .small {\n  display: block;\n  font-size: 80%;\n  line-height: 1.42857143;\n  color: #777;\n}\nblockquote footer:before,\nblockquote small:before,\nblockquote .small:before {\n  content: '\\2014 \\00A0';\n}\n.blockquote-reverse,\nblockquote.pull-right {\n  padding-right: 15px;\n  padding-left: 0;\n  text-align: right;\n  border-right: 5px solid #eee;\n  border-left: 0;\n}\n.blockquote-reverse footer:before,\nblockquote.pull-right footer:before,\n.blockquote-reverse small:before,\nblockquote.pull-right small:before,\n.blockquote-reverse .small:before,\nblockquote.pull-right .small:before {\n  content: '';\n}\n.blockquote-reverse footer:after,\nblockquote.pull-right footer:after,\n.blockquote-reverse small:after,\nblockquote.pull-right small:after,\n.blockquote-reverse .small:after,\nblockquote.pull-right .small:after {\n  content: '\\00A0 \\2014';\n}\naddress {\n  margin-bottom: 20px;\n  font-style: normal;\n  line-height: 1.42857143;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: Menlo, Monaco, Consolas, \"Courier New\", monospace;\n}\ncode {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #c7254e;\n  background-color: #f9f2f4;\n  border-radius: 4px;\n}\nkbd {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #fff;\n  background-color: #333;\n  border-radius: 3px;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n}\nkbd kbd {\n  padding: 0;\n  font-size: 100%;\n  font-weight: bold;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\npre {\n  display: block;\n  padding: 9.5px;\n  margin: 0 0 10px;\n  font-size: 13px;\n  line-height: 1.42857143;\n  color: #333;\n  word-break: break-all;\n  word-wrap: break-word;\n  background-color: #f5f5f5;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\npre code {\n  padding: 0;\n  font-size: inherit;\n  color: inherit;\n  white-space: pre-wrap;\n  background-color: transparent;\n  border-radius: 0;\n}\n.pre-scrollable {\n  max-height: 340px;\n  overflow-y: scroll;\n}\n.container {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n@media (min-width: 768px) {\n  .container {\n    width: 750px;\n  }\n}\n@media (min-width: 992px) {\n  .container {\n    width: 970px;\n  }\n}\n@media (min-width: 1200px) {\n  .container {\n    width: 1170px;\n  }\n}\n.container-fluid {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n.row {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n.col-xs-1, .col-sm-1, .col-md-1, .col-lg-1, .col-xs-2, .col-sm-2, .col-md-2, .col-lg-2, .col-xs-3, .col-sm-3, .col-md-3, .col-lg-3, .col-xs-4, .col-sm-4, .col-md-4, .col-lg-4, .col-xs-5, .col-sm-5, .col-md-5, .col-lg-5, .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6, .col-xs-7, .col-sm-7, .col-md-7, .col-lg-7, .col-xs-8, .col-sm-8, .col-md-8, .col-lg-8, .col-xs-9, .col-sm-9, .col-md-9, .col-lg-9, .col-xs-10, .col-sm-10, .col-md-10, .col-lg-10, .col-xs-11, .col-sm-11, .col-md-11, .col-lg-11, .col-xs-12, .col-sm-12, .col-md-12, .col-lg-12 {\n  position: relative;\n  min-height: 1px;\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12 {\n  float: left;\n}\n.col-xs-12 {\n  width: 100%;\n}\n.col-xs-11 {\n  width: 91.66666667%;\n}\n.col-xs-10 {\n  width: 83.33333333%;\n}\n.col-xs-9 {\n  width: 75%;\n}\n.col-xs-8 {\n  width: 66.66666667%;\n}\n.col-xs-7 {\n  width: 58.33333333%;\n}\n.col-xs-6 {\n  width: 50%;\n}\n.col-xs-5 {\n  width: 41.66666667%;\n}\n.col-xs-4 {\n  width: 33.33333333%;\n}\n.col-xs-3 {\n  width: 25%;\n}\n.col-xs-2 {\n  width: 16.66666667%;\n}\n.col-xs-1 {\n  width: 8.33333333%;\n}\n.col-xs-pull-12 {\n  right: 100%;\n}\n.col-xs-pull-11 {\n  right: 91.66666667%;\n}\n.col-xs-pull-10 {\n  right: 83.33333333%;\n}\n.col-xs-pull-9 {\n  right: 75%;\n}\n.col-xs-pull-8 {\n  right: 66.66666667%;\n}\n.col-xs-pull-7 {\n  right: 58.33333333%;\n}\n.col-xs-pull-6 {\n  right: 50%;\n}\n.col-xs-pull-5 {\n  right: 41.66666667%;\n}\n.col-xs-pull-4 {\n  right: 33.33333333%;\n}\n.col-xs-pull-3 {\n  right: 25%;\n}\n.col-xs-pull-2 {\n  right: 16.66666667%;\n}\n.col-xs-pull-1 {\n  right: 8.33333333%;\n}\n.col-xs-pull-0 {\n  right: auto;\n}\n.col-xs-push-12 {\n  left: 100%;\n}\n.col-xs-push-11 {\n  left: 91.66666667%;\n}\n.col-xs-push-10 {\n  left: 83.33333333%;\n}\n.col-xs-push-9 {\n  left: 75%;\n}\n.col-xs-push-8 {\n  left: 66.66666667%;\n}\n.col-xs-push-7 {\n  left: 58.33333333%;\n}\n.col-xs-push-6 {\n  left: 50%;\n}\n.col-xs-push-5 {\n  left: 41.66666667%;\n}\n.col-xs-push-4 {\n  left: 33.33333333%;\n}\n.col-xs-push-3 {\n  left: 25%;\n}\n.col-xs-push-2 {\n  left: 16.66666667%;\n}\n.col-xs-push-1 {\n  left: 8.33333333%;\n}\n.col-xs-push-0 {\n  left: auto;\n}\n.col-xs-offset-12 {\n  margin-left: 100%;\n}\n.col-xs-offset-11 {\n  margin-left: 91.66666667%;\n}\n.col-xs-offset-10 {\n  margin-left: 83.33333333%;\n}\n.col-xs-offset-9 {\n  margin-left: 75%;\n}\n.col-xs-offset-8 {\n  margin-left: 66.66666667%;\n}\n.col-xs-offset-7 {\n  margin-left: 58.33333333%;\n}\n.col-xs-offset-6 {\n  margin-left: 50%;\n}\n.col-xs-offset-5 {\n  margin-left: 41.66666667%;\n}\n.col-xs-offset-4 {\n  margin-left: 33.33333333%;\n}\n.col-xs-offset-3 {\n  margin-left: 25%;\n}\n.col-xs-offset-2 {\n  margin-left: 16.66666667%;\n}\n.col-xs-offset-1 {\n  margin-left: 8.33333333%;\n}\n.col-xs-offset-0 {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {\n    float: left;\n  }\n  .col-sm-12 {\n    width: 100%;\n  }\n  .col-sm-11 {\n    width: 91.66666667%;\n  }\n  .col-sm-10 {\n    width: 83.33333333%;\n  }\n  .col-sm-9 {\n    width: 75%;\n  }\n  .col-sm-8 {\n    width: 66.66666667%;\n  }\n  .col-sm-7 {\n    width: 58.33333333%;\n  }\n  .col-sm-6 {\n    width: 50%;\n  }\n  .col-sm-5 {\n    width: 41.66666667%;\n  }\n  .col-sm-4 {\n    width: 33.33333333%;\n  }\n  .col-sm-3 {\n    width: 25%;\n  }\n  .col-sm-2 {\n    width: 16.66666667%;\n  }\n  .col-sm-1 {\n    width: 8.33333333%;\n  }\n  .col-sm-pull-12 {\n    right: 100%;\n  }\n  .col-sm-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-sm-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-sm-pull-9 {\n    right: 75%;\n  }\n  .col-sm-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-sm-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-sm-pull-6 {\n    right: 50%;\n  }\n  .col-sm-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-sm-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-sm-pull-3 {\n    right: 25%;\n  }\n  .col-sm-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-sm-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-sm-pull-0 {\n    right: auto;\n  }\n  .col-sm-push-12 {\n    left: 100%;\n  }\n  .col-sm-push-11 {\n    left: 91.66666667%;\n  }\n  .col-sm-push-10 {\n    left: 83.33333333%;\n  }\n  .col-sm-push-9 {\n    left: 75%;\n  }\n  .col-sm-push-8 {\n    left: 66.66666667%;\n  }\n  .col-sm-push-7 {\n    left: 58.33333333%;\n  }\n  .col-sm-push-6 {\n    left: 50%;\n  }\n  .col-sm-push-5 {\n    left: 41.66666667%;\n  }\n  .col-sm-push-4 {\n    left: 33.33333333%;\n  }\n  .col-sm-push-3 {\n    left: 25%;\n  }\n  .col-sm-push-2 {\n    left: 16.66666667%;\n  }\n  .col-sm-push-1 {\n    left: 8.33333333%;\n  }\n  .col-sm-push-0 {\n    left: auto;\n  }\n  .col-sm-offset-12 {\n    margin-left: 100%;\n  }\n  .col-sm-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-sm-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-sm-offset-9 {\n    margin-left: 75%;\n  }\n  .col-sm-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-sm-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-sm-offset-6 {\n    margin-left: 50%;\n  }\n  .col-sm-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-sm-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-sm-offset-3 {\n    margin-left: 25%;\n  }\n  .col-sm-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-sm-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-sm-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 992px) {\n  .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12 {\n    float: left;\n  }\n  .col-md-12 {\n    width: 100%;\n  }\n  .col-md-11 {\n    width: 91.66666667%;\n  }\n  .col-md-10 {\n    width: 83.33333333%;\n  }\n  .col-md-9 {\n    width: 75%;\n  }\n  .col-md-8 {\n    width: 66.66666667%;\n  }\n  .col-md-7 {\n    width: 58.33333333%;\n  }\n  .col-md-6 {\n    width: 50%;\n  }\n  .col-md-5 {\n    width: 41.66666667%;\n  }\n  .col-md-4 {\n    width: 33.33333333%;\n  }\n  .col-md-3 {\n    width: 25%;\n  }\n  .col-md-2 {\n    width: 16.66666667%;\n  }\n  .col-md-1 {\n    width: 8.33333333%;\n  }\n  .col-md-pull-12 {\n    right: 100%;\n  }\n  .col-md-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-md-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-md-pull-9 {\n    right: 75%;\n  }\n  .col-md-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-md-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-md-pull-6 {\n    right: 50%;\n  }\n  .col-md-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-md-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-md-pull-3 {\n    right: 25%;\n  }\n  .col-md-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-md-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-md-pull-0 {\n    right: auto;\n  }\n  .col-md-push-12 {\n    left: 100%;\n  }\n  .col-md-push-11 {\n    left: 91.66666667%;\n  }\n  .col-md-push-10 {\n    left: 83.33333333%;\n  }\n  .col-md-push-9 {\n    left: 75%;\n  }\n  .col-md-push-8 {\n    left: 66.66666667%;\n  }\n  .col-md-push-7 {\n    left: 58.33333333%;\n  }\n  .col-md-push-6 {\n    left: 50%;\n  }\n  .col-md-push-5 {\n    left: 41.66666667%;\n  }\n  .col-md-push-4 {\n    left: 33.33333333%;\n  }\n  .col-md-push-3 {\n    left: 25%;\n  }\n  .col-md-push-2 {\n    left: 16.66666667%;\n  }\n  .col-md-push-1 {\n    left: 8.33333333%;\n  }\n  .col-md-push-0 {\n    left: auto;\n  }\n  .col-md-offset-12 {\n    margin-left: 100%;\n  }\n  .col-md-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-md-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-md-offset-9 {\n    margin-left: 75%;\n  }\n  .col-md-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-md-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-md-offset-6 {\n    margin-left: 50%;\n  }\n  .col-md-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-md-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-md-offset-3 {\n    margin-left: 25%;\n  }\n  .col-md-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-md-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-md-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 1200px) {\n  .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12 {\n    float: left;\n  }\n  .col-lg-12 {\n    width: 100%;\n  }\n  .col-lg-11 {\n    width: 91.66666667%;\n  }\n  .col-lg-10 {\n    width: 83.33333333%;\n  }\n  .col-lg-9 {\n    width: 75%;\n  }\n  .col-lg-8 {\n    width: 66.66666667%;\n  }\n  .col-lg-7 {\n    width: 58.33333333%;\n  }\n  .col-lg-6 {\n    width: 50%;\n  }\n  .col-lg-5 {\n    width: 41.66666667%;\n  }\n  .col-lg-4 {\n    width: 33.33333333%;\n  }\n  .col-lg-3 {\n    width: 25%;\n  }\n  .col-lg-2 {\n    width: 16.66666667%;\n  }\n  .col-lg-1 {\n    width: 8.33333333%;\n  }\n  .col-lg-pull-12 {\n    right: 100%;\n  }\n  .col-lg-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-lg-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-lg-pull-9 {\n    right: 75%;\n  }\n  .col-lg-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-lg-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-lg-pull-6 {\n    right: 50%;\n  }\n  .col-lg-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-lg-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-lg-pull-3 {\n    right: 25%;\n  }\n  .col-lg-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-lg-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-lg-pull-0 {\n    right: auto;\n  }\n  .col-lg-push-12 {\n    left: 100%;\n  }\n  .col-lg-push-11 {\n    left: 91.66666667%;\n  }\n  .col-lg-push-10 {\n    left: 83.33333333%;\n  }\n  .col-lg-push-9 {\n    left: 75%;\n  }\n  .col-lg-push-8 {\n    left: 66.66666667%;\n  }\n  .col-lg-push-7 {\n    left: 58.33333333%;\n  }\n  .col-lg-push-6 {\n    left: 50%;\n  }\n  .col-lg-push-5 {\n    left: 41.66666667%;\n  }\n  .col-lg-push-4 {\n    left: 33.33333333%;\n  }\n  .col-lg-push-3 {\n    left: 25%;\n  }\n  .col-lg-push-2 {\n    left: 16.66666667%;\n  }\n  .col-lg-push-1 {\n    left: 8.33333333%;\n  }\n  .col-lg-push-0 {\n    left: auto;\n  }\n  .col-lg-offset-12 {\n    margin-left: 100%;\n  }\n  .col-lg-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-lg-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-lg-offset-9 {\n    margin-left: 75%;\n  }\n  .col-lg-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-lg-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-lg-offset-6 {\n    margin-left: 50%;\n  }\n  .col-lg-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-lg-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-lg-offset-3 {\n    margin-left: 25%;\n  }\n  .col-lg-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-lg-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-lg-offset-0 {\n    margin-left: 0;\n  }\n}\ntable {\n  background-color: transparent;\n}\ncaption {\n  padding-top: 8px;\n  padding-bottom: 8px;\n  color: #777;\n  text-align: left;\n}\nth {\n  text-align: left;\n}\n.table {\n  width: 100%;\n  max-width: 100%;\n  margin-bottom: 20px;\n}\n.table > thead > tr > th,\n.table > tbody > tr > th,\n.table > tfoot > tr > th,\n.table > thead > tr > td,\n.table > tbody > tr > td,\n.table > tfoot > tr > td {\n  padding: 8px;\n  line-height: 1.42857143;\n  vertical-align: top;\n  border-top: 1px solid #ddd;\n}\n.table > thead > tr > th {\n  vertical-align: bottom;\n  border-bottom: 2px solid #ddd;\n}\n.table > caption + thead > tr:first-child > th,\n.table > colgroup + thead > tr:first-child > th,\n.table > thead:first-child > tr:first-child > th,\n.table > caption + thead > tr:first-child > td,\n.table > colgroup + thead > tr:first-child > td,\n.table > thead:first-child > tr:first-child > td {\n  border-top: 0;\n}\n.table > tbody + tbody {\n  border-top: 2px solid #ddd;\n}\n.table .table {\n  background-color: #fff;\n}\n.table-condensed > thead > tr > th,\n.table-condensed > tbody > tr > th,\n.table-condensed > tfoot > tr > th,\n.table-condensed > thead > tr > td,\n.table-condensed > tbody > tr > td,\n.table-condensed > tfoot > tr > td {\n  padding: 5px;\n}\n.table-bordered {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > tbody > tr > th,\n.table-bordered > tfoot > tr > th,\n.table-bordered > thead > tr > td,\n.table-bordered > tbody > tr > td,\n.table-bordered > tfoot > tr > td {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > thead > tr > td {\n  border-bottom-width: 2px;\n}\n.table-striped > tbody > tr:nth-of-type(odd) {\n  background-color: #f9f9f9;\n}\n.table-hover > tbody > tr:hover {\n  background-color: #f5f5f5;\n}\ntable col[class*=\"col-\"] {\n  position: static;\n  display: table-column;\n  float: none;\n}\ntable td[class*=\"col-\"],\ntable th[class*=\"col-\"] {\n  position: static;\n  display: table-cell;\n  float: none;\n}\n.table > thead > tr > td.active,\n.table > tbody > tr > td.active,\n.table > tfoot > tr > td.active,\n.table > thead > tr > th.active,\n.table > tbody > tr > th.active,\n.table > tfoot > tr > th.active,\n.table > thead > tr.active > td,\n.table > tbody > tr.active > td,\n.table > tfoot > tr.active > td,\n.table > thead > tr.active > th,\n.table > tbody > tr.active > th,\n.table > tfoot > tr.active > th {\n  background-color: #f5f5f5;\n}\n.table-hover > tbody > tr > td.active:hover,\n.table-hover > tbody > tr > th.active:hover,\n.table-hover > tbody > tr.active:hover > td,\n.table-hover > tbody > tr:hover > .active,\n.table-hover > tbody > tr.active:hover > th {\n  background-color: #e8e8e8;\n}\n.table > thead > tr > td.success,\n.table > tbody > tr > td.success,\n.table > tfoot > tr > td.success,\n.table > thead > tr > th.success,\n.table > tbody > tr > th.success,\n.table > tfoot > tr > th.success,\n.table > thead > tr.success > td,\n.table > tbody > tr.success > td,\n.table > tfoot > tr.success > td,\n.table > thead > tr.success > th,\n.table > tbody > tr.success > th,\n.table > tfoot > tr.success > th {\n  background-color: #dff0d8;\n}\n.table-hover > tbody > tr > td.success:hover,\n.table-hover > tbody > tr > th.success:hover,\n.table-hover > tbody > tr.success:hover > td,\n.table-hover > tbody > tr:hover > .success,\n.table-hover > tbody > tr.success:hover > th {\n  background-color: #d0e9c6;\n}\n.table > thead > tr > td.info,\n.table > tbody > tr > td.info,\n.table > tfoot > tr > td.info,\n.table > thead > tr > th.info,\n.table > tbody > tr > th.info,\n.table > tfoot > tr > th.info,\n.table > thead > tr.info > td,\n.table > tbody > tr.info > td,\n.table > tfoot > tr.info > td,\n.table > thead > tr.info > th,\n.table > tbody > tr.info > th,\n.table > tfoot > tr.info > th {\n  background-color: #d9edf7;\n}\n.table-hover > tbody > tr > td.info:hover,\n.table-hover > tbody > tr > th.info:hover,\n.table-hover > tbody > tr.info:hover > td,\n.table-hover > tbody > tr:hover > .info,\n.table-hover > tbody > tr.info:hover > th {\n  background-color: #c4e3f3;\n}\n.table > thead > tr > td.warning,\n.table > tbody > tr > td.warning,\n.table > tfoot > tr > td.warning,\n.table > thead > tr > th.warning,\n.table > tbody > tr > th.warning,\n.table > tfoot > tr > th.warning,\n.table > thead > tr.warning > td,\n.table > tbody > tr.warning > td,\n.table > tfoot > tr.warning > td,\n.table > thead > tr.warning > th,\n.table > tbody > tr.warning > th,\n.table > tfoot > tr.warning > th {\n  background-color: #fcf8e3;\n}\n.table-hover > tbody > tr > td.warning:hover,\n.table-hover > tbody > tr > th.warning:hover,\n.table-hover > tbody > tr.warning:hover > td,\n.table-hover > tbody > tr:hover > .warning,\n.table-hover > tbody > tr.warning:hover > th {\n  background-color: #faf2cc;\n}\n.table > thead > tr > td.danger,\n.table > tbody > tr > td.danger,\n.table > tfoot > tr > td.danger,\n.table > thead > tr > th.danger,\n.table > tbody > tr > th.danger,\n.table > tfoot > tr > th.danger,\n.table > thead > tr.danger > td,\n.table > tbody > tr.danger > td,\n.table > tfoot > tr.danger > td,\n.table > thead > tr.danger > th,\n.table > tbody > tr.danger > th,\n.table > tfoot > tr.danger > th {\n  background-color: #f2dede;\n}\n.table-hover > tbody > tr > td.danger:hover,\n.table-hover > tbody > tr > th.danger:hover,\n.table-hover > tbody > tr.danger:hover > td,\n.table-hover > tbody > tr:hover > .danger,\n.table-hover > tbody > tr.danger:hover > th {\n  background-color: #ebcccc;\n}\n.table-responsive {\n  min-height: .01%;\n  overflow-x: auto;\n}\n@media screen and (max-width: 767px) {\n  .table-responsive {\n    width: 100%;\n    margin-bottom: 15px;\n    overflow-y: hidden;\n    -ms-overflow-style: -ms-autohiding-scrollbar;\n    border: 1px solid #ddd;\n  }\n  .table-responsive > .table {\n    margin-bottom: 0;\n  }\n  .table-responsive > .table > thead > tr > th,\n  .table-responsive > .table > tbody > tr > th,\n  .table-responsive > .table > tfoot > tr > th,\n  .table-responsive > .table > thead > tr > td,\n  .table-responsive > .table > tbody > tr > td,\n  .table-responsive > .table > tfoot > tr > td {\n    white-space: nowrap;\n  }\n  .table-responsive > .table-bordered {\n    border: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:first-child,\n  .table-responsive > .table-bordered > tbody > tr > th:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n  .table-responsive > .table-bordered > thead > tr > td:first-child,\n  .table-responsive > .table-bordered > tbody > tr > td:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n    border-left: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:last-child,\n  .table-responsive > .table-bordered > tbody > tr > th:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n  .table-responsive > .table-bordered > thead > tr > td:last-child,\n  .table-responsive > .table-bordered > tbody > tr > td:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n    border-right: 0;\n  }\n  .table-responsive > .table-bordered > tbody > tr:last-child > th,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > th,\n  .table-responsive > .table-bordered > tbody > tr:last-child > td,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > td {\n    border-bottom: 0;\n  }\n}\nfieldset {\n  min-width: 0;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\nlegend {\n  display: block;\n  width: 100%;\n  padding: 0;\n  margin-bottom: 20px;\n  font-size: 21px;\n  line-height: inherit;\n  color: #333;\n  border: 0;\n  border-bottom: 1px solid #e5e5e5;\n}\nlabel {\n  display: inline-block;\n  max-width: 100%;\n  margin-bottom: 5px;\n  font-weight: bold;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\ninput[type=\"radio\"],\ninput[type=\"checkbox\"] {\n  margin: 4px 0 0;\n  margin-top: 1px \\9;\n  line-height: normal;\n}\ninput[type=\"file\"] {\n  display: block;\n}\ninput[type=\"range\"] {\n  display: block;\n  width: 100%;\n}\nselect[multiple],\nselect[size] {\n  height: auto;\n}\ninput[type=\"file\"]:focus,\ninput[type=\"radio\"]:focus,\ninput[type=\"checkbox\"]:focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\noutput {\n  display: block;\n  padding-top: 7px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n}\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n  background-color: #fff;\n  background-image: none;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;\n       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n}\n.form-control:focus {\n  border-color: #66afe9;\n  outline: 0;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n}\n.form-control::-moz-placeholder {\n  color: #999;\n  opacity: 1;\n}\n.form-control:-ms-input-placeholder {\n  color: #999;\n}\n.form-control::-webkit-input-placeholder {\n  color: #999;\n}\n.form-control[disabled],\n.form-control[readonly],\nfieldset[disabled] .form-control {\n  cursor: not-allowed;\n  background-color: #eee;\n  opacity: 1;\n}\ntextarea.form-control {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-appearance: none;\n}\n@media screen and (-webkit-min-device-pixel-ratio: 0) {\n  input[type=\"date\"],\n  input[type=\"time\"],\n  input[type=\"datetime-local\"],\n  input[type=\"month\"] {\n    line-height: 34px;\n  }\n  input[type=\"date\"].input-sm,\n  input[type=\"time\"].input-sm,\n  input[type=\"datetime-local\"].input-sm,\n  input[type=\"month\"].input-sm,\n  .input-group-sm input[type=\"date\"],\n  .input-group-sm input[type=\"time\"],\n  .input-group-sm input[type=\"datetime-local\"],\n  .input-group-sm input[type=\"month\"] {\n    line-height: 30px;\n  }\n  input[type=\"date\"].input-lg,\n  input[type=\"time\"].input-lg,\n  input[type=\"datetime-local\"].input-lg,\n  input[type=\"month\"].input-lg,\n  .input-group-lg input[type=\"date\"],\n  .input-group-lg input[type=\"time\"],\n  .input-group-lg input[type=\"datetime-local\"],\n  .input-group-lg input[type=\"month\"] {\n    line-height: 46px;\n  }\n}\n.form-group {\n  margin-bottom: 15px;\n}\n.radio,\n.checkbox {\n  position: relative;\n  display: block;\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.radio label,\n.checkbox label {\n  min-height: 20px;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  cursor: pointer;\n}\n.radio input[type=\"radio\"],\n.radio-inline input[type=\"radio\"],\n.checkbox input[type=\"checkbox\"],\n.checkbox-inline input[type=\"checkbox\"] {\n  position: absolute;\n  margin-top: 4px \\9;\n  margin-left: -20px;\n}\n.radio + .radio,\n.checkbox + .checkbox {\n  margin-top: -5px;\n}\n.radio-inline,\n.checkbox-inline {\n  display: inline-block;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  vertical-align: middle;\n  cursor: pointer;\n}\n.radio-inline + .radio-inline,\n.checkbox-inline + .checkbox-inline {\n  margin-top: 0;\n  margin-left: 10px;\n}\ninput[type=\"radio\"][disabled],\ninput[type=\"checkbox\"][disabled],\ninput[type=\"radio\"].disabled,\ninput[type=\"checkbox\"].disabled,\nfieldset[disabled] input[type=\"radio\"],\nfieldset[disabled] input[type=\"checkbox\"] {\n  cursor: not-allowed;\n}\n.radio-inline.disabled,\n.checkbox-inline.disabled,\nfieldset[disabled] .radio-inline,\nfieldset[disabled] .checkbox-inline {\n  cursor: not-allowed;\n}\n.radio.disabled label,\n.checkbox.disabled label,\nfieldset[disabled] .radio label,\nfieldset[disabled] .checkbox label {\n  cursor: not-allowed;\n}\n.form-control-static {\n  padding-top: 7px;\n  padding-bottom: 7px;\n  margin-bottom: 0;\n}\n.form-control-static.input-lg,\n.form-control-static.input-sm {\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-sm {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-sm {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-sm,\nselect[multiple].input-sm {\n  height: auto;\n}\n.form-group-sm .form-control {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.form-group-sm .form-control {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.form-group-sm .form-control,\nselect[multiple].form-group-sm .form-control {\n  height: auto;\n}\n.form-group-sm .form-control-static {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.input-lg {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-lg {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-lg,\nselect[multiple].input-lg {\n  height: auto;\n}\n.form-group-lg .form-control {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.form-group-lg .form-control {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.form-group-lg .form-control,\nselect[multiple].form-group-lg .form-control {\n  height: auto;\n}\n.form-group-lg .form-control-static {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.has-feedback {\n  position: relative;\n}\n.has-feedback .form-control {\n  padding-right: 42.5px;\n}\n.form-control-feedback {\n  position: absolute;\n  top: 0;\n  right: 0;\n  z-index: 2;\n  display: block;\n  width: 34px;\n  height: 34px;\n  line-height: 34px;\n  text-align: center;\n  pointer-events: none;\n}\n.input-lg + .form-control-feedback {\n  width: 46px;\n  height: 46px;\n  line-height: 46px;\n}\n.input-sm + .form-control-feedback {\n  width: 30px;\n  height: 30px;\n  line-height: 30px;\n}\n.has-success .help-block,\n.has-success .control-label,\n.has-success .radio,\n.has-success .checkbox,\n.has-success .radio-inline,\n.has-success .checkbox-inline,\n.has-success.radio label,\n.has-success.checkbox label,\n.has-success.radio-inline label,\n.has-success.checkbox-inline label {\n  color: #3c763d;\n}\n.has-success .form-control {\n  border-color: #3c763d;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-success .form-control:focus {\n  border-color: #2b542c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n}\n.has-success .input-group-addon {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #3c763d;\n}\n.has-success .form-control-feedback {\n  color: #3c763d;\n}\n.has-warning .help-block,\n.has-warning .control-label,\n.has-warning .radio,\n.has-warning .checkbox,\n.has-warning .radio-inline,\n.has-warning .checkbox-inline,\n.has-warning.radio label,\n.has-warning.checkbox label,\n.has-warning.radio-inline label,\n.has-warning.checkbox-inline label {\n  color: #8a6d3b;\n}\n.has-warning .form-control {\n  border-color: #8a6d3b;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-warning .form-control:focus {\n  border-color: #66512c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n}\n.has-warning .input-group-addon {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #8a6d3b;\n}\n.has-warning .form-control-feedback {\n  color: #8a6d3b;\n}\n.has-error .help-block,\n.has-error .control-label,\n.has-error .radio,\n.has-error .checkbox,\n.has-error .radio-inline,\n.has-error .checkbox-inline,\n.has-error.radio label,\n.has-error.checkbox label,\n.has-error.radio-inline label,\n.has-error.checkbox-inline label {\n  color: #a94442;\n}\n.has-error .form-control {\n  border-color: #a94442;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-error .form-control:focus {\n  border-color: #843534;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n}\n.has-error .input-group-addon {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #a94442;\n}\n.has-error .form-control-feedback {\n  color: #a94442;\n}\n.has-feedback label ~ .form-control-feedback {\n  top: 25px;\n}\n.has-feedback label.sr-only ~ .form-control-feedback {\n  top: 0;\n}\n.help-block {\n  display: block;\n  margin-top: 5px;\n  margin-bottom: 10px;\n  color: #737373;\n}\n@media (min-width: 768px) {\n  .form-inline .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .form-inline .form-control-static {\n    display: inline-block;\n  }\n  .form-inline .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .form-inline .input-group .input-group-addon,\n  .form-inline .input-group .input-group-btn,\n  .form-inline .input-group .form-control {\n    width: auto;\n  }\n  .form-inline .input-group > .form-control {\n    width: 100%;\n  }\n  .form-inline .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio,\n  .form-inline .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio label,\n  .form-inline .checkbox label {\n    padding-left: 0;\n  }\n  .form-inline .radio input[type=\"radio\"],\n  .form-inline .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .form-inline .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox,\n.form-horizontal .radio-inline,\n.form-horizontal .checkbox-inline {\n  padding-top: 7px;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox {\n  min-height: 27px;\n}\n.form-horizontal .form-group {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .control-label {\n    padding-top: 7px;\n    margin-bottom: 0;\n    text-align: right;\n  }\n}\n.form-horizontal .has-feedback .form-control-feedback {\n  right: 15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-lg .control-label {\n    padding-top: 14.333333px;\n  }\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-sm .control-label {\n    padding-top: 6px;\n  }\n}\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  -ms-touch-action: manipulation;\n      touch-action: manipulation;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n      -ms-user-select: none;\n          user-select: none;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.btn:focus,\n.btn:active:focus,\n.btn.active:focus,\n.btn.focus,\n.btn:active.focus,\n.btn.active.focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\n.btn:hover,\n.btn:focus,\n.btn.focus {\n  color: #333;\n  text-decoration: none;\n}\n.btn:active,\n.btn.active {\n  background-image: none;\n  outline: 0;\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn.disabled,\n.btn[disabled],\nfieldset[disabled] .btn {\n  pointer-events: none;\n  cursor: not-allowed;\n  filter: alpha(opacity=65);\n  -webkit-box-shadow: none;\n          box-shadow: none;\n  opacity: .65;\n}\n.btn-default {\n  color: #333;\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default:hover,\n.btn-default:focus,\n.btn-default.focus,\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  background-image: none;\n}\n.btn-default.disabled,\n.btn-default[disabled],\nfieldset[disabled] .btn-default,\n.btn-default.disabled:hover,\n.btn-default[disabled]:hover,\nfieldset[disabled] .btn-default:hover,\n.btn-default.disabled:focus,\n.btn-default[disabled]:focus,\nfieldset[disabled] .btn-default:focus,\n.btn-default.disabled.focus,\n.btn-default[disabled].focus,\nfieldset[disabled] .btn-default.focus,\n.btn-default.disabled:active,\n.btn-default[disabled]:active,\nfieldset[disabled] .btn-default:active,\n.btn-default.disabled.active,\n.btn-default[disabled].active,\nfieldset[disabled] .btn-default.active {\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default .badge {\n  color: #fff;\n  background-color: #333;\n}\n.btn-primary {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary:hover,\n.btn-primary:focus,\n.btn-primary.focus,\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled,\n.btn-primary[disabled],\nfieldset[disabled] .btn-primary,\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled.focus,\n.btn-primary[disabled].focus,\nfieldset[disabled] .btn-primary.focus,\n.btn-primary.disabled:active,\n.btn-primary[disabled]:active,\nfieldset[disabled] .btn-primary:active,\n.btn-primary.disabled.active,\n.btn-primary[disabled].active,\nfieldset[disabled] .btn-primary.active {\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.btn-success {\n  color: #fff;\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success:hover,\n.btn-success:focus,\n.btn-success.focus,\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled,\n.btn-success[disabled],\nfieldset[disabled] .btn-success,\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled.focus,\n.btn-success[disabled].focus,\nfieldset[disabled] .btn-success.focus,\n.btn-success.disabled:active,\n.btn-success[disabled]:active,\nfieldset[disabled] .btn-success:active,\n.btn-success.disabled.active,\n.btn-success[disabled].active,\nfieldset[disabled] .btn-success.active {\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success .badge {\n  color: #5cb85c;\n  background-color: #fff;\n}\n.btn-info {\n  color: #fff;\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info:hover,\n.btn-info:focus,\n.btn-info.focus,\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  background-image: none;\n}\n.btn-info.disabled,\n.btn-info[disabled],\nfieldset[disabled] .btn-info,\n.btn-info.disabled:hover,\n.btn-info[disabled]:hover,\nfieldset[disabled] .btn-info:hover,\n.btn-info.disabled:focus,\n.btn-info[disabled]:focus,\nfieldset[disabled] .btn-info:focus,\n.btn-info.disabled.focus,\n.btn-info[disabled].focus,\nfieldset[disabled] .btn-info.focus,\n.btn-info.disabled:active,\n.btn-info[disabled]:active,\nfieldset[disabled] .btn-info:active,\n.btn-info.disabled.active,\n.btn-info[disabled].active,\nfieldset[disabled] .btn-info.active {\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info .badge {\n  color: #5bc0de;\n  background-color: #fff;\n}\n.btn-warning {\n  color: #fff;\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning:hover,\n.btn-warning:focus,\n.btn-warning.focus,\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  background-image: none;\n}\n.btn-warning.disabled,\n.btn-warning[disabled],\nfieldset[disabled] .btn-warning,\n.btn-warning.disabled:hover,\n.btn-warning[disabled]:hover,\nfieldset[disabled] .btn-warning:hover,\n.btn-warning.disabled:focus,\n.btn-warning[disabled]:focus,\nfieldset[disabled] .btn-warning:focus,\n.btn-warning.disabled.focus,\n.btn-warning[disabled].focus,\nfieldset[disabled] .btn-warning.focus,\n.btn-warning.disabled:active,\n.btn-warning[disabled]:active,\nfieldset[disabled] .btn-warning:active,\n.btn-warning.disabled.active,\n.btn-warning[disabled].active,\nfieldset[disabled] .btn-warning.active {\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning .badge {\n  color: #f0ad4e;\n  background-color: #fff;\n}\n.btn-danger {\n  color: #fff;\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger:hover,\n.btn-danger:focus,\n.btn-danger.focus,\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  background-image: none;\n}\n.btn-danger.disabled,\n.btn-danger[disabled],\nfieldset[disabled] .btn-danger,\n.btn-danger.disabled:hover,\n.btn-danger[disabled]:hover,\nfieldset[disabled] .btn-danger:hover,\n.btn-danger.disabled:focus,\n.btn-danger[disabled]:focus,\nfieldset[disabled] .btn-danger:focus,\n.btn-danger.disabled.focus,\n.btn-danger[disabled].focus,\nfieldset[disabled] .btn-danger.focus,\n.btn-danger.disabled:active,\n.btn-danger[disabled]:active,\nfieldset[disabled] .btn-danger:active,\n.btn-danger.disabled.active,\n.btn-danger[disabled].active,\nfieldset[disabled] .btn-danger.active {\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger .badge {\n  color: #d9534f;\n  background-color: #fff;\n}\n.btn-link {\n  font-weight: normal;\n  color: #337ab7;\n  border-radius: 0;\n}\n.btn-link,\n.btn-link:active,\n.btn-link.active,\n.btn-link[disabled],\nfieldset[disabled] .btn-link {\n  background-color: transparent;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn-link,\n.btn-link:hover,\n.btn-link:focus,\n.btn-link:active {\n  border-color: transparent;\n}\n.btn-link:hover,\n.btn-link:focus {\n  color: #23527c;\n  text-decoration: underline;\n  background-color: transparent;\n}\n.btn-link[disabled]:hover,\nfieldset[disabled] .btn-link:hover,\n.btn-link[disabled]:focus,\nfieldset[disabled] .btn-link:focus {\n  color: #777;\n  text-decoration: none;\n}\n.btn-lg,\n.btn-group-lg > .btn {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.btn-sm,\n.btn-group-sm > .btn {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-xs,\n.btn-group-xs > .btn {\n  padding: 1px 5px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-block {\n  display: block;\n  width: 100%;\n}\n.btn-block + .btn-block {\n  margin-top: 5px;\n}\ninput[type=\"submit\"].btn-block,\ninput[type=\"reset\"].btn-block,\ninput[type=\"button\"].btn-block {\n  width: 100%;\n}\n.fade {\n  opacity: 0;\n  -webkit-transition: opacity .15s linear;\n       -o-transition: opacity .15s linear;\n          transition: opacity .15s linear;\n}\n.fade.in {\n  opacity: 1;\n}\n.collapse {\n  display: none;\n  visibility: hidden;\n}\n.collapse.in {\n  display: block;\n  visibility: visible;\n}\ntr.collapse.in {\n  display: table-row;\n}\ntbody.collapse.in {\n  display: table-row-group;\n}\n.collapsing {\n  position: relative;\n  height: 0;\n  overflow: hidden;\n  -webkit-transition-timing-function: ease;\n       -o-transition-timing-function: ease;\n          transition-timing-function: ease;\n  -webkit-transition-duration: .35s;\n       -o-transition-duration: .35s;\n          transition-duration: .35s;\n  -webkit-transition-property: height, visibility;\n       -o-transition-property: height, visibility;\n          transition-property: height, visibility;\n}\n.caret {\n  display: inline-block;\n  width: 0;\n  height: 0;\n  margin-left: 2px;\n  vertical-align: middle;\n  border-top: 4px solid;\n  border-right: 4px solid transparent;\n  border-left: 4px solid transparent;\n}\n.dropup,\n.dropdown {\n  position: relative;\n}\n.dropdown-toggle:focus {\n  outline: 0;\n}\n.dropdown-menu {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  z-index: 1000;\n  display: none;\n  float: left;\n  min-width: 160px;\n  padding: 5px 0;\n  margin: 2px 0 0;\n  font-size: 14px;\n  text-align: left;\n  list-style: none;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .15);\n  border-radius: 4px;\n  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n          box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n}\n.dropdown-menu.pull-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu .divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.dropdown-menu > li > a {\n  display: block;\n  padding: 3px 20px;\n  clear: both;\n  font-weight: normal;\n  line-height: 1.42857143;\n  color: #333;\n  white-space: nowrap;\n}\n.dropdown-menu > li > a:hover,\n.dropdown-menu > li > a:focus {\n  color: #262626;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.dropdown-menu > .active > a,\n.dropdown-menu > .active > a:hover,\n.dropdown-menu > .active > a:focus {\n  color: #fff;\n  text-decoration: none;\n  background-color: #337ab7;\n  outline: 0;\n}\n.dropdown-menu > .disabled > a,\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  color: #777;\n}\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n  background-image: none;\n  filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);\n}\n.open > .dropdown-menu {\n  display: block;\n}\n.open > a {\n  outline: 0;\n}\n.dropdown-menu-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu-left {\n  right: auto;\n  left: 0;\n}\n.dropdown-header {\n  display: block;\n  padding: 3px 20px;\n  font-size: 12px;\n  line-height: 1.42857143;\n  color: #777;\n  white-space: nowrap;\n}\n.dropdown-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 990;\n}\n.pull-right > .dropdown-menu {\n  right: 0;\n  left: auto;\n}\n.dropup .caret,\n.navbar-fixed-bottom .dropdown .caret {\n  content: \"\";\n  border-top: 0;\n  border-bottom: 4px solid;\n}\n.dropup .dropdown-menu,\n.navbar-fixed-bottom .dropdown .dropdown-menu {\n  top: auto;\n  bottom: 100%;\n  margin-bottom: 2px;\n}\n@media (min-width: 768px) {\n  .navbar-right .dropdown-menu {\n    right: 0;\n    left: auto;\n  }\n  .navbar-right .dropdown-menu-left {\n    right: auto;\n    left: 0;\n  }\n}\n.btn-group,\n.btn-group-vertical {\n  position: relative;\n  display: inline-block;\n  vertical-align: middle;\n}\n.btn-group > .btn,\n.btn-group-vertical > .btn {\n  position: relative;\n  float: left;\n}\n.btn-group > .btn:hover,\n.btn-group-vertical > .btn:hover,\n.btn-group > .btn:focus,\n.btn-group-vertical > .btn:focus,\n.btn-group > .btn:active,\n.btn-group-vertical > .btn:active,\n.btn-group > .btn.active,\n.btn-group-vertical > .btn.active {\n  z-index: 2;\n}\n.btn-group .btn + .btn,\n.btn-group .btn + .btn-group,\n.btn-group .btn-group + .btn,\n.btn-group .btn-group + .btn-group {\n  margin-left: -1px;\n}\n.btn-toolbar {\n  margin-left: -5px;\n}\n.btn-toolbar .btn-group,\n.btn-toolbar .input-group {\n  float: left;\n}\n.btn-toolbar > .btn,\n.btn-toolbar > .btn-group,\n.btn-toolbar > .input-group {\n  margin-left: 5px;\n}\n.btn-group > .btn:not(:first-child):not(:last-child):not(.dropdown-toggle) {\n  border-radius: 0;\n}\n.btn-group > .btn:first-child {\n  margin-left: 0;\n}\n.btn-group > .btn:first-child:not(:last-child):not(.dropdown-toggle) {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn:last-child:not(:first-child),\n.btn-group > .dropdown-toggle:not(:first-child) {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group > .btn-group {\n  float: left;\n}\n.btn-group > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group .dropdown-toggle:active,\n.btn-group.open .dropdown-toggle {\n  outline: 0;\n}\n.btn-group > .btn + .dropdown-toggle {\n  padding-right: 8px;\n  padding-left: 8px;\n}\n.btn-group > .btn-lg + .dropdown-toggle {\n  padding-right: 12px;\n  padding-left: 12px;\n}\n.btn-group.open .dropdown-toggle {\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn-group.open .dropdown-toggle.btn-link {\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn .caret {\n  margin-left: 0;\n}\n.btn-lg .caret {\n  border-width: 5px 5px 0;\n  border-bottom-width: 0;\n}\n.dropup .btn-lg .caret {\n  border-width: 0 5px 5px;\n}\n.btn-group-vertical > .btn,\n.btn-group-vertical > .btn-group,\n.btn-group-vertical > .btn-group > .btn {\n  display: block;\n  float: none;\n  width: 100%;\n  max-width: 100%;\n}\n.btn-group-vertical > .btn-group > .btn {\n  float: none;\n}\n.btn-group-vertical > .btn + .btn,\n.btn-group-vertical > .btn + .btn-group,\n.btn-group-vertical > .btn-group + .btn,\n.btn-group-vertical > .btn-group + .btn-group {\n  margin-top: -1px;\n  margin-left: 0;\n}\n.btn-group-vertical > .btn:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn:first-child:not(:last-child) {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn:last-child:not(:first-child) {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n  border-bottom-left-radius: 4px;\n}\n.btn-group-vertical > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.btn-group-justified {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  border-collapse: separate;\n}\n.btn-group-justified > .btn,\n.btn-group-justified > .btn-group {\n  display: table-cell;\n  float: none;\n  width: 1%;\n}\n.btn-group-justified > .btn-group .btn {\n  width: 100%;\n}\n.btn-group-justified > .btn-group .dropdown-menu {\n  left: auto;\n}\n[data-toggle=\"buttons\"] > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn input[type=\"checkbox\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"checkbox\"] {\n  position: absolute;\n  clip: rect(0, 0, 0, 0);\n  pointer-events: none;\n}\n.input-group {\n  position: relative;\n  display: table;\n  border-collapse: separate;\n}\n.input-group[class*=\"col-\"] {\n  float: none;\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-group .form-control {\n  position: relative;\n  z-index: 2;\n  float: left;\n  width: 100%;\n  margin-bottom: 0;\n}\n.input-group-lg > .form-control,\n.input-group-lg > .input-group-addon,\n.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-group-lg > .form-control,\nselect.input-group-lg > .input-group-addon,\nselect.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-group-lg > .form-control,\ntextarea.input-group-lg > .input-group-addon,\ntextarea.input-group-lg > .input-group-btn > .btn,\nselect[multiple].input-group-lg > .form-control,\nselect[multiple].input-group-lg > .input-group-addon,\nselect[multiple].input-group-lg > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-sm > .form-control,\n.input-group-sm > .input-group-addon,\n.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-group-sm > .form-control,\nselect.input-group-sm > .input-group-addon,\nselect.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-group-sm > .form-control,\ntextarea.input-group-sm > .input-group-addon,\ntextarea.input-group-sm > .input-group-btn > .btn,\nselect[multiple].input-group-sm > .form-control,\nselect[multiple].input-group-sm > .input-group-addon,\nselect[multiple].input-group-sm > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-addon,\n.input-group-btn,\n.input-group .form-control {\n  display: table-cell;\n}\n.input-group-addon:not(:first-child):not(:last-child),\n.input-group-btn:not(:first-child):not(:last-child),\n.input-group .form-control:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.input-group-addon,\n.input-group-btn {\n  width: 1%;\n  white-space: nowrap;\n  vertical-align: middle;\n}\n.input-group-addon {\n  padding: 6px 12px;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1;\n  color: #555;\n  text-align: center;\n  background-color: #eee;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n.input-group-addon.input-sm {\n  padding: 5px 10px;\n  font-size: 12px;\n  border-radius: 3px;\n}\n.input-group-addon.input-lg {\n  padding: 10px 16px;\n  font-size: 18px;\n  border-radius: 6px;\n}\n.input-group-addon input[type=\"radio\"],\n.input-group-addon input[type=\"checkbox\"] {\n  margin-top: 0;\n}\n.input-group .form-control:first-child,\n.input-group-addon:first-child,\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group > .btn,\n.input-group-btn:first-child > .dropdown-toggle,\n.input-group-btn:last-child > .btn:not(:last-child):not(.dropdown-toggle),\n.input-group-btn:last-child > .btn-group:not(:last-child) > .btn {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.input-group-addon:first-child {\n  border-right: 0;\n}\n.input-group .form-control:last-child,\n.input-group-addon:last-child,\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group > .btn,\n.input-group-btn:last-child > .dropdown-toggle,\n.input-group-btn:first-child > .btn:not(:first-child),\n.input-group-btn:first-child > .btn-group:not(:first-child) > .btn {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.input-group-addon:last-child {\n  border-left: 0;\n}\n.input-group-btn {\n  position: relative;\n  font-size: 0;\n  white-space: nowrap;\n}\n.input-group-btn > .btn {\n  position: relative;\n}\n.input-group-btn > .btn + .btn {\n  margin-left: -1px;\n}\n.input-group-btn > .btn:hover,\n.input-group-btn > .btn:focus,\n.input-group-btn > .btn:active {\n  z-index: 2;\n}\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group {\n  margin-right: -1px;\n}\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group {\n  margin-left: -1px;\n}\n.nav {\n  padding-left: 0;\n  margin-bottom: 0;\n  list-style: none;\n}\n.nav > li {\n  position: relative;\n  display: block;\n}\n.nav > li > a {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n}\n.nav > li > a:hover,\n.nav > li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.nav > li.disabled > a {\n  color: #777;\n}\n.nav > li.disabled > a:hover,\n.nav > li.disabled > a:focus {\n  color: #777;\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n}\n.nav .open > a,\n.nav .open > a:hover,\n.nav .open > a:focus {\n  background-color: #eee;\n  border-color: #337ab7;\n}\n.nav .nav-divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.nav > li > a > img {\n  max-width: none;\n}\n.nav-tabs {\n  border-bottom: 1px solid #ddd;\n}\n.nav-tabs > li {\n  float: left;\n  margin-bottom: -1px;\n}\n.nav-tabs > li > a {\n  margin-right: 2px;\n  line-height: 1.42857143;\n  border: 1px solid transparent;\n  border-radius: 4px 4px 0 0;\n}\n.nav-tabs > li > a:hover {\n  border-color: #eee #eee #ddd;\n}\n.nav-tabs > li.active > a,\n.nav-tabs > li.active > a:hover,\n.nav-tabs > li.active > a:focus {\n  color: #555;\n  cursor: default;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-bottom-color: transparent;\n}\n.nav-tabs.nav-justified {\n  width: 100%;\n  border-bottom: 0;\n}\n.nav-tabs.nav-justified > li {\n  float: none;\n}\n.nav-tabs.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-tabs.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-tabs.nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs.nav-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs.nav-justified > .active > a,\n.nav-tabs.nav-justified > .active > a:hover,\n.nav-tabs.nav-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs.nav-justified > .active > a,\n  .nav-tabs.nav-justified > .active > a:hover,\n  .nav-tabs.nav-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.nav-pills > li {\n  float: left;\n}\n.nav-pills > li > a {\n  border-radius: 4px;\n}\n.nav-pills > li + li {\n  margin-left: 2px;\n}\n.nav-pills > li.active > a,\n.nav-pills > li.active > a:hover,\n.nav-pills > li.active > a:focus {\n  color: #fff;\n  background-color: #337ab7;\n}\n.nav-stacked > li {\n  float: none;\n}\n.nav-stacked > li + li {\n  margin-top: 2px;\n  margin-left: 0;\n}\n.nav-justified {\n  width: 100%;\n}\n.nav-justified > li {\n  float: none;\n}\n.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs-justified {\n  border-bottom: 0;\n}\n.nav-tabs-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs-justified > .active > a,\n.nav-tabs-justified > .active > a:hover,\n.nav-tabs-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs-justified > .active > a,\n  .nav-tabs-justified > .active > a:hover,\n  .nav-tabs-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.tab-content > .tab-pane {\n  display: none;\n  visibility: hidden;\n}\n.tab-content > .active {\n  display: block;\n  visibility: visible;\n}\n.nav-tabs .dropdown-menu {\n  margin-top: -1px;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar {\n  position: relative;\n  min-height: 50px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n}\n@media (min-width: 768px) {\n  .navbar {\n    border-radius: 4px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-header {\n    float: left;\n  }\n}\n.navbar-collapse {\n  padding-right: 15px;\n  padding-left: 15px;\n  overflow-x: visible;\n  -webkit-overflow-scrolling: touch;\n  border-top: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n}\n.navbar-collapse.in {\n  overflow-y: auto;\n}\n@media (min-width: 768px) {\n  .navbar-collapse {\n    width: auto;\n    border-top: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-collapse.collapse {\n    display: block !important;\n    height: auto !important;\n    padding-bottom: 0;\n    overflow: visible !important;\n    visibility: visible !important;\n  }\n  .navbar-collapse.in {\n    overflow-y: visible;\n  }\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-static-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    padding-right: 0;\n    padding-left: 0;\n  }\n}\n.navbar-fixed-top .navbar-collapse,\n.navbar-fixed-bottom .navbar-collapse {\n  max-height: 340px;\n}\n@media (max-device-width: 480px) and (orientation: landscape) {\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    max-height: 200px;\n  }\n}\n.container > .navbar-header,\n.container-fluid > .navbar-header,\n.container > .navbar-collapse,\n.container-fluid > .navbar-collapse {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .container > .navbar-header,\n  .container-fluid > .navbar-header,\n  .container > .navbar-collapse,\n  .container-fluid > .navbar-collapse {\n    margin-right: 0;\n    margin-left: 0;\n  }\n}\n.navbar-static-top {\n  z-index: 1000;\n  border-width: 0 0 1px;\n}\n@media (min-width: 768px) {\n  .navbar-static-top {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top,\n.navbar-fixed-bottom {\n  position: fixed;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n}\n@media (min-width: 768px) {\n  .navbar-fixed-top,\n  .navbar-fixed-bottom {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top {\n  top: 0;\n  border-width: 0 0 1px;\n}\n.navbar-fixed-bottom {\n  bottom: 0;\n  margin-bottom: 0;\n  border-width: 1px 0 0;\n}\n.navbar-brand {\n  float: left;\n  height: 50px;\n  padding: 15px 15px;\n  font-size: 18px;\n  line-height: 20px;\n}\n.navbar-brand:hover,\n.navbar-brand:focus {\n  text-decoration: none;\n}\n.navbar-brand > img {\n  display: block;\n}\n@media (min-width: 768px) {\n  .navbar > .container .navbar-brand,\n  .navbar > .container-fluid .navbar-brand {\n    margin-left: -15px;\n  }\n}\n.navbar-toggle {\n  position: relative;\n  float: right;\n  padding: 9px 10px;\n  margin-top: 8px;\n  margin-right: 15px;\n  margin-bottom: 8px;\n  background-color: transparent;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.navbar-toggle:focus {\n  outline: 0;\n}\n.navbar-toggle .icon-bar {\n  display: block;\n  width: 22px;\n  height: 2px;\n  border-radius: 1px;\n}\n.navbar-toggle .icon-bar + .icon-bar {\n  margin-top: 4px;\n}\n@media (min-width: 768px) {\n  .navbar-toggle {\n    display: none;\n  }\n}\n.navbar-nav {\n  margin: 7.5px -15px;\n}\n.navbar-nav > li > a {\n  padding-top: 10px;\n  padding-bottom: 10px;\n  line-height: 20px;\n}\n@media (max-width: 767px) {\n  .navbar-nav .open .dropdown-menu {\n    position: static;\n    float: none;\n    width: auto;\n    margin-top: 0;\n    background-color: transparent;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-nav .open .dropdown-menu > li > a,\n  .navbar-nav .open .dropdown-menu .dropdown-header {\n    padding: 5px 15px 5px 25px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a {\n    line-height: 20px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-nav .open .dropdown-menu > li > a:focus {\n    background-image: none;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-nav {\n    float: left;\n    margin: 0;\n  }\n  .navbar-nav > li {\n    float: left;\n  }\n  .navbar-nav > li > a {\n    padding-top: 15px;\n    padding-bottom: 15px;\n  }\n}\n.navbar-form {\n  padding: 10px 15px;\n  margin-top: 8px;\n  margin-right: -15px;\n  margin-bottom: 8px;\n  margin-left: -15px;\n  border-top: 1px solid transparent;\n  border-bottom: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n}\n@media (min-width: 768px) {\n  .navbar-form .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control-static {\n    display: inline-block;\n  }\n  .navbar-form .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .navbar-form .input-group .input-group-addon,\n  .navbar-form .input-group .input-group-btn,\n  .navbar-form .input-group .form-control {\n    width: auto;\n  }\n  .navbar-form .input-group > .form-control {\n    width: 100%;\n  }\n  .navbar-form .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio,\n  .navbar-form .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio label,\n  .navbar-form .checkbox label {\n    padding-left: 0;\n  }\n  .navbar-form .radio input[type=\"radio\"],\n  .navbar-form .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .navbar-form .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n@media (max-width: 767px) {\n  .navbar-form .form-group {\n    margin-bottom: 5px;\n  }\n  .navbar-form .form-group:last-child {\n    margin-bottom: 0;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-form {\n    width: auto;\n    padding-top: 0;\n    padding-bottom: 0;\n    margin-right: 0;\n    margin-left: 0;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n}\n.navbar-nav > li > .dropdown-menu {\n  margin-top: 0;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar-fixed-bottom .navbar-nav > li > .dropdown-menu {\n  margin-bottom: 0;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.navbar-btn {\n  margin-top: 8px;\n  margin-bottom: 8px;\n}\n.navbar-btn.btn-sm {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.navbar-btn.btn-xs {\n  margin-top: 14px;\n  margin-bottom: 14px;\n}\n.navbar-text {\n  margin-top: 15px;\n  margin-bottom: 15px;\n}\n@media (min-width: 768px) {\n  .navbar-text {\n    float: left;\n    margin-right: 15px;\n    margin-left: 15px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-left {\n    float: left !important;\n  }\n  .navbar-right {\n    float: right !important;\n    margin-right: -15px;\n  }\n  .navbar-right ~ .navbar-right {\n    margin-right: 0;\n  }\n}\n.navbar-default {\n  background-color: #f8f8f8;\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-brand {\n  color: #777;\n}\n.navbar-default .navbar-brand:hover,\n.navbar-default .navbar-brand:focus {\n  color: #5e5e5e;\n  background-color: transparent;\n}\n.navbar-default .navbar-text {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a:hover,\n.navbar-default .navbar-nav > li > a:focus {\n  color: #333;\n  background-color: transparent;\n}\n.navbar-default .navbar-nav > .active > a,\n.navbar-default .navbar-nav > .active > a:hover,\n.navbar-default .navbar-nav > .active > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .disabled > a,\n.navbar-default .navbar-nav > .disabled > a:hover,\n.navbar-default .navbar-nav > .disabled > a:focus {\n  color: #ccc;\n  background-color: transparent;\n}\n.navbar-default .navbar-toggle {\n  border-color: #ddd;\n}\n.navbar-default .navbar-toggle:hover,\n.navbar-default .navbar-toggle:focus {\n  background-color: #ddd;\n}\n.navbar-default .navbar-toggle .icon-bar {\n  background-color: #888;\n}\n.navbar-default .navbar-collapse,\n.navbar-default .navbar-form {\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .open > a,\n.navbar-default .navbar-nav > .open > a:hover,\n.navbar-default .navbar-nav > .open > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n@media (max-width: 767px) {\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a {\n    color: #777;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #333;\n    background-color: transparent;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #555;\n    background-color: #e7e7e7;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #ccc;\n    background-color: transparent;\n  }\n}\n.navbar-default .navbar-link {\n  color: #777;\n}\n.navbar-default .navbar-link:hover {\n  color: #333;\n}\n.navbar-default .btn-link {\n  color: #777;\n}\n.navbar-default .btn-link:hover,\n.navbar-default .btn-link:focus {\n  color: #333;\n}\n.navbar-default .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-default .btn-link:hover,\n.navbar-default .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-default .btn-link:focus {\n  color: #ccc;\n}\n.navbar-inverse {\n  background-color: #222;\n  border-color: #080808;\n}\n.navbar-inverse .navbar-brand {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-brand:hover,\n.navbar-inverse .navbar-brand:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-text {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a:hover,\n.navbar-inverse .navbar-nav > li > a:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-nav > .active > a,\n.navbar-inverse .navbar-nav > .active > a:hover,\n.navbar-inverse .navbar-nav > .active > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n.navbar-inverse .navbar-nav > .disabled > a,\n.navbar-inverse .navbar-nav > .disabled > a:hover,\n.navbar-inverse .navbar-nav > .disabled > a:focus {\n  color: #444;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-toggle {\n  border-color: #333;\n}\n.navbar-inverse .navbar-toggle:hover,\n.navbar-inverse .navbar-toggle:focus {\n  background-color: #333;\n}\n.navbar-inverse .navbar-toggle .icon-bar {\n  background-color: #fff;\n}\n.navbar-inverse .navbar-collapse,\n.navbar-inverse .navbar-form {\n  border-color: #101010;\n}\n.navbar-inverse .navbar-nav > .open > a,\n.navbar-inverse .navbar-nav > .open > a:hover,\n.navbar-inverse .navbar-nav > .open > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n@media (max-width: 767px) {\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {\n    border-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu .divider {\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {\n    color: #9d9d9d;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #fff;\n    background-color: transparent;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #fff;\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #444;\n    background-color: transparent;\n  }\n}\n.navbar-inverse .navbar-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-link:hover {\n  color: #fff;\n}\n.navbar-inverse .btn-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link:focus {\n  color: #fff;\n}\n.navbar-inverse .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-inverse .btn-link:focus {\n  color: #444;\n}\n.breadcrumb {\n  padding: 8px 15px;\n  margin-bottom: 20px;\n  list-style: none;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n}\n.breadcrumb > li {\n  display: inline-block;\n}\n.breadcrumb > li + li:before {\n  padding: 0 5px;\n  color: #ccc;\n  content: \"/\\00a0\";\n}\n.breadcrumb > .active {\n  color: #777;\n}\n.pagination {\n  display: inline-block;\n  padding-left: 0;\n  margin: 20px 0;\n  border-radius: 4px;\n}\n.pagination > li {\n  display: inline;\n}\n.pagination > li > a,\n.pagination > li > span {\n  position: relative;\n  float: left;\n  padding: 6px 12px;\n  margin-left: -1px;\n  line-height: 1.42857143;\n  color: #337ab7;\n  text-decoration: none;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.pagination > li:first-child > a,\n.pagination > li:first-child > span {\n  margin-left: 0;\n  border-top-left-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.pagination > li:last-child > a,\n.pagination > li:last-child > span {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 4px;\n}\n.pagination > li > a:hover,\n.pagination > li > span:hover,\n.pagination > li > a:focus,\n.pagination > li > span:focus {\n  color: #23527c;\n  background-color: #eee;\n  border-color: #ddd;\n}\n.pagination > .active > a,\n.pagination > .active > span,\n.pagination > .active > a:hover,\n.pagination > .active > span:hover,\n.pagination > .active > a:focus,\n.pagination > .active > span:focus {\n  z-index: 2;\n  color: #fff;\n  cursor: default;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.pagination > .disabled > span,\n.pagination > .disabled > span:hover,\n.pagination > .disabled > span:focus,\n.pagination > .disabled > a,\n.pagination > .disabled > a:hover,\n.pagination > .disabled > a:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n  border-color: #ddd;\n}\n.pagination-lg > li > a,\n.pagination-lg > li > span {\n  padding: 10px 16px;\n  font-size: 18px;\n}\n.pagination-lg > li:first-child > a,\n.pagination-lg > li:first-child > span {\n  border-top-left-radius: 6px;\n  border-bottom-left-radius: 6px;\n}\n.pagination-lg > li:last-child > a,\n.pagination-lg > li:last-child > span {\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n}\n.pagination-sm > li > a,\n.pagination-sm > li > span {\n  padding: 5px 10px;\n  font-size: 12px;\n}\n.pagination-sm > li:first-child > a,\n.pagination-sm > li:first-child > span {\n  border-top-left-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.pagination-sm > li:last-child > a,\n.pagination-sm > li:last-child > span {\n  border-top-right-radius: 3px;\n  border-bottom-right-radius: 3px;\n}\n.pager {\n  padding-left: 0;\n  margin: 20px 0;\n  text-align: center;\n  list-style: none;\n}\n.pager li {\n  display: inline;\n}\n.pager li > a,\n.pager li > span {\n  display: inline-block;\n  padding: 5px 14px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 15px;\n}\n.pager li > a:hover,\n.pager li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.pager .next > a,\n.pager .next > span {\n  float: right;\n}\n.pager .previous > a,\n.pager .previous > span {\n  float: left;\n}\n.pager .disabled > a,\n.pager .disabled > a:hover,\n.pager .disabled > a:focus,\n.pager .disabled > span {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n}\n.label {\n  display: inline;\n  padding: .2em .6em .3em;\n  font-size: 75%;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  border-radius: .25em;\n}\na.label:hover,\na.label:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.label:empty {\n  display: none;\n}\n.btn .label {\n  position: relative;\n  top: -1px;\n}\n.label-default {\n  background-color: #777;\n}\n.label-default[href]:hover,\n.label-default[href]:focus {\n  background-color: #5e5e5e;\n}\n.label-primary {\n  background-color: #337ab7;\n}\n.label-primary[href]:hover,\n.label-primary[href]:focus {\n  background-color: #286090;\n}\n.label-success {\n  background-color: #5cb85c;\n}\n.label-success[href]:hover,\n.label-success[href]:focus {\n  background-color: #449d44;\n}\n.label-info {\n  background-color: #5bc0de;\n}\n.label-info[href]:hover,\n.label-info[href]:focus {\n  background-color: #31b0d5;\n}\n.label-warning {\n  background-color: #f0ad4e;\n}\n.label-warning[href]:hover,\n.label-warning[href]:focus {\n  background-color: #ec971f;\n}\n.label-danger {\n  background-color: #d9534f;\n}\n.label-danger[href]:hover,\n.label-danger[href]:focus {\n  background-color: #c9302c;\n}\n.badge {\n  display: inline-block;\n  min-width: 10px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  background-color: #777;\n  border-radius: 10px;\n}\n.badge:empty {\n  display: none;\n}\n.btn .badge {\n  position: relative;\n  top: -1px;\n}\n.btn-xs .badge {\n  top: 0;\n  padding: 1px 5px;\n}\na.badge:hover,\na.badge:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.list-group-item.active > .badge,\n.nav-pills > .active > a > .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.list-group-item > .badge {\n  float: right;\n}\n.list-group-item > .badge + .badge {\n  margin-right: 5px;\n}\n.nav-pills > li > a > .badge {\n  margin-left: 3px;\n}\n.jumbotron {\n  padding: 30px 15px;\n  margin-bottom: 30px;\n  color: inherit;\n  background-color: #eee;\n}\n.jumbotron h1,\n.jumbotron .h1 {\n  color: inherit;\n}\n.jumbotron p {\n  margin-bottom: 15px;\n  font-size: 21px;\n  font-weight: 200;\n}\n.jumbotron > hr {\n  border-top-color: #d5d5d5;\n}\n.container .jumbotron,\n.container-fluid .jumbotron {\n  border-radius: 6px;\n}\n.jumbotron .container {\n  max-width: 100%;\n}\n@media screen and (min-width: 768px) {\n  .jumbotron {\n    padding: 48px 0;\n  }\n  .container .jumbotron,\n  .container-fluid .jumbotron {\n    padding-right: 60px;\n    padding-left: 60px;\n  }\n  .jumbotron h1,\n  .jumbotron .h1 {\n    font-size: 63px;\n  }\n}\n.thumbnail {\n  display: block;\n  padding: 4px;\n  margin-bottom: 20px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: border .2s ease-in-out;\n       -o-transition: border .2s ease-in-out;\n          transition: border .2s ease-in-out;\n}\n.thumbnail > img,\n.thumbnail a > img {\n  margin-right: auto;\n  margin-left: auto;\n}\na.thumbnail:hover,\na.thumbnail:focus,\na.thumbnail.active {\n  border-color: #337ab7;\n}\n.thumbnail .caption {\n  padding: 9px;\n  color: #333;\n}\n.alert {\n  padding: 15px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.alert h4 {\n  margin-top: 0;\n  color: inherit;\n}\n.alert .alert-link {\n  font-weight: bold;\n}\n.alert > p,\n.alert > ul {\n  margin-bottom: 0;\n}\n.alert > p + p {\n  margin-top: 5px;\n}\n.alert-dismissable,\n.alert-dismissible {\n  padding-right: 35px;\n}\n.alert-dismissable .close,\n.alert-dismissible .close {\n  position: relative;\n  top: -2px;\n  right: -21px;\n  color: inherit;\n}\n.alert-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.alert-success hr {\n  border-top-color: #c9e2b3;\n}\n.alert-success .alert-link {\n  color: #2b542c;\n}\n.alert-info {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.alert-info hr {\n  border-top-color: #a6e1ec;\n}\n.alert-info .alert-link {\n  color: #245269;\n}\n.alert-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.alert-warning hr {\n  border-top-color: #f7e1b5;\n}\n.alert-warning .alert-link {\n  color: #66512c;\n}\n.alert-danger {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.alert-danger hr {\n  border-top-color: #e4b9c0;\n}\n.alert-danger .alert-link {\n  color: #843534;\n}\n@-webkit-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@-o-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n.progress {\n  height: 20px;\n  margin-bottom: 20px;\n  overflow: hidden;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n          box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n}\n.progress-bar {\n  float: left;\n  width: 0;\n  height: 100%;\n  font-size: 12px;\n  line-height: 20px;\n  color: #fff;\n  text-align: center;\n  background-color: #337ab7;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n  -webkit-transition: width .6s ease;\n       -o-transition: width .6s ease;\n          transition: width .6s ease;\n}\n.progress-striped .progress-bar,\n.progress-bar-striped {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  -webkit-background-size: 40px 40px;\n          background-size: 40px 40px;\n}\n.progress.active .progress-bar,\n.progress-bar.active {\n  -webkit-animation: progress-bar-stripes 2s linear infinite;\n       -o-animation: progress-bar-stripes 2s linear infinite;\n          animation: progress-bar-stripes 2s linear infinite;\n}\n.progress-bar-success {\n  background-color: #5cb85c;\n}\n.progress-striped .progress-bar-success {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-info {\n  background-color: #5bc0de;\n}\n.progress-striped .progress-bar-info {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-warning {\n  background-color: #f0ad4e;\n}\n.progress-striped .progress-bar-warning {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-danger {\n  background-color: #d9534f;\n}\n.progress-striped .progress-bar-danger {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.media {\n  margin-top: 15px;\n}\n.media:first-child {\n  margin-top: 0;\n}\n.media,\n.media-body {\n  overflow: hidden;\n  zoom: 1;\n}\n.media-body {\n  width: 10000px;\n}\n.media-object {\n  display: block;\n}\n.media-right,\n.media > .pull-right {\n  padding-left: 10px;\n}\n.media-left,\n.media > .pull-left {\n  padding-right: 10px;\n}\n.media-left,\n.media-right,\n.media-body {\n  display: table-cell;\n  vertical-align: top;\n}\n.media-middle {\n  vertical-align: middle;\n}\n.media-bottom {\n  vertical-align: bottom;\n}\n.media-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.media-list {\n  padding-left: 0;\n  list-style: none;\n}\n.list-group {\n  padding-left: 0;\n  margin-bottom: 20px;\n}\n.list-group-item {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n  margin-bottom: -1px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.list-group-item:first-child {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n}\n.list-group-item:last-child {\n  margin-bottom: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\na.list-group-item {\n  color: #555;\n}\na.list-group-item .list-group-item-heading {\n  color: #333;\n}\na.list-group-item:hover,\na.list-group-item:focus {\n  color: #555;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.list-group-item.disabled,\n.list-group-item.disabled:hover,\n.list-group-item.disabled:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #eee;\n}\n.list-group-item.disabled .list-group-item-heading,\n.list-group-item.disabled:hover .list-group-item-heading,\n.list-group-item.disabled:focus .list-group-item-heading {\n  color: inherit;\n}\n.list-group-item.disabled .list-group-item-text,\n.list-group-item.disabled:hover .list-group-item-text,\n.list-group-item.disabled:focus .list-group-item-text {\n  color: #777;\n}\n.list-group-item.active,\n.list-group-item.active:hover,\n.list-group-item.active:focus {\n  z-index: 2;\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.list-group-item.active .list-group-item-heading,\n.list-group-item.active:hover .list-group-item-heading,\n.list-group-item.active:focus .list-group-item-heading,\n.list-group-item.active .list-group-item-heading > small,\n.list-group-item.active:hover .list-group-item-heading > small,\n.list-group-item.active:focus .list-group-item-heading > small,\n.list-group-item.active .list-group-item-heading > .small,\n.list-group-item.active:hover .list-group-item-heading > .small,\n.list-group-item.active:focus .list-group-item-heading > .small {\n  color: inherit;\n}\n.list-group-item.active .list-group-item-text,\n.list-group-item.active:hover .list-group-item-text,\n.list-group-item.active:focus .list-group-item-text {\n  color: #c7ddef;\n}\n.list-group-item-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n}\na.list-group-item-success {\n  color: #3c763d;\n}\na.list-group-item-success .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-success:hover,\na.list-group-item-success:focus {\n  color: #3c763d;\n  background-color: #d0e9c6;\n}\na.list-group-item-success.active,\na.list-group-item-success.active:hover,\na.list-group-item-success.active:focus {\n  color: #fff;\n  background-color: #3c763d;\n  border-color: #3c763d;\n}\n.list-group-item-info {\n  color: #31708f;\n  background-color: #d9edf7;\n}\na.list-group-item-info {\n  color: #31708f;\n}\na.list-group-item-info .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-info:hover,\na.list-group-item-info:focus {\n  color: #31708f;\n  background-color: #c4e3f3;\n}\na.list-group-item-info.active,\na.list-group-item-info.active:hover,\na.list-group-item-info.active:focus {\n  color: #fff;\n  background-color: #31708f;\n  border-color: #31708f;\n}\n.list-group-item-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n}\na.list-group-item-warning {\n  color: #8a6d3b;\n}\na.list-group-item-warning .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-warning:hover,\na.list-group-item-warning:focus {\n  color: #8a6d3b;\n  background-color: #faf2cc;\n}\na.list-group-item-warning.active,\na.list-group-item-warning.active:hover,\na.list-group-item-warning.active:focus {\n  color: #fff;\n  background-color: #8a6d3b;\n  border-color: #8a6d3b;\n}\n.list-group-item-danger {\n  color: #a94442;\n  background-color: #f2dede;\n}\na.list-group-item-danger {\n  color: #a94442;\n}\na.list-group-item-danger .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-danger:hover,\na.list-group-item-danger:focus {\n  color: #a94442;\n  background-color: #ebcccc;\n}\na.list-group-item-danger.active,\na.list-group-item-danger.active:hover,\na.list-group-item-danger.active:focus {\n  color: #fff;\n  background-color: #a94442;\n  border-color: #a94442;\n}\n.list-group-item-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.list-group-item-text {\n  margin-bottom: 0;\n  line-height: 1.3;\n}\n.panel {\n  margin-bottom: 20px;\n  background-color: #fff;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n}\n.panel-body {\n  padding: 15px;\n}\n.panel-heading {\n  padding: 10px 15px;\n  border-bottom: 1px solid transparent;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel-heading > .dropdown .dropdown-toggle {\n  color: inherit;\n}\n.panel-title {\n  margin-top: 0;\n  margin-bottom: 0;\n  font-size: 16px;\n  color: inherit;\n}\n.panel-title > a,\n.panel-title > small,\n.panel-title > .small,\n.panel-title > small > a,\n.panel-title > .small > a {\n  color: inherit;\n}\n.panel-footer {\n  padding: 10px 15px;\n  background-color: #f5f5f5;\n  border-top: 1px solid #ddd;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .list-group,\n.panel > .panel-collapse > .list-group {\n  margin-bottom: 0;\n}\n.panel > .list-group .list-group-item,\n.panel > .panel-collapse > .list-group .list-group-item {\n  border-width: 1px 0;\n  border-radius: 0;\n}\n.panel > .list-group:first-child .list-group-item:first-child,\n.panel > .panel-collapse > .list-group:first-child .list-group-item:first-child {\n  border-top: 0;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .list-group:last-child .list-group-item:last-child,\n.panel > .panel-collapse > .list-group:last-child .list-group-item:last-child {\n  border-bottom: 0;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel-heading + .list-group .list-group-item:first-child {\n  border-top-width: 0;\n}\n.list-group + .panel-footer {\n  border-top-width: 0;\n}\n.panel > .table,\n.panel > .table-responsive > .table,\n.panel > .panel-collapse > .table {\n  margin-bottom: 0;\n}\n.panel > .table caption,\n.panel > .table-responsive > .table caption,\n.panel > .panel-collapse > .table caption {\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.panel > .table:first-child,\n.panel > .table-responsive:first-child > .table:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:first-child {\n  border-top-left-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:last-child {\n  border-top-right-radius: 3px;\n}\n.panel > .table:last-child,\n.panel > .table-responsive:last-child > .table:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:first-child {\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:last-child {\n  border-bottom-right-radius: 3px;\n}\n.panel > .panel-body + .table,\n.panel > .panel-body + .table-responsive,\n.panel > .table + .panel-body,\n.panel > .table-responsive + .panel-body {\n  border-top: 1px solid #ddd;\n}\n.panel > .table > tbody:first-child > tr:first-child th,\n.panel > .table > tbody:first-child > tr:first-child td {\n  border-top: 0;\n}\n.panel > .table-bordered,\n.panel > .table-responsive > .table-bordered {\n  border: 0;\n}\n.panel > .table-bordered > thead > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:first-child,\n.panel > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-bordered > thead > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:first-child,\n.panel > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-bordered > tfoot > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n  border-left: 0;\n}\n.panel > .table-bordered > thead > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:last-child,\n.panel > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-bordered > thead > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:last-child,\n.panel > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-bordered > tfoot > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n  border-right: 0;\n}\n.panel > .table-bordered > thead > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > td,\n.panel > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-bordered > thead > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > th,\n.panel > .table-bordered > tbody > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > th {\n  border-bottom: 0;\n}\n.panel > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-bordered > tfoot > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > th {\n  border-bottom: 0;\n}\n.panel > .table-responsive {\n  margin-bottom: 0;\n  border: 0;\n}\n.panel-group {\n  margin-bottom: 20px;\n}\n.panel-group .panel {\n  margin-bottom: 0;\n  border-radius: 4px;\n}\n.panel-group .panel + .panel {\n  margin-top: 5px;\n}\n.panel-group .panel-heading {\n  border-bottom: 0;\n}\n.panel-group .panel-heading + .panel-collapse > .panel-body,\n.panel-group .panel-heading + .panel-collapse > .list-group {\n  border-top: 1px solid #ddd;\n}\n.panel-group .panel-footer {\n  border-top: 0;\n}\n.panel-group .panel-footer + .panel-collapse .panel-body {\n  border-bottom: 1px solid #ddd;\n}\n.panel-default {\n  border-color: #ddd;\n}\n.panel-default > .panel-heading {\n  color: #333;\n  background-color: #f5f5f5;\n  border-color: #ddd;\n}\n.panel-default > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ddd;\n}\n.panel-default > .panel-heading .badge {\n  color: #f5f5f5;\n  background-color: #333;\n}\n.panel-default > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ddd;\n}\n.panel-primary {\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #337ab7;\n}\n.panel-primary > .panel-heading .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.panel-primary > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #337ab7;\n}\n.panel-success {\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #d6e9c6;\n}\n.panel-success > .panel-heading .badge {\n  color: #dff0d8;\n  background-color: #3c763d;\n}\n.panel-success > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #d6e9c6;\n}\n.panel-info {\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #bce8f1;\n}\n.panel-info > .panel-heading .badge {\n  color: #d9edf7;\n  background-color: #31708f;\n}\n.panel-info > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #bce8f1;\n}\n.panel-warning {\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #faebcc;\n}\n.panel-warning > .panel-heading .badge {\n  color: #fcf8e3;\n  background-color: #8a6d3b;\n}\n.panel-warning > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #faebcc;\n}\n.panel-danger {\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ebccd1;\n}\n.panel-danger > .panel-heading .badge {\n  color: #f2dede;\n  background-color: #a94442;\n}\n.panel-danger > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ebccd1;\n}\n.embed-responsive {\n  position: relative;\n  display: block;\n  height: 0;\n  padding: 0;\n  overflow: hidden;\n}\n.embed-responsive .embed-responsive-item,\n.embed-responsive iframe,\n.embed-responsive embed,\n.embed-responsive object,\n.embed-responsive video {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  border: 0;\n}\n.embed-responsive.embed-responsive-16by9 {\n  padding-bottom: 56.25%;\n}\n.embed-responsive.embed-responsive-4by3 {\n  padding-bottom: 75%;\n}\n.well {\n  min-height: 20px;\n  padding: 19px;\n  margin-bottom: 20px;\n  background-color: #f5f5f5;\n  border: 1px solid #e3e3e3;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n}\n.well blockquote {\n  border-color: #ddd;\n  border-color: rgba(0, 0, 0, .15);\n}\n.well-lg {\n  padding: 24px;\n  border-radius: 6px;\n}\n.well-sm {\n  padding: 9px;\n  border-radius: 3px;\n}\n.close {\n  float: right;\n  font-size: 21px;\n  font-weight: bold;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n}\n.close:hover,\n.close:focus {\n  color: #000;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\nbutton.close {\n  -webkit-appearance: none;\n  padding: 0;\n  cursor: pointer;\n  background: transparent;\n  border: 0;\n}\n.modal-open {\n  overflow: hidden;\n}\n.modal {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1040;\n  display: none;\n  overflow: hidden;\n  -webkit-overflow-scrolling: touch;\n  outline: 0;\n}\n.modal.fade .modal-dialog {\n  -webkit-transition: -webkit-transform .3s ease-out;\n       -o-transition:      -o-transform .3s ease-out;\n          transition:         transform .3s ease-out;\n  -webkit-transform: translate(0, -25%);\n      -ms-transform: translate(0, -25%);\n       -o-transform: translate(0, -25%);\n          transform: translate(0, -25%);\n}\n.modal.in .modal-dialog {\n  -webkit-transform: translate(0, 0);\n      -ms-transform: translate(0, 0);\n       -o-transform: translate(0, 0);\n          transform: translate(0, 0);\n}\n.modal-open .modal {\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.modal-dialog {\n  position: relative;\n  width: auto;\n  margin: 10px;\n}\n.modal-content {\n  position: relative;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #999;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  outline: 0;\n  -webkit-box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n          box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n}\n.modal-backdrop {\n  position: absolute;\n  top: 0;\n  right: 0;\n  left: 0;\n  background-color: #000;\n}\n.modal-backdrop.fade {\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.modal-backdrop.in {\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.modal-header {\n  min-height: 16.42857143px;\n  padding: 15px;\n  border-bottom: 1px solid #e5e5e5;\n}\n.modal-header .close {\n  margin-top: -2px;\n}\n.modal-title {\n  margin: 0;\n  line-height: 1.42857143;\n}\n.modal-body {\n  position: relative;\n  padding: 15px;\n}\n.modal-footer {\n  padding: 15px;\n  text-align: right;\n  border-top: 1px solid #e5e5e5;\n}\n.modal-footer .btn + .btn {\n  margin-bottom: 0;\n  margin-left: 5px;\n}\n.modal-footer .btn-group .btn + .btn {\n  margin-left: -1px;\n}\n.modal-footer .btn-block + .btn-block {\n  margin-left: 0;\n}\n.modal-scrollbar-measure {\n  position: absolute;\n  top: -9999px;\n  width: 50px;\n  height: 50px;\n  overflow: scroll;\n}\n@media (min-width: 768px) {\n  .modal-dialog {\n    width: 600px;\n    margin: 30px auto;\n  }\n  .modal-content {\n    -webkit-box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n            box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n  }\n  .modal-sm {\n    width: 300px;\n  }\n}\n@media (min-width: 992px) {\n  .modal-lg {\n    width: 900px;\n  }\n}\n.tooltip {\n  position: absolute;\n  z-index: 1070;\n  display: block;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  font-weight: normal;\n  line-height: 1.4;\n  visibility: visible;\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.tooltip.in {\n  filter: alpha(opacity=90);\n  opacity: .9;\n}\n.tooltip.top {\n  padding: 5px 0;\n  margin-top: -3px;\n}\n.tooltip.right {\n  padding: 0 5px;\n  margin-left: 3px;\n}\n.tooltip.bottom {\n  padding: 5px 0;\n  margin-top: 3px;\n}\n.tooltip.left {\n  padding: 0 5px;\n  margin-left: -3px;\n}\n.tooltip-inner {\n  max-width: 200px;\n  padding: 3px 8px;\n  color: #fff;\n  text-align: center;\n  text-decoration: none;\n  background-color: #000;\n  border-radius: 4px;\n}\n.tooltip-arrow {\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.tooltip.top .tooltip-arrow {\n  bottom: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-left .tooltip-arrow {\n  right: 5px;\n  bottom: 0;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-right .tooltip-arrow {\n  bottom: 0;\n  left: 5px;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.right .tooltip-arrow {\n  top: 50%;\n  left: 0;\n  margin-top: -5px;\n  border-width: 5px 5px 5px 0;\n  border-right-color: #000;\n}\n.tooltip.left .tooltip-arrow {\n  top: 50%;\n  right: 0;\n  margin-top: -5px;\n  border-width: 5px 0 5px 5px;\n  border-left-color: #000;\n}\n.tooltip.bottom .tooltip-arrow {\n  top: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-left .tooltip-arrow {\n  top: 0;\n  right: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-right .tooltip-arrow {\n  top: 0;\n  left: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 1060;\n  display: none;\n  max-width: 276px;\n  padding: 1px;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  white-space: normal;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n          box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n}\n.popover.top {\n  margin-top: -10px;\n}\n.popover.right {\n  margin-left: 10px;\n}\n.popover.bottom {\n  margin-top: 10px;\n}\n.popover.left {\n  margin-left: -10px;\n}\n.popover-title {\n  padding: 8px 14px;\n  margin: 0;\n  font-size: 14px;\n  background-color: #f7f7f7;\n  border-bottom: 1px solid #ebebeb;\n  border-radius: 5px 5px 0 0;\n}\n.popover-content {\n  padding: 9px 14px;\n}\n.popover > .arrow,\n.popover > .arrow:after {\n  position: absolute;\n  display: block;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.popover > .arrow {\n  border-width: 11px;\n}\n.popover > .arrow:after {\n  content: \"\";\n  border-width: 10px;\n}\n.popover.top > .arrow {\n  bottom: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-color: #999;\n  border-top-color: rgba(0, 0, 0, .25);\n  border-bottom-width: 0;\n}\n.popover.top > .arrow:after {\n  bottom: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-color: #fff;\n  border-bottom-width: 0;\n}\n.popover.right > .arrow {\n  top: 50%;\n  left: -11px;\n  margin-top: -11px;\n  border-right-color: #999;\n  border-right-color: rgba(0, 0, 0, .25);\n  border-left-width: 0;\n}\n.popover.right > .arrow:after {\n  bottom: -10px;\n  left: 1px;\n  content: \" \";\n  border-right-color: #fff;\n  border-left-width: 0;\n}\n.popover.bottom > .arrow {\n  top: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-width: 0;\n  border-bottom-color: #999;\n  border-bottom-color: rgba(0, 0, 0, .25);\n}\n.popover.bottom > .arrow:after {\n  top: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-width: 0;\n  border-bottom-color: #fff;\n}\n.popover.left > .arrow {\n  top: 50%;\n  right: -11px;\n  margin-top: -11px;\n  border-right-width: 0;\n  border-left-color: #999;\n  border-left-color: rgba(0, 0, 0, .25);\n}\n.popover.left > .arrow:after {\n  right: 1px;\n  bottom: -10px;\n  content: \" \";\n  border-right-width: 0;\n  border-left-color: #fff;\n}\n.carousel {\n  position: relative;\n}\n.carousel-inner {\n  position: relative;\n  width: 100%;\n  overflow: hidden;\n}\n.carousel-inner > .item {\n  position: relative;\n  display: none;\n  -webkit-transition: .6s ease-in-out left;\n       -o-transition: .6s ease-in-out left;\n          transition: .6s ease-in-out left;\n}\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  line-height: 1;\n}\n@media all and (transform-3d), (-webkit-transform-3d) {\n  .carousel-inner > .item {\n    -webkit-transition: -webkit-transform .6s ease-in-out;\n         -o-transition:      -o-transform .6s ease-in-out;\n            transition:         transform .6s ease-in-out;\n\n    -webkit-backface-visibility: hidden;\n            backface-visibility: hidden;\n    -webkit-perspective: 1000;\n            perspective: 1000;\n  }\n  .carousel-inner > .item.next,\n  .carousel-inner > .item.active.right {\n    left: 0;\n    -webkit-transform: translate3d(100%, 0, 0);\n            transform: translate3d(100%, 0, 0);\n  }\n  .carousel-inner > .item.prev,\n  .carousel-inner > .item.active.left {\n    left: 0;\n    -webkit-transform: translate3d(-100%, 0, 0);\n            transform: translate3d(-100%, 0, 0);\n  }\n  .carousel-inner > .item.next.left,\n  .carousel-inner > .item.prev.right,\n  .carousel-inner > .item.active {\n    left: 0;\n    -webkit-transform: translate3d(0, 0, 0);\n            transform: translate3d(0, 0, 0);\n  }\n}\n.carousel-inner > .active,\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  display: block;\n}\n.carousel-inner > .active {\n  left: 0;\n}\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  position: absolute;\n  top: 0;\n  width: 100%;\n}\n.carousel-inner > .next {\n  left: 100%;\n}\n.carousel-inner > .prev {\n  left: -100%;\n}\n.carousel-inner > .next.left,\n.carousel-inner > .prev.right {\n  left: 0;\n}\n.carousel-inner > .active.left {\n  left: -100%;\n}\n.carousel-inner > .active.right {\n  left: 100%;\n}\n.carousel-control {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 15%;\n  font-size: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.carousel-control.left {\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .5)), to(rgba(0, 0, 0, .0001)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#80000000', endColorstr='#00000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control.right {\n  right: 0;\n  left: auto;\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .0001)), to(rgba(0, 0, 0, .5)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#80000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control:hover,\n.carousel-control:focus {\n  color: #fff;\n  text-decoration: none;\n  filter: alpha(opacity=90);\n  outline: 0;\n  opacity: .9;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-left,\n.carousel-control .glyphicon-chevron-right {\n  position: absolute;\n  top: 50%;\n  z-index: 5;\n  display: inline-block;\n}\n.carousel-control .icon-prev,\n.carousel-control .glyphicon-chevron-left {\n  left: 50%;\n  margin-left: -10px;\n}\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-right {\n  right: 50%;\n  margin-right: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next {\n  width: 20px;\n  height: 20px;\n  margin-top: -10px;\n  font-family: serif;\n  line-height: 1;\n}\n.carousel-control .icon-prev:before {\n  content: '\\2039';\n}\n.carousel-control .icon-next:before {\n  content: '\\203a';\n}\n.carousel-indicators {\n  position: absolute;\n  bottom: 10px;\n  left: 50%;\n  z-index: 15;\n  width: 60%;\n  padding-left: 0;\n  margin-left: -30%;\n  text-align: center;\n  list-style: none;\n}\n.carousel-indicators li {\n  display: inline-block;\n  width: 10px;\n  height: 10px;\n  margin: 1px;\n  text-indent: -999px;\n  cursor: pointer;\n  background-color: #000 \\9;\n  background-color: rgba(0, 0, 0, 0);\n  border: 1px solid #fff;\n  border-radius: 10px;\n}\n.carousel-indicators .active {\n  width: 12px;\n  height: 12px;\n  margin: 0;\n  background-color: #fff;\n}\n.carousel-caption {\n  position: absolute;\n  right: 15%;\n  bottom: 20px;\n  left: 15%;\n  z-index: 10;\n  padding-top: 20px;\n  padding-bottom: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n}\n.carousel-caption .btn {\n  text-shadow: none;\n}\n@media screen and (min-width: 768px) {\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-prev,\n  .carousel-control .icon-next {\n    width: 30px;\n    height: 30px;\n    margin-top: -15px;\n    font-size: 30px;\n  }\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .icon-prev {\n    margin-left: -15px;\n  }\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-next {\n    margin-right: -15px;\n  }\n  .carousel-caption {\n    right: 20%;\n    left: 20%;\n    padding-bottom: 30px;\n  }\n  .carousel-indicators {\n    bottom: 20px;\n  }\n}\n.clearfix:before,\n.clearfix:after,\n.dl-horizontal dd:before,\n.dl-horizontal dd:after,\n.container:before,\n.container:after,\n.container-fluid:before,\n.container-fluid:after,\n.row:before,\n.row:after,\n.form-horizontal .form-group:before,\n.form-horizontal .form-group:after,\n.btn-toolbar:before,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:before,\n.btn-group-vertical > .btn-group:after,\n.nav:before,\n.nav:after,\n.navbar:before,\n.navbar:after,\n.navbar-header:before,\n.navbar-header:after,\n.navbar-collapse:before,\n.navbar-collapse:after,\n.pager:before,\n.pager:after,\n.panel-body:before,\n.panel-body:after,\n.modal-footer:before,\n.modal-footer:after {\n  display: table;\n  content: \" \";\n}\n.clearfix:after,\n.dl-horizontal dd:after,\n.container:after,\n.container-fluid:after,\n.row:after,\n.form-horizontal .form-group:after,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:after,\n.nav:after,\n.navbar:after,\n.navbar-header:after,\n.navbar-collapse:after,\n.pager:after,\n.panel-body:after,\n.modal-footer:after {\n  clear: both;\n}\n.center-block {\n  display: block;\n  margin-right: auto;\n  margin-left: auto;\n}\n.pull-right {\n  float: right !important;\n}\n.pull-left {\n  float: left !important;\n}\n.hide {\n  display: none !important;\n}\n.show {\n  display: block !important;\n}\n.invisible {\n  visibility: hidden;\n}\n.text-hide {\n  font: 0/0 a;\n  color: transparent;\n  text-shadow: none;\n  background-color: transparent;\n  border: 0;\n}\n.hidden {\n  display: none !important;\n  visibility: hidden !important;\n}\n.affix {\n  position: fixed;\n}\n@-ms-viewport {\n  width: device-width;\n}\n.visible-xs,\n.visible-sm,\n.visible-md,\n.visible-lg {\n  display: none !important;\n}\n.visible-xs-block,\n.visible-xs-inline,\n.visible-xs-inline-block,\n.visible-sm-block,\n.visible-sm-inline,\n.visible-sm-inline-block,\n.visible-md-block,\n.visible-md-inline,\n.visible-md-inline-block,\n.visible-lg-block,\n.visible-lg-inline,\n.visible-lg-inline-block {\n  display: none !important;\n}\n@media (max-width: 767px) {\n  .visible-xs {\n    display: block !important;\n  }\n  table.visible-xs {\n    display: table;\n  }\n  tr.visible-xs {\n    display: table-row !important;\n  }\n  th.visible-xs,\n  td.visible-xs {\n    display: table-cell !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-block {\n    display: block !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline {\n    display: inline !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm {\n    display: block !important;\n  }\n  table.visible-sm {\n    display: table;\n  }\n  tr.visible-sm {\n    display: table-row !important;\n  }\n  th.visible-sm,\n  td.visible-sm {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-block {\n    display: block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md {\n    display: block !important;\n  }\n  table.visible-md {\n    display: table;\n  }\n  tr.visible-md {\n    display: table-row !important;\n  }\n  th.visible-md,\n  td.visible-md {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-block {\n    display: block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg {\n    display: block !important;\n  }\n  table.visible-lg {\n    display: table;\n  }\n  tr.visible-lg {\n    display: table-row !important;\n  }\n  th.visible-lg,\n  td.visible-lg {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-block {\n    display: block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (max-width: 767px) {\n  .hidden-xs {\n    display: none !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .hidden-sm {\n    display: none !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .hidden-md {\n    display: none !important;\n  }\n}\n@media (min-width: 1200px) {\n  .hidden-lg {\n    display: none !important;\n  }\n}\n.visible-print {\n  display: none !important;\n}\n@media print {\n  .visible-print {\n    display: block !important;\n  }\n  table.visible-print {\n    display: table;\n  }\n  tr.visible-print {\n    display: table-row !important;\n  }\n  th.visible-print,\n  td.visible-print {\n    display: table-cell !important;\n  }\n}\n.visible-print-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-block {\n    display: block !important;\n  }\n}\n.visible-print-inline {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline {\n    display: inline !important;\n  }\n}\n.visible-print-inline-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline-block {\n    display: inline-block !important;\n  }\n}\n@media print {\n  .hidden-print {\n    display: none !important;\n  }\n}\n/*# sourceMappingURL=bootstrap.css.map */\n", ""]);
+	exports = module.exports = __webpack_require__(23)();
+	exports.push([module.id, "/*!\n * Bootstrap v3.3.2 (http://getbootstrap.com)\n * Copyright 2011-2015 Twitter, Inc.\n * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)\n */\n\n/*! normalize.css v3.0.2 | MIT License | git.io/normalize */\nhtml {\n  font-family: sans-serif;\n  -webkit-text-size-adjust: 100%;\n      -ms-text-size-adjust: 100%;\n}\nbody {\n  margin: 0;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmain,\nmenu,\nnav,\nsection,\nsummary {\n  display: block;\n}\naudio,\ncanvas,\nprogress,\nvideo {\n  display: inline-block;\n  vertical-align: baseline;\n}\naudio:not([controls]) {\n  display: none;\n  height: 0;\n}\n[hidden],\ntemplate {\n  display: none;\n}\na {\n  background-color: transparent;\n}\na:active,\na:hover {\n  outline: 0;\n}\nabbr[title] {\n  border-bottom: 1px dotted;\n}\nb,\nstrong {\n  font-weight: bold;\n}\ndfn {\n  font-style: italic;\n}\nh1 {\n  margin: .67em 0;\n  font-size: 2em;\n}\nmark {\n  color: #000;\n  background: #ff0;\n}\nsmall {\n  font-size: 80%;\n}\nsub,\nsup {\n  position: relative;\n  font-size: 75%;\n  line-height: 0;\n  vertical-align: baseline;\n}\nsup {\n  top: -.5em;\n}\nsub {\n  bottom: -.25em;\n}\nimg {\n  border: 0;\n}\nsvg:not(:root) {\n  overflow: hidden;\n}\nfigure {\n  margin: 1em 40px;\n}\nhr {\n  height: 0;\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n}\npre {\n  overflow: auto;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n  margin: 0;\n  font: inherit;\n  color: inherit;\n}\nbutton {\n  overflow: visible;\n}\nbutton,\nselect {\n  text-transform: none;\n}\nbutton,\nhtml input[type=\"button\"],\ninput[type=\"reset\"],\ninput[type=\"submit\"] {\n  -webkit-appearance: button;\n  cursor: pointer;\n}\nbutton[disabled],\nhtml input[disabled] {\n  cursor: default;\n}\nbutton::-moz-focus-inner,\ninput::-moz-focus-inner {\n  padding: 0;\n  border: 0;\n}\ninput {\n  line-height: normal;\n}\ninput[type=\"checkbox\"],\ninput[type=\"radio\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n  padding: 0;\n}\ninput[type=\"number\"]::-webkit-inner-spin-button,\ninput[type=\"number\"]::-webkit-outer-spin-button {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n  -webkit-appearance: textfield;\n}\ninput[type=\"search\"]::-webkit-search-cancel-button,\ninput[type=\"search\"]::-webkit-search-decoration {\n  -webkit-appearance: none;\n}\nfieldset {\n  padding: .35em .625em .75em;\n  margin: 0 2px;\n  border: 1px solid #c0c0c0;\n}\nlegend {\n  padding: 0;\n  border: 0;\n}\ntextarea {\n  overflow: auto;\n}\noptgroup {\n  font-weight: bold;\n}\ntable {\n  border-spacing: 0;\n  border-collapse: collapse;\n}\ntd,\nth {\n  padding: 0;\n}\n/*! Source: https://github.com/h5bp/html5-boilerplate/blob/master/src/css/main.css */\n@media print {\n  *,\n  *:before,\n  *:after {\n    color: #000 !important;\n    text-shadow: none !important;\n    background: transparent !important;\n    -webkit-box-shadow: none !important;\n            box-shadow: none !important;\n  }\n  a,\n  a:visited {\n    text-decoration: underline;\n  }\n  a[href]:after {\n    content: \" (\" attr(href) \")\";\n  }\n  abbr[title]:after {\n    content: \" (\" attr(title) \")\";\n  }\n  a[href^=\"#\"]:after,\n  a[href^=\"javascript:\"]:after {\n    content: \"\";\n  }\n  pre,\n  blockquote {\n    border: 1px solid #999;\n\n    page-break-inside: avoid;\n  }\n  thead {\n    display: table-header-group;\n  }\n  tr,\n  img {\n    page-break-inside: avoid;\n  }\n  img {\n    max-width: 100% !important;\n  }\n  p,\n  h2,\n  h3 {\n    orphans: 3;\n    widows: 3;\n  }\n  h2,\n  h3 {\n    page-break-after: avoid;\n  }\n  select {\n    background: #fff !important;\n  }\n  .navbar {\n    display: none;\n  }\n  .btn > .caret,\n  .dropup > .btn > .caret {\n    border-top-color: #000 !important;\n  }\n  .label {\n    border: 1px solid #000;\n  }\n  .table {\n    border-collapse: collapse !important;\n  }\n  .table td,\n  .table th {\n    background-color: #fff !important;\n  }\n  .table-bordered th,\n  .table-bordered td {\n    border: 1px solid #ddd !important;\n  }\n}\n@font-face {\n  font-family: 'Glyphicons Halflings';\n\n  src: url("+__webpack_require__(24)+");\n  src: url("+__webpack_require__(24)+"?#iefix) format('embedded-opentype'), url("+__webpack_require__(30)+") format('woff2'), url("+__webpack_require__(27)+") format('woff'), url("+__webpack_require__(26)+") format('truetype'), url("+__webpack_require__(25)+"#glyphicons_halflingsregular) format('svg');\n}\n.glyphicon {\n  position: relative;\n  top: 1px;\n  display: inline-block;\n  font-family: 'Glyphicons Halflings';\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1;\n\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n.glyphicon-asterisk:before {\n  content: \"\\2a\";\n}\n.glyphicon-plus:before {\n  content: \"\\2b\";\n}\n.glyphicon-euro:before,\n.glyphicon-eur:before {\n  content: \"\\20ac\";\n}\n.glyphicon-minus:before {\n  content: \"\\2212\";\n}\n.glyphicon-cloud:before {\n  content: \"\\2601\";\n}\n.glyphicon-envelope:before {\n  content: \"\\2709\";\n}\n.glyphicon-pencil:before {\n  content: \"\\270f\";\n}\n.glyphicon-glass:before {\n  content: \"\\e001\";\n}\n.glyphicon-music:before {\n  content: \"\\e002\";\n}\n.glyphicon-search:before {\n  content: \"\\e003\";\n}\n.glyphicon-heart:before {\n  content: \"\\e005\";\n}\n.glyphicon-star:before {\n  content: \"\\e006\";\n}\n.glyphicon-star-empty:before {\n  content: \"\\e007\";\n}\n.glyphicon-user:before {\n  content: \"\\e008\";\n}\n.glyphicon-film:before {\n  content: \"\\e009\";\n}\n.glyphicon-th-large:before {\n  content: \"\\e010\";\n}\n.glyphicon-th:before {\n  content: \"\\e011\";\n}\n.glyphicon-th-list:before {\n  content: \"\\e012\";\n}\n.glyphicon-ok:before {\n  content: \"\\e013\";\n}\n.glyphicon-remove:before {\n  content: \"\\e014\";\n}\n.glyphicon-zoom-in:before {\n  content: \"\\e015\";\n}\n.glyphicon-zoom-out:before {\n  content: \"\\e016\";\n}\n.glyphicon-off:before {\n  content: \"\\e017\";\n}\n.glyphicon-signal:before {\n  content: \"\\e018\";\n}\n.glyphicon-cog:before {\n  content: \"\\e019\";\n}\n.glyphicon-trash:before {\n  content: \"\\e020\";\n}\n.glyphicon-home:before {\n  content: \"\\e021\";\n}\n.glyphicon-file:before {\n  content: \"\\e022\";\n}\n.glyphicon-time:before {\n  content: \"\\e023\";\n}\n.glyphicon-road:before {\n  content: \"\\e024\";\n}\n.glyphicon-download-alt:before {\n  content: \"\\e025\";\n}\n.glyphicon-download:before {\n  content: \"\\e026\";\n}\n.glyphicon-upload:before {\n  content: \"\\e027\";\n}\n.glyphicon-inbox:before {\n  content: \"\\e028\";\n}\n.glyphicon-play-circle:before {\n  content: \"\\e029\";\n}\n.glyphicon-repeat:before {\n  content: \"\\e030\";\n}\n.glyphicon-refresh:before {\n  content: \"\\e031\";\n}\n.glyphicon-list-alt:before {\n  content: \"\\e032\";\n}\n.glyphicon-lock:before {\n  content: \"\\e033\";\n}\n.glyphicon-flag:before {\n  content: \"\\e034\";\n}\n.glyphicon-headphones:before {\n  content: \"\\e035\";\n}\n.glyphicon-volume-off:before {\n  content: \"\\e036\";\n}\n.glyphicon-volume-down:before {\n  content: \"\\e037\";\n}\n.glyphicon-volume-up:before {\n  content: \"\\e038\";\n}\n.glyphicon-qrcode:before {\n  content: \"\\e039\";\n}\n.glyphicon-barcode:before {\n  content: \"\\e040\";\n}\n.glyphicon-tag:before {\n  content: \"\\e041\";\n}\n.glyphicon-tags:before {\n  content: \"\\e042\";\n}\n.glyphicon-book:before {\n  content: \"\\e043\";\n}\n.glyphicon-bookmark:before {\n  content: \"\\e044\";\n}\n.glyphicon-print:before {\n  content: \"\\e045\";\n}\n.glyphicon-camera:before {\n  content: \"\\e046\";\n}\n.glyphicon-font:before {\n  content: \"\\e047\";\n}\n.glyphicon-bold:before {\n  content: \"\\e048\";\n}\n.glyphicon-italic:before {\n  content: \"\\e049\";\n}\n.glyphicon-text-height:before {\n  content: \"\\e050\";\n}\n.glyphicon-text-width:before {\n  content: \"\\e051\";\n}\n.glyphicon-align-left:before {\n  content: \"\\e052\";\n}\n.glyphicon-align-center:before {\n  content: \"\\e053\";\n}\n.glyphicon-align-right:before {\n  content: \"\\e054\";\n}\n.glyphicon-align-justify:before {\n  content: \"\\e055\";\n}\n.glyphicon-list:before {\n  content: \"\\e056\";\n}\n.glyphicon-indent-left:before {\n  content: \"\\e057\";\n}\n.glyphicon-indent-right:before {\n  content: \"\\e058\";\n}\n.glyphicon-facetime-video:before {\n  content: \"\\e059\";\n}\n.glyphicon-picture:before {\n  content: \"\\e060\";\n}\n.glyphicon-map-marker:before {\n  content: \"\\e062\";\n}\n.glyphicon-adjust:before {\n  content: \"\\e063\";\n}\n.glyphicon-tint:before {\n  content: \"\\e064\";\n}\n.glyphicon-edit:before {\n  content: \"\\e065\";\n}\n.glyphicon-share:before {\n  content: \"\\e066\";\n}\n.glyphicon-check:before {\n  content: \"\\e067\";\n}\n.glyphicon-move:before {\n  content: \"\\e068\";\n}\n.glyphicon-step-backward:before {\n  content: \"\\e069\";\n}\n.glyphicon-fast-backward:before {\n  content: \"\\e070\";\n}\n.glyphicon-backward:before {\n  content: \"\\e071\";\n}\n.glyphicon-play:before {\n  content: \"\\e072\";\n}\n.glyphicon-pause:before {\n  content: \"\\e073\";\n}\n.glyphicon-stop:before {\n  content: \"\\e074\";\n}\n.glyphicon-forward:before {\n  content: \"\\e075\";\n}\n.glyphicon-fast-forward:before {\n  content: \"\\e076\";\n}\n.glyphicon-step-forward:before {\n  content: \"\\e077\";\n}\n.glyphicon-eject:before {\n  content: \"\\e078\";\n}\n.glyphicon-chevron-left:before {\n  content: \"\\e079\";\n}\n.glyphicon-chevron-right:before {\n  content: \"\\e080\";\n}\n.glyphicon-plus-sign:before {\n  content: \"\\e081\";\n}\n.glyphicon-minus-sign:before {\n  content: \"\\e082\";\n}\n.glyphicon-remove-sign:before {\n  content: \"\\e083\";\n}\n.glyphicon-ok-sign:before {\n  content: \"\\e084\";\n}\n.glyphicon-question-sign:before {\n  content: \"\\e085\";\n}\n.glyphicon-info-sign:before {\n  content: \"\\e086\";\n}\n.glyphicon-screenshot:before {\n  content: \"\\e087\";\n}\n.glyphicon-remove-circle:before {\n  content: \"\\e088\";\n}\n.glyphicon-ok-circle:before {\n  content: \"\\e089\";\n}\n.glyphicon-ban-circle:before {\n  content: \"\\e090\";\n}\n.glyphicon-arrow-left:before {\n  content: \"\\e091\";\n}\n.glyphicon-arrow-right:before {\n  content: \"\\e092\";\n}\n.glyphicon-arrow-up:before {\n  content: \"\\e093\";\n}\n.glyphicon-arrow-down:before {\n  content: \"\\e094\";\n}\n.glyphicon-share-alt:before {\n  content: \"\\e095\";\n}\n.glyphicon-resize-full:before {\n  content: \"\\e096\";\n}\n.glyphicon-resize-small:before {\n  content: \"\\e097\";\n}\n.glyphicon-exclamation-sign:before {\n  content: \"\\e101\";\n}\n.glyphicon-gift:before {\n  content: \"\\e102\";\n}\n.glyphicon-leaf:before {\n  content: \"\\e103\";\n}\n.glyphicon-fire:before {\n  content: \"\\e104\";\n}\n.glyphicon-eye-open:before {\n  content: \"\\e105\";\n}\n.glyphicon-eye-close:before {\n  content: \"\\e106\";\n}\n.glyphicon-warning-sign:before {\n  content: \"\\e107\";\n}\n.glyphicon-plane:before {\n  content: \"\\e108\";\n}\n.glyphicon-calendar:before {\n  content: \"\\e109\";\n}\n.glyphicon-random:before {\n  content: \"\\e110\";\n}\n.glyphicon-comment:before {\n  content: \"\\e111\";\n}\n.glyphicon-magnet:before {\n  content: \"\\e112\";\n}\n.glyphicon-chevron-up:before {\n  content: \"\\e113\";\n}\n.glyphicon-chevron-down:before {\n  content: \"\\e114\";\n}\n.glyphicon-retweet:before {\n  content: \"\\e115\";\n}\n.glyphicon-shopping-cart:before {\n  content: \"\\e116\";\n}\n.glyphicon-folder-close:before {\n  content: \"\\e117\";\n}\n.glyphicon-folder-open:before {\n  content: \"\\e118\";\n}\n.glyphicon-resize-vertical:before {\n  content: \"\\e119\";\n}\n.glyphicon-resize-horizontal:before {\n  content: \"\\e120\";\n}\n.glyphicon-hdd:before {\n  content: \"\\e121\";\n}\n.glyphicon-bullhorn:before {\n  content: \"\\e122\";\n}\n.glyphicon-bell:before {\n  content: \"\\e123\";\n}\n.glyphicon-certificate:before {\n  content: \"\\e124\";\n}\n.glyphicon-thumbs-up:before {\n  content: \"\\e125\";\n}\n.glyphicon-thumbs-down:before {\n  content: \"\\e126\";\n}\n.glyphicon-hand-right:before {\n  content: \"\\e127\";\n}\n.glyphicon-hand-left:before {\n  content: \"\\e128\";\n}\n.glyphicon-hand-up:before {\n  content: \"\\e129\";\n}\n.glyphicon-hand-down:before {\n  content: \"\\e130\";\n}\n.glyphicon-circle-arrow-right:before {\n  content: \"\\e131\";\n}\n.glyphicon-circle-arrow-left:before {\n  content: \"\\e132\";\n}\n.glyphicon-circle-arrow-up:before {\n  content: \"\\e133\";\n}\n.glyphicon-circle-arrow-down:before {\n  content: \"\\e134\";\n}\n.glyphicon-globe:before {\n  content: \"\\e135\";\n}\n.glyphicon-wrench:before {\n  content: \"\\e136\";\n}\n.glyphicon-tasks:before {\n  content: \"\\e137\";\n}\n.glyphicon-filter:before {\n  content: \"\\e138\";\n}\n.glyphicon-briefcase:before {\n  content: \"\\e139\";\n}\n.glyphicon-fullscreen:before {\n  content: \"\\e140\";\n}\n.glyphicon-dashboard:before {\n  content: \"\\e141\";\n}\n.glyphicon-paperclip:before {\n  content: \"\\e142\";\n}\n.glyphicon-heart-empty:before {\n  content: \"\\e143\";\n}\n.glyphicon-link:before {\n  content: \"\\e144\";\n}\n.glyphicon-phone:before {\n  content: \"\\e145\";\n}\n.glyphicon-pushpin:before {\n  content: \"\\e146\";\n}\n.glyphicon-usd:before {\n  content: \"\\e148\";\n}\n.glyphicon-gbp:before {\n  content: \"\\e149\";\n}\n.glyphicon-sort:before {\n  content: \"\\e150\";\n}\n.glyphicon-sort-by-alphabet:before {\n  content: \"\\e151\";\n}\n.glyphicon-sort-by-alphabet-alt:before {\n  content: \"\\e152\";\n}\n.glyphicon-sort-by-order:before {\n  content: \"\\e153\";\n}\n.glyphicon-sort-by-order-alt:before {\n  content: \"\\e154\";\n}\n.glyphicon-sort-by-attributes:before {\n  content: \"\\e155\";\n}\n.glyphicon-sort-by-attributes-alt:before {\n  content: \"\\e156\";\n}\n.glyphicon-unchecked:before {\n  content: \"\\e157\";\n}\n.glyphicon-expand:before {\n  content: \"\\e158\";\n}\n.glyphicon-collapse-down:before {\n  content: \"\\e159\";\n}\n.glyphicon-collapse-up:before {\n  content: \"\\e160\";\n}\n.glyphicon-log-in:before {\n  content: \"\\e161\";\n}\n.glyphicon-flash:before {\n  content: \"\\e162\";\n}\n.glyphicon-log-out:before {\n  content: \"\\e163\";\n}\n.glyphicon-new-window:before {\n  content: \"\\e164\";\n}\n.glyphicon-record:before {\n  content: \"\\e165\";\n}\n.glyphicon-save:before {\n  content: \"\\e166\";\n}\n.glyphicon-open:before {\n  content: \"\\e167\";\n}\n.glyphicon-saved:before {\n  content: \"\\e168\";\n}\n.glyphicon-import:before {\n  content: \"\\e169\";\n}\n.glyphicon-export:before {\n  content: \"\\e170\";\n}\n.glyphicon-send:before {\n  content: \"\\e171\";\n}\n.glyphicon-floppy-disk:before {\n  content: \"\\e172\";\n}\n.glyphicon-floppy-saved:before {\n  content: \"\\e173\";\n}\n.glyphicon-floppy-remove:before {\n  content: \"\\e174\";\n}\n.glyphicon-floppy-save:before {\n  content: \"\\e175\";\n}\n.glyphicon-floppy-open:before {\n  content: \"\\e176\";\n}\n.glyphicon-credit-card:before {\n  content: \"\\e177\";\n}\n.glyphicon-transfer:before {\n  content: \"\\e178\";\n}\n.glyphicon-cutlery:before {\n  content: \"\\e179\";\n}\n.glyphicon-header:before {\n  content: \"\\e180\";\n}\n.glyphicon-compressed:before {\n  content: \"\\e181\";\n}\n.glyphicon-earphone:before {\n  content: \"\\e182\";\n}\n.glyphicon-phone-alt:before {\n  content: \"\\e183\";\n}\n.glyphicon-tower:before {\n  content: \"\\e184\";\n}\n.glyphicon-stats:before {\n  content: \"\\e185\";\n}\n.glyphicon-sd-video:before {\n  content: \"\\e186\";\n}\n.glyphicon-hd-video:before {\n  content: \"\\e187\";\n}\n.glyphicon-subtitles:before {\n  content: \"\\e188\";\n}\n.glyphicon-sound-stereo:before {\n  content: \"\\e189\";\n}\n.glyphicon-sound-dolby:before {\n  content: \"\\e190\";\n}\n.glyphicon-sound-5-1:before {\n  content: \"\\e191\";\n}\n.glyphicon-sound-6-1:before {\n  content: \"\\e192\";\n}\n.glyphicon-sound-7-1:before {\n  content: \"\\e193\";\n}\n.glyphicon-copyright-mark:before {\n  content: \"\\e194\";\n}\n.glyphicon-registration-mark:before {\n  content: \"\\e195\";\n}\n.glyphicon-cloud-download:before {\n  content: \"\\e197\";\n}\n.glyphicon-cloud-upload:before {\n  content: \"\\e198\";\n}\n.glyphicon-tree-conifer:before {\n  content: \"\\e199\";\n}\n.glyphicon-tree-deciduous:before {\n  content: \"\\e200\";\n}\n.glyphicon-cd:before {\n  content: \"\\e201\";\n}\n.glyphicon-save-file:before {\n  content: \"\\e202\";\n}\n.glyphicon-open-file:before {\n  content: \"\\e203\";\n}\n.glyphicon-level-up:before {\n  content: \"\\e204\";\n}\n.glyphicon-copy:before {\n  content: \"\\e205\";\n}\n.glyphicon-paste:before {\n  content: \"\\e206\";\n}\n.glyphicon-alert:before {\n  content: \"\\e209\";\n}\n.glyphicon-equalizer:before {\n  content: \"\\e210\";\n}\n.glyphicon-king:before {\n  content: \"\\e211\";\n}\n.glyphicon-queen:before {\n  content: \"\\e212\";\n}\n.glyphicon-pawn:before {\n  content: \"\\e213\";\n}\n.glyphicon-bishop:before {\n  content: \"\\e214\";\n}\n.glyphicon-knight:before {\n  content: \"\\e215\";\n}\n.glyphicon-baby-formula:before {\n  content: \"\\e216\";\n}\n.glyphicon-tent:before {\n  content: \"\\26fa\";\n}\n.glyphicon-blackboard:before {\n  content: \"\\e218\";\n}\n.glyphicon-bed:before {\n  content: \"\\e219\";\n}\n.glyphicon-apple:before {\n  content: \"\\f8ff\";\n}\n.glyphicon-erase:before {\n  content: \"\\e221\";\n}\n.glyphicon-hourglass:before {\n  content: \"\\231b\";\n}\n.glyphicon-lamp:before {\n  content: \"\\e223\";\n}\n.glyphicon-duplicate:before {\n  content: \"\\e224\";\n}\n.glyphicon-piggy-bank:before {\n  content: \"\\e225\";\n}\n.glyphicon-scissors:before {\n  content: \"\\e226\";\n}\n.glyphicon-bitcoin:before {\n  content: \"\\e227\";\n}\n.glyphicon-yen:before {\n  content: \"\\00a5\";\n}\n.glyphicon-ruble:before {\n  content: \"\\20bd\";\n}\n.glyphicon-scale:before {\n  content: \"\\e230\";\n}\n.glyphicon-ice-lolly:before {\n  content: \"\\e231\";\n}\n.glyphicon-ice-lolly-tasted:before {\n  content: \"\\e232\";\n}\n.glyphicon-education:before {\n  content: \"\\e233\";\n}\n.glyphicon-option-horizontal:before {\n  content: \"\\e234\";\n}\n.glyphicon-option-vertical:before {\n  content: \"\\e235\";\n}\n.glyphicon-menu-hamburger:before {\n  content: \"\\e236\";\n}\n.glyphicon-modal-window:before {\n  content: \"\\e237\";\n}\n.glyphicon-oil:before {\n  content: \"\\e238\";\n}\n.glyphicon-grain:before {\n  content: \"\\e239\";\n}\n.glyphicon-sunglasses:before {\n  content: \"\\e240\";\n}\n.glyphicon-text-size:before {\n  content: \"\\e241\";\n}\n.glyphicon-text-color:before {\n  content: \"\\e242\";\n}\n.glyphicon-text-background:before {\n  content: \"\\e243\";\n}\n.glyphicon-object-align-top:before {\n  content: \"\\e244\";\n}\n.glyphicon-object-align-bottom:before {\n  content: \"\\e245\";\n}\n.glyphicon-object-align-horizontal:before {\n  content: \"\\e246\";\n}\n.glyphicon-object-align-left:before {\n  content: \"\\e247\";\n}\n.glyphicon-object-align-vertical:before {\n  content: \"\\e248\";\n}\n.glyphicon-object-align-right:before {\n  content: \"\\e249\";\n}\n.glyphicon-triangle-right:before {\n  content: \"\\e250\";\n}\n.glyphicon-triangle-left:before {\n  content: \"\\e251\";\n}\n.glyphicon-triangle-bottom:before {\n  content: \"\\e252\";\n}\n.glyphicon-triangle-top:before {\n  content: \"\\e253\";\n}\n.glyphicon-console:before {\n  content: \"\\e254\";\n}\n.glyphicon-superscript:before {\n  content: \"\\e255\";\n}\n.glyphicon-subscript:before {\n  content: \"\\e256\";\n}\n.glyphicon-menu-left:before {\n  content: \"\\e257\";\n}\n.glyphicon-menu-right:before {\n  content: \"\\e258\";\n}\n.glyphicon-menu-down:before {\n  content: \"\\e259\";\n}\n.glyphicon-menu-up:before {\n  content: \"\\e260\";\n}\n* {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\n*:before,\n*:after {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\nhtml {\n  font-size: 10px;\n\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n}\nbody {\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #333;\n  background-color: #fff;\n}\ninput,\nbutton,\nselect,\ntextarea {\n  font-family: inherit;\n  font-size: inherit;\n  line-height: inherit;\n}\na {\n  color: #337ab7;\n  text-decoration: none;\n}\na:hover,\na:focus {\n  color: #23527c;\n  text-decoration: underline;\n}\na:focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\nfigure {\n  margin: 0;\n}\nimg {\n  vertical-align: middle;\n}\n.img-responsive,\n.thumbnail > img,\n.thumbnail a > img,\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  display: block;\n  max-width: 100%;\n  height: auto;\n}\n.img-rounded {\n  border-radius: 6px;\n}\n.img-thumbnail {\n  display: inline-block;\n  max-width: 100%;\n  height: auto;\n  padding: 4px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: all .2s ease-in-out;\n       -o-transition: all .2s ease-in-out;\n          transition: all .2s ease-in-out;\n}\n.img-circle {\n  border-radius: 50%;\n}\nhr {\n  margin-top: 20px;\n  margin-bottom: 20px;\n  border: 0;\n  border-top: 1px solid #eee;\n}\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  border: 0;\n}\n.sr-only-focusable:active,\n.sr-only-focusable:focus {\n  position: static;\n  width: auto;\n  height: auto;\n  margin: 0;\n  overflow: visible;\n  clip: auto;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\n.h1,\n.h2,\n.h3,\n.h4,\n.h5,\n.h6 {\n  font-family: inherit;\n  font-weight: 500;\n  line-height: 1.1;\n  color: inherit;\n}\nh1 small,\nh2 small,\nh3 small,\nh4 small,\nh5 small,\nh6 small,\n.h1 small,\n.h2 small,\n.h3 small,\n.h4 small,\n.h5 small,\n.h6 small,\nh1 .small,\nh2 .small,\nh3 .small,\nh4 .small,\nh5 .small,\nh6 .small,\n.h1 .small,\n.h2 .small,\n.h3 .small,\n.h4 .small,\n.h5 .small,\n.h6 .small {\n  font-weight: normal;\n  line-height: 1;\n  color: #777;\n}\nh1,\n.h1,\nh2,\n.h2,\nh3,\n.h3 {\n  margin-top: 20px;\n  margin-bottom: 10px;\n}\nh1 small,\n.h1 small,\nh2 small,\n.h2 small,\nh3 small,\n.h3 small,\nh1 .small,\n.h1 .small,\nh2 .small,\n.h2 .small,\nh3 .small,\n.h3 .small {\n  font-size: 65%;\n}\nh4,\n.h4,\nh5,\n.h5,\nh6,\n.h6 {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\nh4 small,\n.h4 small,\nh5 small,\n.h5 small,\nh6 small,\n.h6 small,\nh4 .small,\n.h4 .small,\nh5 .small,\n.h5 .small,\nh6 .small,\n.h6 .small {\n  font-size: 75%;\n}\nh1,\n.h1 {\n  font-size: 36px;\n}\nh2,\n.h2 {\n  font-size: 30px;\n}\nh3,\n.h3 {\n  font-size: 24px;\n}\nh4,\n.h4 {\n  font-size: 18px;\n}\nh5,\n.h5 {\n  font-size: 14px;\n}\nh6,\n.h6 {\n  font-size: 12px;\n}\np {\n  margin: 0 0 10px;\n}\n.lead {\n  margin-bottom: 20px;\n  font-size: 16px;\n  font-weight: 300;\n  line-height: 1.4;\n}\n@media (min-width: 768px) {\n  .lead {\n    font-size: 21px;\n  }\n}\nsmall,\n.small {\n  font-size: 85%;\n}\nmark,\n.mark {\n  padding: .2em;\n  background-color: #fcf8e3;\n}\n.text-left {\n  text-align: left;\n}\n.text-right {\n  text-align: right;\n}\n.text-center {\n  text-align: center;\n}\n.text-justify {\n  text-align: justify;\n}\n.text-nowrap {\n  white-space: nowrap;\n}\n.text-lowercase {\n  text-transform: lowercase;\n}\n.text-uppercase {\n  text-transform: uppercase;\n}\n.text-capitalize {\n  text-transform: capitalize;\n}\n.text-muted {\n  color: #777;\n}\n.text-primary {\n  color: #337ab7;\n}\na.text-primary:hover {\n  color: #286090;\n}\n.text-success {\n  color: #3c763d;\n}\na.text-success:hover {\n  color: #2b542c;\n}\n.text-info {\n  color: #31708f;\n}\na.text-info:hover {\n  color: #245269;\n}\n.text-warning {\n  color: #8a6d3b;\n}\na.text-warning:hover {\n  color: #66512c;\n}\n.text-danger {\n  color: #a94442;\n}\na.text-danger:hover {\n  color: #843534;\n}\n.bg-primary {\n  color: #fff;\n  background-color: #337ab7;\n}\na.bg-primary:hover {\n  background-color: #286090;\n}\n.bg-success {\n  background-color: #dff0d8;\n}\na.bg-success:hover {\n  background-color: #c1e2b3;\n}\n.bg-info {\n  background-color: #d9edf7;\n}\na.bg-info:hover {\n  background-color: #afd9ee;\n}\n.bg-warning {\n  background-color: #fcf8e3;\n}\na.bg-warning:hover {\n  background-color: #f7ecb5;\n}\n.bg-danger {\n  background-color: #f2dede;\n}\na.bg-danger:hover {\n  background-color: #e4b9b9;\n}\n.page-header {\n  padding-bottom: 9px;\n  margin: 40px 0 20px;\n  border-bottom: 1px solid #eee;\n}\nul,\nol {\n  margin-top: 0;\n  margin-bottom: 10px;\n}\nul ul,\nol ul,\nul ol,\nol ol {\n  margin-bottom: 0;\n}\n.list-unstyled {\n  padding-left: 0;\n  list-style: none;\n}\n.list-inline {\n  padding-left: 0;\n  margin-left: -5px;\n  list-style: none;\n}\n.list-inline > li {\n  display: inline-block;\n  padding-right: 5px;\n  padding-left: 5px;\n}\ndl {\n  margin-top: 0;\n  margin-bottom: 20px;\n}\ndt,\ndd {\n  line-height: 1.42857143;\n}\ndt {\n  font-weight: bold;\n}\ndd {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .dl-horizontal dt {\n    float: left;\n    width: 160px;\n    overflow: hidden;\n    clear: left;\n    text-align: right;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n  .dl-horizontal dd {\n    margin-left: 180px;\n  }\n}\nabbr[title],\nabbr[data-original-title] {\n  cursor: help;\n  border-bottom: 1px dotted #777;\n}\n.initialism {\n  font-size: 90%;\n  text-transform: uppercase;\n}\nblockquote {\n  padding: 10px 20px;\n  margin: 0 0 20px;\n  font-size: 17.5px;\n  border-left: 5px solid #eee;\n}\nblockquote p:last-child,\nblockquote ul:last-child,\nblockquote ol:last-child {\n  margin-bottom: 0;\n}\nblockquote footer,\nblockquote small,\nblockquote .small {\n  display: block;\n  font-size: 80%;\n  line-height: 1.42857143;\n  color: #777;\n}\nblockquote footer:before,\nblockquote small:before,\nblockquote .small:before {\n  content: '\\2014 \\00A0';\n}\n.blockquote-reverse,\nblockquote.pull-right {\n  padding-right: 15px;\n  padding-left: 0;\n  text-align: right;\n  border-right: 5px solid #eee;\n  border-left: 0;\n}\n.blockquote-reverse footer:before,\nblockquote.pull-right footer:before,\n.blockquote-reverse small:before,\nblockquote.pull-right small:before,\n.blockquote-reverse .small:before,\nblockquote.pull-right .small:before {\n  content: '';\n}\n.blockquote-reverse footer:after,\nblockquote.pull-right footer:after,\n.blockquote-reverse small:after,\nblockquote.pull-right small:after,\n.blockquote-reverse .small:after,\nblockquote.pull-right .small:after {\n  content: '\\00A0 \\2014';\n}\naddress {\n  margin-bottom: 20px;\n  font-style: normal;\n  line-height: 1.42857143;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: Menlo, Monaco, Consolas, \"Courier New\", monospace;\n}\ncode {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #c7254e;\n  background-color: #f9f2f4;\n  border-radius: 4px;\n}\nkbd {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #fff;\n  background-color: #333;\n  border-radius: 3px;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n}\nkbd kbd {\n  padding: 0;\n  font-size: 100%;\n  font-weight: bold;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\npre {\n  display: block;\n  padding: 9.5px;\n  margin: 0 0 10px;\n  font-size: 13px;\n  line-height: 1.42857143;\n  color: #333;\n  word-break: break-all;\n  word-wrap: break-word;\n  background-color: #f5f5f5;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\npre code {\n  padding: 0;\n  font-size: inherit;\n  color: inherit;\n  white-space: pre-wrap;\n  background-color: transparent;\n  border-radius: 0;\n}\n.pre-scrollable {\n  max-height: 340px;\n  overflow-y: scroll;\n}\n.container {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n@media (min-width: 768px) {\n  .container {\n    width: 750px;\n  }\n}\n@media (min-width: 992px) {\n  .container {\n    width: 970px;\n  }\n}\n@media (min-width: 1200px) {\n  .container {\n    width: 1170px;\n  }\n}\n.container-fluid {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n.row {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n.col-xs-1, .col-sm-1, .col-md-1, .col-lg-1, .col-xs-2, .col-sm-2, .col-md-2, .col-lg-2, .col-xs-3, .col-sm-3, .col-md-3, .col-lg-3, .col-xs-4, .col-sm-4, .col-md-4, .col-lg-4, .col-xs-5, .col-sm-5, .col-md-5, .col-lg-5, .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6, .col-xs-7, .col-sm-7, .col-md-7, .col-lg-7, .col-xs-8, .col-sm-8, .col-md-8, .col-lg-8, .col-xs-9, .col-sm-9, .col-md-9, .col-lg-9, .col-xs-10, .col-sm-10, .col-md-10, .col-lg-10, .col-xs-11, .col-sm-11, .col-md-11, .col-lg-11, .col-xs-12, .col-sm-12, .col-md-12, .col-lg-12 {\n  position: relative;\n  min-height: 1px;\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12 {\n  float: left;\n}\n.col-xs-12 {\n  width: 100%;\n}\n.col-xs-11 {\n  width: 91.66666667%;\n}\n.col-xs-10 {\n  width: 83.33333333%;\n}\n.col-xs-9 {\n  width: 75%;\n}\n.col-xs-8 {\n  width: 66.66666667%;\n}\n.col-xs-7 {\n  width: 58.33333333%;\n}\n.col-xs-6 {\n  width: 50%;\n}\n.col-xs-5 {\n  width: 41.66666667%;\n}\n.col-xs-4 {\n  width: 33.33333333%;\n}\n.col-xs-3 {\n  width: 25%;\n}\n.col-xs-2 {\n  width: 16.66666667%;\n}\n.col-xs-1 {\n  width: 8.33333333%;\n}\n.col-xs-pull-12 {\n  right: 100%;\n}\n.col-xs-pull-11 {\n  right: 91.66666667%;\n}\n.col-xs-pull-10 {\n  right: 83.33333333%;\n}\n.col-xs-pull-9 {\n  right: 75%;\n}\n.col-xs-pull-8 {\n  right: 66.66666667%;\n}\n.col-xs-pull-7 {\n  right: 58.33333333%;\n}\n.col-xs-pull-6 {\n  right: 50%;\n}\n.col-xs-pull-5 {\n  right: 41.66666667%;\n}\n.col-xs-pull-4 {\n  right: 33.33333333%;\n}\n.col-xs-pull-3 {\n  right: 25%;\n}\n.col-xs-pull-2 {\n  right: 16.66666667%;\n}\n.col-xs-pull-1 {\n  right: 8.33333333%;\n}\n.col-xs-pull-0 {\n  right: auto;\n}\n.col-xs-push-12 {\n  left: 100%;\n}\n.col-xs-push-11 {\n  left: 91.66666667%;\n}\n.col-xs-push-10 {\n  left: 83.33333333%;\n}\n.col-xs-push-9 {\n  left: 75%;\n}\n.col-xs-push-8 {\n  left: 66.66666667%;\n}\n.col-xs-push-7 {\n  left: 58.33333333%;\n}\n.col-xs-push-6 {\n  left: 50%;\n}\n.col-xs-push-5 {\n  left: 41.66666667%;\n}\n.col-xs-push-4 {\n  left: 33.33333333%;\n}\n.col-xs-push-3 {\n  left: 25%;\n}\n.col-xs-push-2 {\n  left: 16.66666667%;\n}\n.col-xs-push-1 {\n  left: 8.33333333%;\n}\n.col-xs-push-0 {\n  left: auto;\n}\n.col-xs-offset-12 {\n  margin-left: 100%;\n}\n.col-xs-offset-11 {\n  margin-left: 91.66666667%;\n}\n.col-xs-offset-10 {\n  margin-left: 83.33333333%;\n}\n.col-xs-offset-9 {\n  margin-left: 75%;\n}\n.col-xs-offset-8 {\n  margin-left: 66.66666667%;\n}\n.col-xs-offset-7 {\n  margin-left: 58.33333333%;\n}\n.col-xs-offset-6 {\n  margin-left: 50%;\n}\n.col-xs-offset-5 {\n  margin-left: 41.66666667%;\n}\n.col-xs-offset-4 {\n  margin-left: 33.33333333%;\n}\n.col-xs-offset-3 {\n  margin-left: 25%;\n}\n.col-xs-offset-2 {\n  margin-left: 16.66666667%;\n}\n.col-xs-offset-1 {\n  margin-left: 8.33333333%;\n}\n.col-xs-offset-0 {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {\n    float: left;\n  }\n  .col-sm-12 {\n    width: 100%;\n  }\n  .col-sm-11 {\n    width: 91.66666667%;\n  }\n  .col-sm-10 {\n    width: 83.33333333%;\n  }\n  .col-sm-9 {\n    width: 75%;\n  }\n  .col-sm-8 {\n    width: 66.66666667%;\n  }\n  .col-sm-7 {\n    width: 58.33333333%;\n  }\n  .col-sm-6 {\n    width: 50%;\n  }\n  .col-sm-5 {\n    width: 41.66666667%;\n  }\n  .col-sm-4 {\n    width: 33.33333333%;\n  }\n  .col-sm-3 {\n    width: 25%;\n  }\n  .col-sm-2 {\n    width: 16.66666667%;\n  }\n  .col-sm-1 {\n    width: 8.33333333%;\n  }\n  .col-sm-pull-12 {\n    right: 100%;\n  }\n  .col-sm-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-sm-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-sm-pull-9 {\n    right: 75%;\n  }\n  .col-sm-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-sm-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-sm-pull-6 {\n    right: 50%;\n  }\n  .col-sm-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-sm-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-sm-pull-3 {\n    right: 25%;\n  }\n  .col-sm-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-sm-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-sm-pull-0 {\n    right: auto;\n  }\n  .col-sm-push-12 {\n    left: 100%;\n  }\n  .col-sm-push-11 {\n    left: 91.66666667%;\n  }\n  .col-sm-push-10 {\n    left: 83.33333333%;\n  }\n  .col-sm-push-9 {\n    left: 75%;\n  }\n  .col-sm-push-8 {\n    left: 66.66666667%;\n  }\n  .col-sm-push-7 {\n    left: 58.33333333%;\n  }\n  .col-sm-push-6 {\n    left: 50%;\n  }\n  .col-sm-push-5 {\n    left: 41.66666667%;\n  }\n  .col-sm-push-4 {\n    left: 33.33333333%;\n  }\n  .col-sm-push-3 {\n    left: 25%;\n  }\n  .col-sm-push-2 {\n    left: 16.66666667%;\n  }\n  .col-sm-push-1 {\n    left: 8.33333333%;\n  }\n  .col-sm-push-0 {\n    left: auto;\n  }\n  .col-sm-offset-12 {\n    margin-left: 100%;\n  }\n  .col-sm-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-sm-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-sm-offset-9 {\n    margin-left: 75%;\n  }\n  .col-sm-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-sm-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-sm-offset-6 {\n    margin-left: 50%;\n  }\n  .col-sm-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-sm-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-sm-offset-3 {\n    margin-left: 25%;\n  }\n  .col-sm-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-sm-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-sm-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 992px) {\n  .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12 {\n    float: left;\n  }\n  .col-md-12 {\n    width: 100%;\n  }\n  .col-md-11 {\n    width: 91.66666667%;\n  }\n  .col-md-10 {\n    width: 83.33333333%;\n  }\n  .col-md-9 {\n    width: 75%;\n  }\n  .col-md-8 {\n    width: 66.66666667%;\n  }\n  .col-md-7 {\n    width: 58.33333333%;\n  }\n  .col-md-6 {\n    width: 50%;\n  }\n  .col-md-5 {\n    width: 41.66666667%;\n  }\n  .col-md-4 {\n    width: 33.33333333%;\n  }\n  .col-md-3 {\n    width: 25%;\n  }\n  .col-md-2 {\n    width: 16.66666667%;\n  }\n  .col-md-1 {\n    width: 8.33333333%;\n  }\n  .col-md-pull-12 {\n    right: 100%;\n  }\n  .col-md-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-md-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-md-pull-9 {\n    right: 75%;\n  }\n  .col-md-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-md-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-md-pull-6 {\n    right: 50%;\n  }\n  .col-md-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-md-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-md-pull-3 {\n    right: 25%;\n  }\n  .col-md-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-md-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-md-pull-0 {\n    right: auto;\n  }\n  .col-md-push-12 {\n    left: 100%;\n  }\n  .col-md-push-11 {\n    left: 91.66666667%;\n  }\n  .col-md-push-10 {\n    left: 83.33333333%;\n  }\n  .col-md-push-9 {\n    left: 75%;\n  }\n  .col-md-push-8 {\n    left: 66.66666667%;\n  }\n  .col-md-push-7 {\n    left: 58.33333333%;\n  }\n  .col-md-push-6 {\n    left: 50%;\n  }\n  .col-md-push-5 {\n    left: 41.66666667%;\n  }\n  .col-md-push-4 {\n    left: 33.33333333%;\n  }\n  .col-md-push-3 {\n    left: 25%;\n  }\n  .col-md-push-2 {\n    left: 16.66666667%;\n  }\n  .col-md-push-1 {\n    left: 8.33333333%;\n  }\n  .col-md-push-0 {\n    left: auto;\n  }\n  .col-md-offset-12 {\n    margin-left: 100%;\n  }\n  .col-md-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-md-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-md-offset-9 {\n    margin-left: 75%;\n  }\n  .col-md-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-md-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-md-offset-6 {\n    margin-left: 50%;\n  }\n  .col-md-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-md-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-md-offset-3 {\n    margin-left: 25%;\n  }\n  .col-md-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-md-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-md-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 1200px) {\n  .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12 {\n    float: left;\n  }\n  .col-lg-12 {\n    width: 100%;\n  }\n  .col-lg-11 {\n    width: 91.66666667%;\n  }\n  .col-lg-10 {\n    width: 83.33333333%;\n  }\n  .col-lg-9 {\n    width: 75%;\n  }\n  .col-lg-8 {\n    width: 66.66666667%;\n  }\n  .col-lg-7 {\n    width: 58.33333333%;\n  }\n  .col-lg-6 {\n    width: 50%;\n  }\n  .col-lg-5 {\n    width: 41.66666667%;\n  }\n  .col-lg-4 {\n    width: 33.33333333%;\n  }\n  .col-lg-3 {\n    width: 25%;\n  }\n  .col-lg-2 {\n    width: 16.66666667%;\n  }\n  .col-lg-1 {\n    width: 8.33333333%;\n  }\n  .col-lg-pull-12 {\n    right: 100%;\n  }\n  .col-lg-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-lg-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-lg-pull-9 {\n    right: 75%;\n  }\n  .col-lg-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-lg-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-lg-pull-6 {\n    right: 50%;\n  }\n  .col-lg-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-lg-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-lg-pull-3 {\n    right: 25%;\n  }\n  .col-lg-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-lg-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-lg-pull-0 {\n    right: auto;\n  }\n  .col-lg-push-12 {\n    left: 100%;\n  }\n  .col-lg-push-11 {\n    left: 91.66666667%;\n  }\n  .col-lg-push-10 {\n    left: 83.33333333%;\n  }\n  .col-lg-push-9 {\n    left: 75%;\n  }\n  .col-lg-push-8 {\n    left: 66.66666667%;\n  }\n  .col-lg-push-7 {\n    left: 58.33333333%;\n  }\n  .col-lg-push-6 {\n    left: 50%;\n  }\n  .col-lg-push-5 {\n    left: 41.66666667%;\n  }\n  .col-lg-push-4 {\n    left: 33.33333333%;\n  }\n  .col-lg-push-3 {\n    left: 25%;\n  }\n  .col-lg-push-2 {\n    left: 16.66666667%;\n  }\n  .col-lg-push-1 {\n    left: 8.33333333%;\n  }\n  .col-lg-push-0 {\n    left: auto;\n  }\n  .col-lg-offset-12 {\n    margin-left: 100%;\n  }\n  .col-lg-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-lg-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-lg-offset-9 {\n    margin-left: 75%;\n  }\n  .col-lg-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-lg-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-lg-offset-6 {\n    margin-left: 50%;\n  }\n  .col-lg-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-lg-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-lg-offset-3 {\n    margin-left: 25%;\n  }\n  .col-lg-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-lg-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-lg-offset-0 {\n    margin-left: 0;\n  }\n}\ntable {\n  background-color: transparent;\n}\ncaption {\n  padding-top: 8px;\n  padding-bottom: 8px;\n  color: #777;\n  text-align: left;\n}\nth {\n  text-align: left;\n}\n.table {\n  width: 100%;\n  max-width: 100%;\n  margin-bottom: 20px;\n}\n.table > thead > tr > th,\n.table > tbody > tr > th,\n.table > tfoot > tr > th,\n.table > thead > tr > td,\n.table > tbody > tr > td,\n.table > tfoot > tr > td {\n  padding: 8px;\n  line-height: 1.42857143;\n  vertical-align: top;\n  border-top: 1px solid #ddd;\n}\n.table > thead > tr > th {\n  vertical-align: bottom;\n  border-bottom: 2px solid #ddd;\n}\n.table > caption + thead > tr:first-child > th,\n.table > colgroup + thead > tr:first-child > th,\n.table > thead:first-child > tr:first-child > th,\n.table > caption + thead > tr:first-child > td,\n.table > colgroup + thead > tr:first-child > td,\n.table > thead:first-child > tr:first-child > td {\n  border-top: 0;\n}\n.table > tbody + tbody {\n  border-top: 2px solid #ddd;\n}\n.table .table {\n  background-color: #fff;\n}\n.table-condensed > thead > tr > th,\n.table-condensed > tbody > tr > th,\n.table-condensed > tfoot > tr > th,\n.table-condensed > thead > tr > td,\n.table-condensed > tbody > tr > td,\n.table-condensed > tfoot > tr > td {\n  padding: 5px;\n}\n.table-bordered {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > tbody > tr > th,\n.table-bordered > tfoot > tr > th,\n.table-bordered > thead > tr > td,\n.table-bordered > tbody > tr > td,\n.table-bordered > tfoot > tr > td {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > thead > tr > td {\n  border-bottom-width: 2px;\n}\n.table-striped > tbody > tr:nth-of-type(odd) {\n  background-color: #f9f9f9;\n}\n.table-hover > tbody > tr:hover {\n  background-color: #f5f5f5;\n}\ntable col[class*=\"col-\"] {\n  position: static;\n  display: table-column;\n  float: none;\n}\ntable td[class*=\"col-\"],\ntable th[class*=\"col-\"] {\n  position: static;\n  display: table-cell;\n  float: none;\n}\n.table > thead > tr > td.active,\n.table > tbody > tr > td.active,\n.table > tfoot > tr > td.active,\n.table > thead > tr > th.active,\n.table > tbody > tr > th.active,\n.table > tfoot > tr > th.active,\n.table > thead > tr.active > td,\n.table > tbody > tr.active > td,\n.table > tfoot > tr.active > td,\n.table > thead > tr.active > th,\n.table > tbody > tr.active > th,\n.table > tfoot > tr.active > th {\n  background-color: #f5f5f5;\n}\n.table-hover > tbody > tr > td.active:hover,\n.table-hover > tbody > tr > th.active:hover,\n.table-hover > tbody > tr.active:hover > td,\n.table-hover > tbody > tr:hover > .active,\n.table-hover > tbody > tr.active:hover > th {\n  background-color: #e8e8e8;\n}\n.table > thead > tr > td.success,\n.table > tbody > tr > td.success,\n.table > tfoot > tr > td.success,\n.table > thead > tr > th.success,\n.table > tbody > tr > th.success,\n.table > tfoot > tr > th.success,\n.table > thead > tr.success > td,\n.table > tbody > tr.success > td,\n.table > tfoot > tr.success > td,\n.table > thead > tr.success > th,\n.table > tbody > tr.success > th,\n.table > tfoot > tr.success > th {\n  background-color: #dff0d8;\n}\n.table-hover > tbody > tr > td.success:hover,\n.table-hover > tbody > tr > th.success:hover,\n.table-hover > tbody > tr.success:hover > td,\n.table-hover > tbody > tr:hover > .success,\n.table-hover > tbody > tr.success:hover > th {\n  background-color: #d0e9c6;\n}\n.table > thead > tr > td.info,\n.table > tbody > tr > td.info,\n.table > tfoot > tr > td.info,\n.table > thead > tr > th.info,\n.table > tbody > tr > th.info,\n.table > tfoot > tr > th.info,\n.table > thead > tr.info > td,\n.table > tbody > tr.info > td,\n.table > tfoot > tr.info > td,\n.table > thead > tr.info > th,\n.table > tbody > tr.info > th,\n.table > tfoot > tr.info > th {\n  background-color: #d9edf7;\n}\n.table-hover > tbody > tr > td.info:hover,\n.table-hover > tbody > tr > th.info:hover,\n.table-hover > tbody > tr.info:hover > td,\n.table-hover > tbody > tr:hover > .info,\n.table-hover > tbody > tr.info:hover > th {\n  background-color: #c4e3f3;\n}\n.table > thead > tr > td.warning,\n.table > tbody > tr > td.warning,\n.table > tfoot > tr > td.warning,\n.table > thead > tr > th.warning,\n.table > tbody > tr > th.warning,\n.table > tfoot > tr > th.warning,\n.table > thead > tr.warning > td,\n.table > tbody > tr.warning > td,\n.table > tfoot > tr.warning > td,\n.table > thead > tr.warning > th,\n.table > tbody > tr.warning > th,\n.table > tfoot > tr.warning > th {\n  background-color: #fcf8e3;\n}\n.table-hover > tbody > tr > td.warning:hover,\n.table-hover > tbody > tr > th.warning:hover,\n.table-hover > tbody > tr.warning:hover > td,\n.table-hover > tbody > tr:hover > .warning,\n.table-hover > tbody > tr.warning:hover > th {\n  background-color: #faf2cc;\n}\n.table > thead > tr > td.danger,\n.table > tbody > tr > td.danger,\n.table > tfoot > tr > td.danger,\n.table > thead > tr > th.danger,\n.table > tbody > tr > th.danger,\n.table > tfoot > tr > th.danger,\n.table > thead > tr.danger > td,\n.table > tbody > tr.danger > td,\n.table > tfoot > tr.danger > td,\n.table > thead > tr.danger > th,\n.table > tbody > tr.danger > th,\n.table > tfoot > tr.danger > th {\n  background-color: #f2dede;\n}\n.table-hover > tbody > tr > td.danger:hover,\n.table-hover > tbody > tr > th.danger:hover,\n.table-hover > tbody > tr.danger:hover > td,\n.table-hover > tbody > tr:hover > .danger,\n.table-hover > tbody > tr.danger:hover > th {\n  background-color: #ebcccc;\n}\n.table-responsive {\n  min-height: .01%;\n  overflow-x: auto;\n}\n@media screen and (max-width: 767px) {\n  .table-responsive {\n    width: 100%;\n    margin-bottom: 15px;\n    overflow-y: hidden;\n    -ms-overflow-style: -ms-autohiding-scrollbar;\n    border: 1px solid #ddd;\n  }\n  .table-responsive > .table {\n    margin-bottom: 0;\n  }\n  .table-responsive > .table > thead > tr > th,\n  .table-responsive > .table > tbody > tr > th,\n  .table-responsive > .table > tfoot > tr > th,\n  .table-responsive > .table > thead > tr > td,\n  .table-responsive > .table > tbody > tr > td,\n  .table-responsive > .table > tfoot > tr > td {\n    white-space: nowrap;\n  }\n  .table-responsive > .table-bordered {\n    border: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:first-child,\n  .table-responsive > .table-bordered > tbody > tr > th:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n  .table-responsive > .table-bordered > thead > tr > td:first-child,\n  .table-responsive > .table-bordered > tbody > tr > td:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n    border-left: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:last-child,\n  .table-responsive > .table-bordered > tbody > tr > th:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n  .table-responsive > .table-bordered > thead > tr > td:last-child,\n  .table-responsive > .table-bordered > tbody > tr > td:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n    border-right: 0;\n  }\n  .table-responsive > .table-bordered > tbody > tr:last-child > th,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > th,\n  .table-responsive > .table-bordered > tbody > tr:last-child > td,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > td {\n    border-bottom: 0;\n  }\n}\nfieldset {\n  min-width: 0;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\nlegend {\n  display: block;\n  width: 100%;\n  padding: 0;\n  margin-bottom: 20px;\n  font-size: 21px;\n  line-height: inherit;\n  color: #333;\n  border: 0;\n  border-bottom: 1px solid #e5e5e5;\n}\nlabel {\n  display: inline-block;\n  max-width: 100%;\n  margin-bottom: 5px;\n  font-weight: bold;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\ninput[type=\"radio\"],\ninput[type=\"checkbox\"] {\n  margin: 4px 0 0;\n  margin-top: 1px \\9;\n  line-height: normal;\n}\ninput[type=\"file\"] {\n  display: block;\n}\ninput[type=\"range\"] {\n  display: block;\n  width: 100%;\n}\nselect[multiple],\nselect[size] {\n  height: auto;\n}\ninput[type=\"file\"]:focus,\ninput[type=\"radio\"]:focus,\ninput[type=\"checkbox\"]:focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\noutput {\n  display: block;\n  padding-top: 7px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n}\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n  background-color: #fff;\n  background-image: none;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;\n       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n}\n.form-control:focus {\n  border-color: #66afe9;\n  outline: 0;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n}\n.form-control::-moz-placeholder {\n  color: #999;\n  opacity: 1;\n}\n.form-control:-ms-input-placeholder {\n  color: #999;\n}\n.form-control::-webkit-input-placeholder {\n  color: #999;\n}\n.form-control[disabled],\n.form-control[readonly],\nfieldset[disabled] .form-control {\n  cursor: not-allowed;\n  background-color: #eee;\n  opacity: 1;\n}\ntextarea.form-control {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-appearance: none;\n}\n@media screen and (-webkit-min-device-pixel-ratio: 0) {\n  input[type=\"date\"],\n  input[type=\"time\"],\n  input[type=\"datetime-local\"],\n  input[type=\"month\"] {\n    line-height: 34px;\n  }\n  input[type=\"date\"].input-sm,\n  input[type=\"time\"].input-sm,\n  input[type=\"datetime-local\"].input-sm,\n  input[type=\"month\"].input-sm,\n  .input-group-sm input[type=\"date\"],\n  .input-group-sm input[type=\"time\"],\n  .input-group-sm input[type=\"datetime-local\"],\n  .input-group-sm input[type=\"month\"] {\n    line-height: 30px;\n  }\n  input[type=\"date\"].input-lg,\n  input[type=\"time\"].input-lg,\n  input[type=\"datetime-local\"].input-lg,\n  input[type=\"month\"].input-lg,\n  .input-group-lg input[type=\"date\"],\n  .input-group-lg input[type=\"time\"],\n  .input-group-lg input[type=\"datetime-local\"],\n  .input-group-lg input[type=\"month\"] {\n    line-height: 46px;\n  }\n}\n.form-group {\n  margin-bottom: 15px;\n}\n.radio,\n.checkbox {\n  position: relative;\n  display: block;\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.radio label,\n.checkbox label {\n  min-height: 20px;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  cursor: pointer;\n}\n.radio input[type=\"radio\"],\n.radio-inline input[type=\"radio\"],\n.checkbox input[type=\"checkbox\"],\n.checkbox-inline input[type=\"checkbox\"] {\n  position: absolute;\n  margin-top: 4px \\9;\n  margin-left: -20px;\n}\n.radio + .radio,\n.checkbox + .checkbox {\n  margin-top: -5px;\n}\n.radio-inline,\n.checkbox-inline {\n  display: inline-block;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  vertical-align: middle;\n  cursor: pointer;\n}\n.radio-inline + .radio-inline,\n.checkbox-inline + .checkbox-inline {\n  margin-top: 0;\n  margin-left: 10px;\n}\ninput[type=\"radio\"][disabled],\ninput[type=\"checkbox\"][disabled],\ninput[type=\"radio\"].disabled,\ninput[type=\"checkbox\"].disabled,\nfieldset[disabled] input[type=\"radio\"],\nfieldset[disabled] input[type=\"checkbox\"] {\n  cursor: not-allowed;\n}\n.radio-inline.disabled,\n.checkbox-inline.disabled,\nfieldset[disabled] .radio-inline,\nfieldset[disabled] .checkbox-inline {\n  cursor: not-allowed;\n}\n.radio.disabled label,\n.checkbox.disabled label,\nfieldset[disabled] .radio label,\nfieldset[disabled] .checkbox label {\n  cursor: not-allowed;\n}\n.form-control-static {\n  padding-top: 7px;\n  padding-bottom: 7px;\n  margin-bottom: 0;\n}\n.form-control-static.input-lg,\n.form-control-static.input-sm {\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-sm {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-sm {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-sm,\nselect[multiple].input-sm {\n  height: auto;\n}\n.form-group-sm .form-control {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.form-group-sm .form-control {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.form-group-sm .form-control,\nselect[multiple].form-group-sm .form-control {\n  height: auto;\n}\n.form-group-sm .form-control-static {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.input-lg {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-lg {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-lg,\nselect[multiple].input-lg {\n  height: auto;\n}\n.form-group-lg .form-control {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.form-group-lg .form-control {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.form-group-lg .form-control,\nselect[multiple].form-group-lg .form-control {\n  height: auto;\n}\n.form-group-lg .form-control-static {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.has-feedback {\n  position: relative;\n}\n.has-feedback .form-control {\n  padding-right: 42.5px;\n}\n.form-control-feedback {\n  position: absolute;\n  top: 0;\n  right: 0;\n  z-index: 2;\n  display: block;\n  width: 34px;\n  height: 34px;\n  line-height: 34px;\n  text-align: center;\n  pointer-events: none;\n}\n.input-lg + .form-control-feedback {\n  width: 46px;\n  height: 46px;\n  line-height: 46px;\n}\n.input-sm + .form-control-feedback {\n  width: 30px;\n  height: 30px;\n  line-height: 30px;\n}\n.has-success .help-block,\n.has-success .control-label,\n.has-success .radio,\n.has-success .checkbox,\n.has-success .radio-inline,\n.has-success .checkbox-inline,\n.has-success.radio label,\n.has-success.checkbox label,\n.has-success.radio-inline label,\n.has-success.checkbox-inline label {\n  color: #3c763d;\n}\n.has-success .form-control {\n  border-color: #3c763d;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-success .form-control:focus {\n  border-color: #2b542c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n}\n.has-success .input-group-addon {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #3c763d;\n}\n.has-success .form-control-feedback {\n  color: #3c763d;\n}\n.has-warning .help-block,\n.has-warning .control-label,\n.has-warning .radio,\n.has-warning .checkbox,\n.has-warning .radio-inline,\n.has-warning .checkbox-inline,\n.has-warning.radio label,\n.has-warning.checkbox label,\n.has-warning.radio-inline label,\n.has-warning.checkbox-inline label {\n  color: #8a6d3b;\n}\n.has-warning .form-control {\n  border-color: #8a6d3b;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-warning .form-control:focus {\n  border-color: #66512c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n}\n.has-warning .input-group-addon {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #8a6d3b;\n}\n.has-warning .form-control-feedback {\n  color: #8a6d3b;\n}\n.has-error .help-block,\n.has-error .control-label,\n.has-error .radio,\n.has-error .checkbox,\n.has-error .radio-inline,\n.has-error .checkbox-inline,\n.has-error.radio label,\n.has-error.checkbox label,\n.has-error.radio-inline label,\n.has-error.checkbox-inline label {\n  color: #a94442;\n}\n.has-error .form-control {\n  border-color: #a94442;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-error .form-control:focus {\n  border-color: #843534;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n}\n.has-error .input-group-addon {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #a94442;\n}\n.has-error .form-control-feedback {\n  color: #a94442;\n}\n.has-feedback label ~ .form-control-feedback {\n  top: 25px;\n}\n.has-feedback label.sr-only ~ .form-control-feedback {\n  top: 0;\n}\n.help-block {\n  display: block;\n  margin-top: 5px;\n  margin-bottom: 10px;\n  color: #737373;\n}\n@media (min-width: 768px) {\n  .form-inline .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .form-inline .form-control-static {\n    display: inline-block;\n  }\n  .form-inline .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .form-inline .input-group .input-group-addon,\n  .form-inline .input-group .input-group-btn,\n  .form-inline .input-group .form-control {\n    width: auto;\n  }\n  .form-inline .input-group > .form-control {\n    width: 100%;\n  }\n  .form-inline .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio,\n  .form-inline .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio label,\n  .form-inline .checkbox label {\n    padding-left: 0;\n  }\n  .form-inline .radio input[type=\"radio\"],\n  .form-inline .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .form-inline .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox,\n.form-horizontal .radio-inline,\n.form-horizontal .checkbox-inline {\n  padding-top: 7px;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox {\n  min-height: 27px;\n}\n.form-horizontal .form-group {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .control-label {\n    padding-top: 7px;\n    margin-bottom: 0;\n    text-align: right;\n  }\n}\n.form-horizontal .has-feedback .form-control-feedback {\n  right: 15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-lg .control-label {\n    padding-top: 14.333333px;\n  }\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-sm .control-label {\n    padding-top: 6px;\n  }\n}\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  -ms-touch-action: manipulation;\n      touch-action: manipulation;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n      -ms-user-select: none;\n          user-select: none;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.btn:focus,\n.btn:active:focus,\n.btn.active:focus,\n.btn.focus,\n.btn:active.focus,\n.btn.active.focus {\n  outline: thin dotted;\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\n.btn:hover,\n.btn:focus,\n.btn.focus {\n  color: #333;\n  text-decoration: none;\n}\n.btn:active,\n.btn.active {\n  background-image: none;\n  outline: 0;\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn.disabled,\n.btn[disabled],\nfieldset[disabled] .btn {\n  pointer-events: none;\n  cursor: not-allowed;\n  filter: alpha(opacity=65);\n  -webkit-box-shadow: none;\n          box-shadow: none;\n  opacity: .65;\n}\n.btn-default {\n  color: #333;\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default:hover,\n.btn-default:focus,\n.btn-default.focus,\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  background-image: none;\n}\n.btn-default.disabled,\n.btn-default[disabled],\nfieldset[disabled] .btn-default,\n.btn-default.disabled:hover,\n.btn-default[disabled]:hover,\nfieldset[disabled] .btn-default:hover,\n.btn-default.disabled:focus,\n.btn-default[disabled]:focus,\nfieldset[disabled] .btn-default:focus,\n.btn-default.disabled.focus,\n.btn-default[disabled].focus,\nfieldset[disabled] .btn-default.focus,\n.btn-default.disabled:active,\n.btn-default[disabled]:active,\nfieldset[disabled] .btn-default:active,\n.btn-default.disabled.active,\n.btn-default[disabled].active,\nfieldset[disabled] .btn-default.active {\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default .badge {\n  color: #fff;\n  background-color: #333;\n}\n.btn-primary {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary:hover,\n.btn-primary:focus,\n.btn-primary.focus,\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled,\n.btn-primary[disabled],\nfieldset[disabled] .btn-primary,\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled.focus,\n.btn-primary[disabled].focus,\nfieldset[disabled] .btn-primary.focus,\n.btn-primary.disabled:active,\n.btn-primary[disabled]:active,\nfieldset[disabled] .btn-primary:active,\n.btn-primary.disabled.active,\n.btn-primary[disabled].active,\nfieldset[disabled] .btn-primary.active {\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.btn-success {\n  color: #fff;\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success:hover,\n.btn-success:focus,\n.btn-success.focus,\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled,\n.btn-success[disabled],\nfieldset[disabled] .btn-success,\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled.focus,\n.btn-success[disabled].focus,\nfieldset[disabled] .btn-success.focus,\n.btn-success.disabled:active,\n.btn-success[disabled]:active,\nfieldset[disabled] .btn-success:active,\n.btn-success.disabled.active,\n.btn-success[disabled].active,\nfieldset[disabled] .btn-success.active {\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success .badge {\n  color: #5cb85c;\n  background-color: #fff;\n}\n.btn-info {\n  color: #fff;\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info:hover,\n.btn-info:focus,\n.btn-info.focus,\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  background-image: none;\n}\n.btn-info.disabled,\n.btn-info[disabled],\nfieldset[disabled] .btn-info,\n.btn-info.disabled:hover,\n.btn-info[disabled]:hover,\nfieldset[disabled] .btn-info:hover,\n.btn-info.disabled:focus,\n.btn-info[disabled]:focus,\nfieldset[disabled] .btn-info:focus,\n.btn-info.disabled.focus,\n.btn-info[disabled].focus,\nfieldset[disabled] .btn-info.focus,\n.btn-info.disabled:active,\n.btn-info[disabled]:active,\nfieldset[disabled] .btn-info:active,\n.btn-info.disabled.active,\n.btn-info[disabled].active,\nfieldset[disabled] .btn-info.active {\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info .badge {\n  color: #5bc0de;\n  background-color: #fff;\n}\n.btn-warning {\n  color: #fff;\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning:hover,\n.btn-warning:focus,\n.btn-warning.focus,\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  background-image: none;\n}\n.btn-warning.disabled,\n.btn-warning[disabled],\nfieldset[disabled] .btn-warning,\n.btn-warning.disabled:hover,\n.btn-warning[disabled]:hover,\nfieldset[disabled] .btn-warning:hover,\n.btn-warning.disabled:focus,\n.btn-warning[disabled]:focus,\nfieldset[disabled] .btn-warning:focus,\n.btn-warning.disabled.focus,\n.btn-warning[disabled].focus,\nfieldset[disabled] .btn-warning.focus,\n.btn-warning.disabled:active,\n.btn-warning[disabled]:active,\nfieldset[disabled] .btn-warning:active,\n.btn-warning.disabled.active,\n.btn-warning[disabled].active,\nfieldset[disabled] .btn-warning.active {\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning .badge {\n  color: #f0ad4e;\n  background-color: #fff;\n}\n.btn-danger {\n  color: #fff;\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger:hover,\n.btn-danger:focus,\n.btn-danger.focus,\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  background-image: none;\n}\n.btn-danger.disabled,\n.btn-danger[disabled],\nfieldset[disabled] .btn-danger,\n.btn-danger.disabled:hover,\n.btn-danger[disabled]:hover,\nfieldset[disabled] .btn-danger:hover,\n.btn-danger.disabled:focus,\n.btn-danger[disabled]:focus,\nfieldset[disabled] .btn-danger:focus,\n.btn-danger.disabled.focus,\n.btn-danger[disabled].focus,\nfieldset[disabled] .btn-danger.focus,\n.btn-danger.disabled:active,\n.btn-danger[disabled]:active,\nfieldset[disabled] .btn-danger:active,\n.btn-danger.disabled.active,\n.btn-danger[disabled].active,\nfieldset[disabled] .btn-danger.active {\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger .badge {\n  color: #d9534f;\n  background-color: #fff;\n}\n.btn-link {\n  font-weight: normal;\n  color: #337ab7;\n  border-radius: 0;\n}\n.btn-link,\n.btn-link:active,\n.btn-link.active,\n.btn-link[disabled],\nfieldset[disabled] .btn-link {\n  background-color: transparent;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn-link,\n.btn-link:hover,\n.btn-link:focus,\n.btn-link:active {\n  border-color: transparent;\n}\n.btn-link:hover,\n.btn-link:focus {\n  color: #23527c;\n  text-decoration: underline;\n  background-color: transparent;\n}\n.btn-link[disabled]:hover,\nfieldset[disabled] .btn-link:hover,\n.btn-link[disabled]:focus,\nfieldset[disabled] .btn-link:focus {\n  color: #777;\n  text-decoration: none;\n}\n.btn-lg,\n.btn-group-lg > .btn {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.btn-sm,\n.btn-group-sm > .btn {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-xs,\n.btn-group-xs > .btn {\n  padding: 1px 5px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-block {\n  display: block;\n  width: 100%;\n}\n.btn-block + .btn-block {\n  margin-top: 5px;\n}\ninput[type=\"submit\"].btn-block,\ninput[type=\"reset\"].btn-block,\ninput[type=\"button\"].btn-block {\n  width: 100%;\n}\n.fade {\n  opacity: 0;\n  -webkit-transition: opacity .15s linear;\n       -o-transition: opacity .15s linear;\n          transition: opacity .15s linear;\n}\n.fade.in {\n  opacity: 1;\n}\n.collapse {\n  display: none;\n  visibility: hidden;\n}\n.collapse.in {\n  display: block;\n  visibility: visible;\n}\ntr.collapse.in {\n  display: table-row;\n}\ntbody.collapse.in {\n  display: table-row-group;\n}\n.collapsing {\n  position: relative;\n  height: 0;\n  overflow: hidden;\n  -webkit-transition-timing-function: ease;\n       -o-transition-timing-function: ease;\n          transition-timing-function: ease;\n  -webkit-transition-duration: .35s;\n       -o-transition-duration: .35s;\n          transition-duration: .35s;\n  -webkit-transition-property: height, visibility;\n       -o-transition-property: height, visibility;\n          transition-property: height, visibility;\n}\n.caret {\n  display: inline-block;\n  width: 0;\n  height: 0;\n  margin-left: 2px;\n  vertical-align: middle;\n  border-top: 4px solid;\n  border-right: 4px solid transparent;\n  border-left: 4px solid transparent;\n}\n.dropup,\n.dropdown {\n  position: relative;\n}\n.dropdown-toggle:focus {\n  outline: 0;\n}\n.dropdown-menu {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  z-index: 1000;\n  display: none;\n  float: left;\n  min-width: 160px;\n  padding: 5px 0;\n  margin: 2px 0 0;\n  font-size: 14px;\n  text-align: left;\n  list-style: none;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .15);\n  border-radius: 4px;\n  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n          box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n}\n.dropdown-menu.pull-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu .divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.dropdown-menu > li > a {\n  display: block;\n  padding: 3px 20px;\n  clear: both;\n  font-weight: normal;\n  line-height: 1.42857143;\n  color: #333;\n  white-space: nowrap;\n}\n.dropdown-menu > li > a:hover,\n.dropdown-menu > li > a:focus {\n  color: #262626;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.dropdown-menu > .active > a,\n.dropdown-menu > .active > a:hover,\n.dropdown-menu > .active > a:focus {\n  color: #fff;\n  text-decoration: none;\n  background-color: #337ab7;\n  outline: 0;\n}\n.dropdown-menu > .disabled > a,\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  color: #777;\n}\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n  background-image: none;\n  filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);\n}\n.open > .dropdown-menu {\n  display: block;\n}\n.open > a {\n  outline: 0;\n}\n.dropdown-menu-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu-left {\n  right: auto;\n  left: 0;\n}\n.dropdown-header {\n  display: block;\n  padding: 3px 20px;\n  font-size: 12px;\n  line-height: 1.42857143;\n  color: #777;\n  white-space: nowrap;\n}\n.dropdown-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 990;\n}\n.pull-right > .dropdown-menu {\n  right: 0;\n  left: auto;\n}\n.dropup .caret,\n.navbar-fixed-bottom .dropdown .caret {\n  content: \"\";\n  border-top: 0;\n  border-bottom: 4px solid;\n}\n.dropup .dropdown-menu,\n.navbar-fixed-bottom .dropdown .dropdown-menu {\n  top: auto;\n  bottom: 100%;\n  margin-bottom: 2px;\n}\n@media (min-width: 768px) {\n  .navbar-right .dropdown-menu {\n    right: 0;\n    left: auto;\n  }\n  .navbar-right .dropdown-menu-left {\n    right: auto;\n    left: 0;\n  }\n}\n.btn-group,\n.btn-group-vertical {\n  position: relative;\n  display: inline-block;\n  vertical-align: middle;\n}\n.btn-group > .btn,\n.btn-group-vertical > .btn {\n  position: relative;\n  float: left;\n}\n.btn-group > .btn:hover,\n.btn-group-vertical > .btn:hover,\n.btn-group > .btn:focus,\n.btn-group-vertical > .btn:focus,\n.btn-group > .btn:active,\n.btn-group-vertical > .btn:active,\n.btn-group > .btn.active,\n.btn-group-vertical > .btn.active {\n  z-index: 2;\n}\n.btn-group .btn + .btn,\n.btn-group .btn + .btn-group,\n.btn-group .btn-group + .btn,\n.btn-group .btn-group + .btn-group {\n  margin-left: -1px;\n}\n.btn-toolbar {\n  margin-left: -5px;\n}\n.btn-toolbar .btn-group,\n.btn-toolbar .input-group {\n  float: left;\n}\n.btn-toolbar > .btn,\n.btn-toolbar > .btn-group,\n.btn-toolbar > .input-group {\n  margin-left: 5px;\n}\n.btn-group > .btn:not(:first-child):not(:last-child):not(.dropdown-toggle) {\n  border-radius: 0;\n}\n.btn-group > .btn:first-child {\n  margin-left: 0;\n}\n.btn-group > .btn:first-child:not(:last-child):not(.dropdown-toggle) {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn:last-child:not(:first-child),\n.btn-group > .dropdown-toggle:not(:first-child) {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group > .btn-group {\n  float: left;\n}\n.btn-group > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group .dropdown-toggle:active,\n.btn-group.open .dropdown-toggle {\n  outline: 0;\n}\n.btn-group > .btn + .dropdown-toggle {\n  padding-right: 8px;\n  padding-left: 8px;\n}\n.btn-group > .btn-lg + .dropdown-toggle {\n  padding-right: 12px;\n  padding-left: 12px;\n}\n.btn-group.open .dropdown-toggle {\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn-group.open .dropdown-toggle.btn-link {\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn .caret {\n  margin-left: 0;\n}\n.btn-lg .caret {\n  border-width: 5px 5px 0;\n  border-bottom-width: 0;\n}\n.dropup .btn-lg .caret {\n  border-width: 0 5px 5px;\n}\n.btn-group-vertical > .btn,\n.btn-group-vertical > .btn-group,\n.btn-group-vertical > .btn-group > .btn {\n  display: block;\n  float: none;\n  width: 100%;\n  max-width: 100%;\n}\n.btn-group-vertical > .btn-group > .btn {\n  float: none;\n}\n.btn-group-vertical > .btn + .btn,\n.btn-group-vertical > .btn + .btn-group,\n.btn-group-vertical > .btn-group + .btn,\n.btn-group-vertical > .btn-group + .btn-group {\n  margin-top: -1px;\n  margin-left: 0;\n}\n.btn-group-vertical > .btn:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn:first-child:not(:last-child) {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn:last-child:not(:first-child) {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n  border-bottom-left-radius: 4px;\n}\n.btn-group-vertical > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.btn-group-justified {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  border-collapse: separate;\n}\n.btn-group-justified > .btn,\n.btn-group-justified > .btn-group {\n  display: table-cell;\n  float: none;\n  width: 1%;\n}\n.btn-group-justified > .btn-group .btn {\n  width: 100%;\n}\n.btn-group-justified > .btn-group .dropdown-menu {\n  left: auto;\n}\n[data-toggle=\"buttons\"] > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn input[type=\"checkbox\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"checkbox\"] {\n  position: absolute;\n  clip: rect(0, 0, 0, 0);\n  pointer-events: none;\n}\n.input-group {\n  position: relative;\n  display: table;\n  border-collapse: separate;\n}\n.input-group[class*=\"col-\"] {\n  float: none;\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-group .form-control {\n  position: relative;\n  z-index: 2;\n  float: left;\n  width: 100%;\n  margin-bottom: 0;\n}\n.input-group-lg > .form-control,\n.input-group-lg > .input-group-addon,\n.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-group-lg > .form-control,\nselect.input-group-lg > .input-group-addon,\nselect.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-group-lg > .form-control,\ntextarea.input-group-lg > .input-group-addon,\ntextarea.input-group-lg > .input-group-btn > .btn,\nselect[multiple].input-group-lg > .form-control,\nselect[multiple].input-group-lg > .input-group-addon,\nselect[multiple].input-group-lg > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-sm > .form-control,\n.input-group-sm > .input-group-addon,\n.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-group-sm > .form-control,\nselect.input-group-sm > .input-group-addon,\nselect.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-group-sm > .form-control,\ntextarea.input-group-sm > .input-group-addon,\ntextarea.input-group-sm > .input-group-btn > .btn,\nselect[multiple].input-group-sm > .form-control,\nselect[multiple].input-group-sm > .input-group-addon,\nselect[multiple].input-group-sm > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-addon,\n.input-group-btn,\n.input-group .form-control {\n  display: table-cell;\n}\n.input-group-addon:not(:first-child):not(:last-child),\n.input-group-btn:not(:first-child):not(:last-child),\n.input-group .form-control:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.input-group-addon,\n.input-group-btn {\n  width: 1%;\n  white-space: nowrap;\n  vertical-align: middle;\n}\n.input-group-addon {\n  padding: 6px 12px;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1;\n  color: #555;\n  text-align: center;\n  background-color: #eee;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n.input-group-addon.input-sm {\n  padding: 5px 10px;\n  font-size: 12px;\n  border-radius: 3px;\n}\n.input-group-addon.input-lg {\n  padding: 10px 16px;\n  font-size: 18px;\n  border-radius: 6px;\n}\n.input-group-addon input[type=\"radio\"],\n.input-group-addon input[type=\"checkbox\"] {\n  margin-top: 0;\n}\n.input-group .form-control:first-child,\n.input-group-addon:first-child,\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group > .btn,\n.input-group-btn:first-child > .dropdown-toggle,\n.input-group-btn:last-child > .btn:not(:last-child):not(.dropdown-toggle),\n.input-group-btn:last-child > .btn-group:not(:last-child) > .btn {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.input-group-addon:first-child {\n  border-right: 0;\n}\n.input-group .form-control:last-child,\n.input-group-addon:last-child,\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group > .btn,\n.input-group-btn:last-child > .dropdown-toggle,\n.input-group-btn:first-child > .btn:not(:first-child),\n.input-group-btn:first-child > .btn-group:not(:first-child) > .btn {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.input-group-addon:last-child {\n  border-left: 0;\n}\n.input-group-btn {\n  position: relative;\n  font-size: 0;\n  white-space: nowrap;\n}\n.input-group-btn > .btn {\n  position: relative;\n}\n.input-group-btn > .btn + .btn {\n  margin-left: -1px;\n}\n.input-group-btn > .btn:hover,\n.input-group-btn > .btn:focus,\n.input-group-btn > .btn:active {\n  z-index: 2;\n}\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group {\n  margin-right: -1px;\n}\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group {\n  margin-left: -1px;\n}\n.nav {\n  padding-left: 0;\n  margin-bottom: 0;\n  list-style: none;\n}\n.nav > li {\n  position: relative;\n  display: block;\n}\n.nav > li > a {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n}\n.nav > li > a:hover,\n.nav > li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.nav > li.disabled > a {\n  color: #777;\n}\n.nav > li.disabled > a:hover,\n.nav > li.disabled > a:focus {\n  color: #777;\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n}\n.nav .open > a,\n.nav .open > a:hover,\n.nav .open > a:focus {\n  background-color: #eee;\n  border-color: #337ab7;\n}\n.nav .nav-divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.nav > li > a > img {\n  max-width: none;\n}\n.nav-tabs {\n  border-bottom: 1px solid #ddd;\n}\n.nav-tabs > li {\n  float: left;\n  margin-bottom: -1px;\n}\n.nav-tabs > li > a {\n  margin-right: 2px;\n  line-height: 1.42857143;\n  border: 1px solid transparent;\n  border-radius: 4px 4px 0 0;\n}\n.nav-tabs > li > a:hover {\n  border-color: #eee #eee #ddd;\n}\n.nav-tabs > li.active > a,\n.nav-tabs > li.active > a:hover,\n.nav-tabs > li.active > a:focus {\n  color: #555;\n  cursor: default;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-bottom-color: transparent;\n}\n.nav-tabs.nav-justified {\n  width: 100%;\n  border-bottom: 0;\n}\n.nav-tabs.nav-justified > li {\n  float: none;\n}\n.nav-tabs.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-tabs.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-tabs.nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs.nav-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs.nav-justified > .active > a,\n.nav-tabs.nav-justified > .active > a:hover,\n.nav-tabs.nav-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs.nav-justified > .active > a,\n  .nav-tabs.nav-justified > .active > a:hover,\n  .nav-tabs.nav-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.nav-pills > li {\n  float: left;\n}\n.nav-pills > li > a {\n  border-radius: 4px;\n}\n.nav-pills > li + li {\n  margin-left: 2px;\n}\n.nav-pills > li.active > a,\n.nav-pills > li.active > a:hover,\n.nav-pills > li.active > a:focus {\n  color: #fff;\n  background-color: #337ab7;\n}\n.nav-stacked > li {\n  float: none;\n}\n.nav-stacked > li + li {\n  margin-top: 2px;\n  margin-left: 0;\n}\n.nav-justified {\n  width: 100%;\n}\n.nav-justified > li {\n  float: none;\n}\n.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs-justified {\n  border-bottom: 0;\n}\n.nav-tabs-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs-justified > .active > a,\n.nav-tabs-justified > .active > a:hover,\n.nav-tabs-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs-justified > .active > a,\n  .nav-tabs-justified > .active > a:hover,\n  .nav-tabs-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.tab-content > .tab-pane {\n  display: none;\n  visibility: hidden;\n}\n.tab-content > .active {\n  display: block;\n  visibility: visible;\n}\n.nav-tabs .dropdown-menu {\n  margin-top: -1px;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar {\n  position: relative;\n  min-height: 50px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n}\n@media (min-width: 768px) {\n  .navbar {\n    border-radius: 4px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-header {\n    float: left;\n  }\n}\n.navbar-collapse {\n  padding-right: 15px;\n  padding-left: 15px;\n  overflow-x: visible;\n  -webkit-overflow-scrolling: touch;\n  border-top: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n}\n.navbar-collapse.in {\n  overflow-y: auto;\n}\n@media (min-width: 768px) {\n  .navbar-collapse {\n    width: auto;\n    border-top: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-collapse.collapse {\n    display: block !important;\n    height: auto !important;\n    padding-bottom: 0;\n    overflow: visible !important;\n    visibility: visible !important;\n  }\n  .navbar-collapse.in {\n    overflow-y: visible;\n  }\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-static-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    padding-right: 0;\n    padding-left: 0;\n  }\n}\n.navbar-fixed-top .navbar-collapse,\n.navbar-fixed-bottom .navbar-collapse {\n  max-height: 340px;\n}\n@media (max-device-width: 480px) and (orientation: landscape) {\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    max-height: 200px;\n  }\n}\n.container > .navbar-header,\n.container-fluid > .navbar-header,\n.container > .navbar-collapse,\n.container-fluid > .navbar-collapse {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .container > .navbar-header,\n  .container-fluid > .navbar-header,\n  .container > .navbar-collapse,\n  .container-fluid > .navbar-collapse {\n    margin-right: 0;\n    margin-left: 0;\n  }\n}\n.navbar-static-top {\n  z-index: 1000;\n  border-width: 0 0 1px;\n}\n@media (min-width: 768px) {\n  .navbar-static-top {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top,\n.navbar-fixed-bottom {\n  position: fixed;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n}\n@media (min-width: 768px) {\n  .navbar-fixed-top,\n  .navbar-fixed-bottom {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top {\n  top: 0;\n  border-width: 0 0 1px;\n}\n.navbar-fixed-bottom {\n  bottom: 0;\n  margin-bottom: 0;\n  border-width: 1px 0 0;\n}\n.navbar-brand {\n  float: left;\n  height: 50px;\n  padding: 15px 15px;\n  font-size: 18px;\n  line-height: 20px;\n}\n.navbar-brand:hover,\n.navbar-brand:focus {\n  text-decoration: none;\n}\n.navbar-brand > img {\n  display: block;\n}\n@media (min-width: 768px) {\n  .navbar > .container .navbar-brand,\n  .navbar > .container-fluid .navbar-brand {\n    margin-left: -15px;\n  }\n}\n.navbar-toggle {\n  position: relative;\n  float: right;\n  padding: 9px 10px;\n  margin-top: 8px;\n  margin-right: 15px;\n  margin-bottom: 8px;\n  background-color: transparent;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.navbar-toggle:focus {\n  outline: 0;\n}\n.navbar-toggle .icon-bar {\n  display: block;\n  width: 22px;\n  height: 2px;\n  border-radius: 1px;\n}\n.navbar-toggle .icon-bar + .icon-bar {\n  margin-top: 4px;\n}\n@media (min-width: 768px) {\n  .navbar-toggle {\n    display: none;\n  }\n}\n.navbar-nav {\n  margin: 7.5px -15px;\n}\n.navbar-nav > li > a {\n  padding-top: 10px;\n  padding-bottom: 10px;\n  line-height: 20px;\n}\n@media (max-width: 767px) {\n  .navbar-nav .open .dropdown-menu {\n    position: static;\n    float: none;\n    width: auto;\n    margin-top: 0;\n    background-color: transparent;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-nav .open .dropdown-menu > li > a,\n  .navbar-nav .open .dropdown-menu .dropdown-header {\n    padding: 5px 15px 5px 25px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a {\n    line-height: 20px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-nav .open .dropdown-menu > li > a:focus {\n    background-image: none;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-nav {\n    float: left;\n    margin: 0;\n  }\n  .navbar-nav > li {\n    float: left;\n  }\n  .navbar-nav > li > a {\n    padding-top: 15px;\n    padding-bottom: 15px;\n  }\n}\n.navbar-form {\n  padding: 10px 15px;\n  margin-top: 8px;\n  margin-right: -15px;\n  margin-bottom: 8px;\n  margin-left: -15px;\n  border-top: 1px solid transparent;\n  border-bottom: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n}\n@media (min-width: 768px) {\n  .navbar-form .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control-static {\n    display: inline-block;\n  }\n  .navbar-form .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .navbar-form .input-group .input-group-addon,\n  .navbar-form .input-group .input-group-btn,\n  .navbar-form .input-group .form-control {\n    width: auto;\n  }\n  .navbar-form .input-group > .form-control {\n    width: 100%;\n  }\n  .navbar-form .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio,\n  .navbar-form .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio label,\n  .navbar-form .checkbox label {\n    padding-left: 0;\n  }\n  .navbar-form .radio input[type=\"radio\"],\n  .navbar-form .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .navbar-form .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n@media (max-width: 767px) {\n  .navbar-form .form-group {\n    margin-bottom: 5px;\n  }\n  .navbar-form .form-group:last-child {\n    margin-bottom: 0;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-form {\n    width: auto;\n    padding-top: 0;\n    padding-bottom: 0;\n    margin-right: 0;\n    margin-left: 0;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n}\n.navbar-nav > li > .dropdown-menu {\n  margin-top: 0;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar-fixed-bottom .navbar-nav > li > .dropdown-menu {\n  margin-bottom: 0;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.navbar-btn {\n  margin-top: 8px;\n  margin-bottom: 8px;\n}\n.navbar-btn.btn-sm {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.navbar-btn.btn-xs {\n  margin-top: 14px;\n  margin-bottom: 14px;\n}\n.navbar-text {\n  margin-top: 15px;\n  margin-bottom: 15px;\n}\n@media (min-width: 768px) {\n  .navbar-text {\n    float: left;\n    margin-right: 15px;\n    margin-left: 15px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-left {\n    float: left !important;\n  }\n  .navbar-right {\n    float: right !important;\n    margin-right: -15px;\n  }\n  .navbar-right ~ .navbar-right {\n    margin-right: 0;\n  }\n}\n.navbar-default {\n  background-color: #f8f8f8;\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-brand {\n  color: #777;\n}\n.navbar-default .navbar-brand:hover,\n.navbar-default .navbar-brand:focus {\n  color: #5e5e5e;\n  background-color: transparent;\n}\n.navbar-default .navbar-text {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a:hover,\n.navbar-default .navbar-nav > li > a:focus {\n  color: #333;\n  background-color: transparent;\n}\n.navbar-default .navbar-nav > .active > a,\n.navbar-default .navbar-nav > .active > a:hover,\n.navbar-default .navbar-nav > .active > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .disabled > a,\n.navbar-default .navbar-nav > .disabled > a:hover,\n.navbar-default .navbar-nav > .disabled > a:focus {\n  color: #ccc;\n  background-color: transparent;\n}\n.navbar-default .navbar-toggle {\n  border-color: #ddd;\n}\n.navbar-default .navbar-toggle:hover,\n.navbar-default .navbar-toggle:focus {\n  background-color: #ddd;\n}\n.navbar-default .navbar-toggle .icon-bar {\n  background-color: #888;\n}\n.navbar-default .navbar-collapse,\n.navbar-default .navbar-form {\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .open > a,\n.navbar-default .navbar-nav > .open > a:hover,\n.navbar-default .navbar-nav > .open > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n@media (max-width: 767px) {\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a {\n    color: #777;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #333;\n    background-color: transparent;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #555;\n    background-color: #e7e7e7;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #ccc;\n    background-color: transparent;\n  }\n}\n.navbar-default .navbar-link {\n  color: #777;\n}\n.navbar-default .navbar-link:hover {\n  color: #333;\n}\n.navbar-default .btn-link {\n  color: #777;\n}\n.navbar-default .btn-link:hover,\n.navbar-default .btn-link:focus {\n  color: #333;\n}\n.navbar-default .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-default .btn-link:hover,\n.navbar-default .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-default .btn-link:focus {\n  color: #ccc;\n}\n.navbar-inverse {\n  background-color: #222;\n  border-color: #080808;\n}\n.navbar-inverse .navbar-brand {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-brand:hover,\n.navbar-inverse .navbar-brand:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-text {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a:hover,\n.navbar-inverse .navbar-nav > li > a:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-nav > .active > a,\n.navbar-inverse .navbar-nav > .active > a:hover,\n.navbar-inverse .navbar-nav > .active > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n.navbar-inverse .navbar-nav > .disabled > a,\n.navbar-inverse .navbar-nav > .disabled > a:hover,\n.navbar-inverse .navbar-nav > .disabled > a:focus {\n  color: #444;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-toggle {\n  border-color: #333;\n}\n.navbar-inverse .navbar-toggle:hover,\n.navbar-inverse .navbar-toggle:focus {\n  background-color: #333;\n}\n.navbar-inverse .navbar-toggle .icon-bar {\n  background-color: #fff;\n}\n.navbar-inverse .navbar-collapse,\n.navbar-inverse .navbar-form {\n  border-color: #101010;\n}\n.navbar-inverse .navbar-nav > .open > a,\n.navbar-inverse .navbar-nav > .open > a:hover,\n.navbar-inverse .navbar-nav > .open > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n@media (max-width: 767px) {\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {\n    border-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu .divider {\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {\n    color: #9d9d9d;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #fff;\n    background-color: transparent;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #fff;\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #444;\n    background-color: transparent;\n  }\n}\n.navbar-inverse .navbar-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-link:hover {\n  color: #fff;\n}\n.navbar-inverse .btn-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link:focus {\n  color: #fff;\n}\n.navbar-inverse .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-inverse .btn-link:focus {\n  color: #444;\n}\n.breadcrumb {\n  padding: 8px 15px;\n  margin-bottom: 20px;\n  list-style: none;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n}\n.breadcrumb > li {\n  display: inline-block;\n}\n.breadcrumb > li + li:before {\n  padding: 0 5px;\n  color: #ccc;\n  content: \"/\\00a0\";\n}\n.breadcrumb > .active {\n  color: #777;\n}\n.pagination {\n  display: inline-block;\n  padding-left: 0;\n  margin: 20px 0;\n  border-radius: 4px;\n}\n.pagination > li {\n  display: inline;\n}\n.pagination > li > a,\n.pagination > li > span {\n  position: relative;\n  float: left;\n  padding: 6px 12px;\n  margin-left: -1px;\n  line-height: 1.42857143;\n  color: #337ab7;\n  text-decoration: none;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.pagination > li:first-child > a,\n.pagination > li:first-child > span {\n  margin-left: 0;\n  border-top-left-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.pagination > li:last-child > a,\n.pagination > li:last-child > span {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 4px;\n}\n.pagination > li > a:hover,\n.pagination > li > span:hover,\n.pagination > li > a:focus,\n.pagination > li > span:focus {\n  color: #23527c;\n  background-color: #eee;\n  border-color: #ddd;\n}\n.pagination > .active > a,\n.pagination > .active > span,\n.pagination > .active > a:hover,\n.pagination > .active > span:hover,\n.pagination > .active > a:focus,\n.pagination > .active > span:focus {\n  z-index: 2;\n  color: #fff;\n  cursor: default;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.pagination > .disabled > span,\n.pagination > .disabled > span:hover,\n.pagination > .disabled > span:focus,\n.pagination > .disabled > a,\n.pagination > .disabled > a:hover,\n.pagination > .disabled > a:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n  border-color: #ddd;\n}\n.pagination-lg > li > a,\n.pagination-lg > li > span {\n  padding: 10px 16px;\n  font-size: 18px;\n}\n.pagination-lg > li:first-child > a,\n.pagination-lg > li:first-child > span {\n  border-top-left-radius: 6px;\n  border-bottom-left-radius: 6px;\n}\n.pagination-lg > li:last-child > a,\n.pagination-lg > li:last-child > span {\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n}\n.pagination-sm > li > a,\n.pagination-sm > li > span {\n  padding: 5px 10px;\n  font-size: 12px;\n}\n.pagination-sm > li:first-child > a,\n.pagination-sm > li:first-child > span {\n  border-top-left-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.pagination-sm > li:last-child > a,\n.pagination-sm > li:last-child > span {\n  border-top-right-radius: 3px;\n  border-bottom-right-radius: 3px;\n}\n.pager {\n  padding-left: 0;\n  margin: 20px 0;\n  text-align: center;\n  list-style: none;\n}\n.pager li {\n  display: inline;\n}\n.pager li > a,\n.pager li > span {\n  display: inline-block;\n  padding: 5px 14px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 15px;\n}\n.pager li > a:hover,\n.pager li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.pager .next > a,\n.pager .next > span {\n  float: right;\n}\n.pager .previous > a,\n.pager .previous > span {\n  float: left;\n}\n.pager .disabled > a,\n.pager .disabled > a:hover,\n.pager .disabled > a:focus,\n.pager .disabled > span {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n}\n.label {\n  display: inline;\n  padding: .2em .6em .3em;\n  font-size: 75%;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  border-radius: .25em;\n}\na.label:hover,\na.label:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.label:empty {\n  display: none;\n}\n.btn .label {\n  position: relative;\n  top: -1px;\n}\n.label-default {\n  background-color: #777;\n}\n.label-default[href]:hover,\n.label-default[href]:focus {\n  background-color: #5e5e5e;\n}\n.label-primary {\n  background-color: #337ab7;\n}\n.label-primary[href]:hover,\n.label-primary[href]:focus {\n  background-color: #286090;\n}\n.label-success {\n  background-color: #5cb85c;\n}\n.label-success[href]:hover,\n.label-success[href]:focus {\n  background-color: #449d44;\n}\n.label-info {\n  background-color: #5bc0de;\n}\n.label-info[href]:hover,\n.label-info[href]:focus {\n  background-color: #31b0d5;\n}\n.label-warning {\n  background-color: #f0ad4e;\n}\n.label-warning[href]:hover,\n.label-warning[href]:focus {\n  background-color: #ec971f;\n}\n.label-danger {\n  background-color: #d9534f;\n}\n.label-danger[href]:hover,\n.label-danger[href]:focus {\n  background-color: #c9302c;\n}\n.badge {\n  display: inline-block;\n  min-width: 10px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  background-color: #777;\n  border-radius: 10px;\n}\n.badge:empty {\n  display: none;\n}\n.btn .badge {\n  position: relative;\n  top: -1px;\n}\n.btn-xs .badge {\n  top: 0;\n  padding: 1px 5px;\n}\na.badge:hover,\na.badge:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.list-group-item.active > .badge,\n.nav-pills > .active > a > .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.list-group-item > .badge {\n  float: right;\n}\n.list-group-item > .badge + .badge {\n  margin-right: 5px;\n}\n.nav-pills > li > a > .badge {\n  margin-left: 3px;\n}\n.jumbotron {\n  padding: 30px 15px;\n  margin-bottom: 30px;\n  color: inherit;\n  background-color: #eee;\n}\n.jumbotron h1,\n.jumbotron .h1 {\n  color: inherit;\n}\n.jumbotron p {\n  margin-bottom: 15px;\n  font-size: 21px;\n  font-weight: 200;\n}\n.jumbotron > hr {\n  border-top-color: #d5d5d5;\n}\n.container .jumbotron,\n.container-fluid .jumbotron {\n  border-radius: 6px;\n}\n.jumbotron .container {\n  max-width: 100%;\n}\n@media screen and (min-width: 768px) {\n  .jumbotron {\n    padding: 48px 0;\n  }\n  .container .jumbotron,\n  .container-fluid .jumbotron {\n    padding-right: 60px;\n    padding-left: 60px;\n  }\n  .jumbotron h1,\n  .jumbotron .h1 {\n    font-size: 63px;\n  }\n}\n.thumbnail {\n  display: block;\n  padding: 4px;\n  margin-bottom: 20px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: border .2s ease-in-out;\n       -o-transition: border .2s ease-in-out;\n          transition: border .2s ease-in-out;\n}\n.thumbnail > img,\n.thumbnail a > img {\n  margin-right: auto;\n  margin-left: auto;\n}\na.thumbnail:hover,\na.thumbnail:focus,\na.thumbnail.active {\n  border-color: #337ab7;\n}\n.thumbnail .caption {\n  padding: 9px;\n  color: #333;\n}\n.alert {\n  padding: 15px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.alert h4 {\n  margin-top: 0;\n  color: inherit;\n}\n.alert .alert-link {\n  font-weight: bold;\n}\n.alert > p,\n.alert > ul {\n  margin-bottom: 0;\n}\n.alert > p + p {\n  margin-top: 5px;\n}\n.alert-dismissable,\n.alert-dismissible {\n  padding-right: 35px;\n}\n.alert-dismissable .close,\n.alert-dismissible .close {\n  position: relative;\n  top: -2px;\n  right: -21px;\n  color: inherit;\n}\n.alert-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.alert-success hr {\n  border-top-color: #c9e2b3;\n}\n.alert-success .alert-link {\n  color: #2b542c;\n}\n.alert-info {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.alert-info hr {\n  border-top-color: #a6e1ec;\n}\n.alert-info .alert-link {\n  color: #245269;\n}\n.alert-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.alert-warning hr {\n  border-top-color: #f7e1b5;\n}\n.alert-warning .alert-link {\n  color: #66512c;\n}\n.alert-danger {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.alert-danger hr {\n  border-top-color: #e4b9c0;\n}\n.alert-danger .alert-link {\n  color: #843534;\n}\n@-webkit-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@-o-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n.progress {\n  height: 20px;\n  margin-bottom: 20px;\n  overflow: hidden;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n          box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n}\n.progress-bar {\n  float: left;\n  width: 0;\n  height: 100%;\n  font-size: 12px;\n  line-height: 20px;\n  color: #fff;\n  text-align: center;\n  background-color: #337ab7;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n  -webkit-transition: width .6s ease;\n       -o-transition: width .6s ease;\n          transition: width .6s ease;\n}\n.progress-striped .progress-bar,\n.progress-bar-striped {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  -webkit-background-size: 40px 40px;\n          background-size: 40px 40px;\n}\n.progress.active .progress-bar,\n.progress-bar.active {\n  -webkit-animation: progress-bar-stripes 2s linear infinite;\n       -o-animation: progress-bar-stripes 2s linear infinite;\n          animation: progress-bar-stripes 2s linear infinite;\n}\n.progress-bar-success {\n  background-color: #5cb85c;\n}\n.progress-striped .progress-bar-success {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-info {\n  background-color: #5bc0de;\n}\n.progress-striped .progress-bar-info {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-warning {\n  background-color: #f0ad4e;\n}\n.progress-striped .progress-bar-warning {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-danger {\n  background-color: #d9534f;\n}\n.progress-striped .progress-bar-danger {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.media {\n  margin-top: 15px;\n}\n.media:first-child {\n  margin-top: 0;\n}\n.media,\n.media-body {\n  overflow: hidden;\n  zoom: 1;\n}\n.media-body {\n  width: 10000px;\n}\n.media-object {\n  display: block;\n}\n.media-right,\n.media > .pull-right {\n  padding-left: 10px;\n}\n.media-left,\n.media > .pull-left {\n  padding-right: 10px;\n}\n.media-left,\n.media-right,\n.media-body {\n  display: table-cell;\n  vertical-align: top;\n}\n.media-middle {\n  vertical-align: middle;\n}\n.media-bottom {\n  vertical-align: bottom;\n}\n.media-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.media-list {\n  padding-left: 0;\n  list-style: none;\n}\n.list-group {\n  padding-left: 0;\n  margin-bottom: 20px;\n}\n.list-group-item {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n  margin-bottom: -1px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.list-group-item:first-child {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n}\n.list-group-item:last-child {\n  margin-bottom: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\na.list-group-item {\n  color: #555;\n}\na.list-group-item .list-group-item-heading {\n  color: #333;\n}\na.list-group-item:hover,\na.list-group-item:focus {\n  color: #555;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.list-group-item.disabled,\n.list-group-item.disabled:hover,\n.list-group-item.disabled:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #eee;\n}\n.list-group-item.disabled .list-group-item-heading,\n.list-group-item.disabled:hover .list-group-item-heading,\n.list-group-item.disabled:focus .list-group-item-heading {\n  color: inherit;\n}\n.list-group-item.disabled .list-group-item-text,\n.list-group-item.disabled:hover .list-group-item-text,\n.list-group-item.disabled:focus .list-group-item-text {\n  color: #777;\n}\n.list-group-item.active,\n.list-group-item.active:hover,\n.list-group-item.active:focus {\n  z-index: 2;\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.list-group-item.active .list-group-item-heading,\n.list-group-item.active:hover .list-group-item-heading,\n.list-group-item.active:focus .list-group-item-heading,\n.list-group-item.active .list-group-item-heading > small,\n.list-group-item.active:hover .list-group-item-heading > small,\n.list-group-item.active:focus .list-group-item-heading > small,\n.list-group-item.active .list-group-item-heading > .small,\n.list-group-item.active:hover .list-group-item-heading > .small,\n.list-group-item.active:focus .list-group-item-heading > .small {\n  color: inherit;\n}\n.list-group-item.active .list-group-item-text,\n.list-group-item.active:hover .list-group-item-text,\n.list-group-item.active:focus .list-group-item-text {\n  color: #c7ddef;\n}\n.list-group-item-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n}\na.list-group-item-success {\n  color: #3c763d;\n}\na.list-group-item-success .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-success:hover,\na.list-group-item-success:focus {\n  color: #3c763d;\n  background-color: #d0e9c6;\n}\na.list-group-item-success.active,\na.list-group-item-success.active:hover,\na.list-group-item-success.active:focus {\n  color: #fff;\n  background-color: #3c763d;\n  border-color: #3c763d;\n}\n.list-group-item-info {\n  color: #31708f;\n  background-color: #d9edf7;\n}\na.list-group-item-info {\n  color: #31708f;\n}\na.list-group-item-info .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-info:hover,\na.list-group-item-info:focus {\n  color: #31708f;\n  background-color: #c4e3f3;\n}\na.list-group-item-info.active,\na.list-group-item-info.active:hover,\na.list-group-item-info.active:focus {\n  color: #fff;\n  background-color: #31708f;\n  border-color: #31708f;\n}\n.list-group-item-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n}\na.list-group-item-warning {\n  color: #8a6d3b;\n}\na.list-group-item-warning .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-warning:hover,\na.list-group-item-warning:focus {\n  color: #8a6d3b;\n  background-color: #faf2cc;\n}\na.list-group-item-warning.active,\na.list-group-item-warning.active:hover,\na.list-group-item-warning.active:focus {\n  color: #fff;\n  background-color: #8a6d3b;\n  border-color: #8a6d3b;\n}\n.list-group-item-danger {\n  color: #a94442;\n  background-color: #f2dede;\n}\na.list-group-item-danger {\n  color: #a94442;\n}\na.list-group-item-danger .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-danger:hover,\na.list-group-item-danger:focus {\n  color: #a94442;\n  background-color: #ebcccc;\n}\na.list-group-item-danger.active,\na.list-group-item-danger.active:hover,\na.list-group-item-danger.active:focus {\n  color: #fff;\n  background-color: #a94442;\n  border-color: #a94442;\n}\n.list-group-item-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.list-group-item-text {\n  margin-bottom: 0;\n  line-height: 1.3;\n}\n.panel {\n  margin-bottom: 20px;\n  background-color: #fff;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n}\n.panel-body {\n  padding: 15px;\n}\n.panel-heading {\n  padding: 10px 15px;\n  border-bottom: 1px solid transparent;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel-heading > .dropdown .dropdown-toggle {\n  color: inherit;\n}\n.panel-title {\n  margin-top: 0;\n  margin-bottom: 0;\n  font-size: 16px;\n  color: inherit;\n}\n.panel-title > a,\n.panel-title > small,\n.panel-title > .small,\n.panel-title > small > a,\n.panel-title > .small > a {\n  color: inherit;\n}\n.panel-footer {\n  padding: 10px 15px;\n  background-color: #f5f5f5;\n  border-top: 1px solid #ddd;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .list-group,\n.panel > .panel-collapse > .list-group {\n  margin-bottom: 0;\n}\n.panel > .list-group .list-group-item,\n.panel > .panel-collapse > .list-group .list-group-item {\n  border-width: 1px 0;\n  border-radius: 0;\n}\n.panel > .list-group:first-child .list-group-item:first-child,\n.panel > .panel-collapse > .list-group:first-child .list-group-item:first-child {\n  border-top: 0;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .list-group:last-child .list-group-item:last-child,\n.panel > .panel-collapse > .list-group:last-child .list-group-item:last-child {\n  border-bottom: 0;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel-heading + .list-group .list-group-item:first-child {\n  border-top-width: 0;\n}\n.list-group + .panel-footer {\n  border-top-width: 0;\n}\n.panel > .table,\n.panel > .table-responsive > .table,\n.panel > .panel-collapse > .table {\n  margin-bottom: 0;\n}\n.panel > .table caption,\n.panel > .table-responsive > .table caption,\n.panel > .panel-collapse > .table caption {\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.panel > .table:first-child,\n.panel > .table-responsive:first-child > .table:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:first-child {\n  border-top-left-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:last-child {\n  border-top-right-radius: 3px;\n}\n.panel > .table:last-child,\n.panel > .table-responsive:last-child > .table:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:first-child {\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:last-child {\n  border-bottom-right-radius: 3px;\n}\n.panel > .panel-body + .table,\n.panel > .panel-body + .table-responsive,\n.panel > .table + .panel-body,\n.panel > .table-responsive + .panel-body {\n  border-top: 1px solid #ddd;\n}\n.panel > .table > tbody:first-child > tr:first-child th,\n.panel > .table > tbody:first-child > tr:first-child td {\n  border-top: 0;\n}\n.panel > .table-bordered,\n.panel > .table-responsive > .table-bordered {\n  border: 0;\n}\n.panel > .table-bordered > thead > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:first-child,\n.panel > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-bordered > thead > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:first-child,\n.panel > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-bordered > tfoot > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n  border-left: 0;\n}\n.panel > .table-bordered > thead > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:last-child,\n.panel > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-bordered > thead > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:last-child,\n.panel > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-bordered > tfoot > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n  border-right: 0;\n}\n.panel > .table-bordered > thead > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > td,\n.panel > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-bordered > thead > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > th,\n.panel > .table-bordered > tbody > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > th {\n  border-bottom: 0;\n}\n.panel > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-bordered > tfoot > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > th {\n  border-bottom: 0;\n}\n.panel > .table-responsive {\n  margin-bottom: 0;\n  border: 0;\n}\n.panel-group {\n  margin-bottom: 20px;\n}\n.panel-group .panel {\n  margin-bottom: 0;\n  border-radius: 4px;\n}\n.panel-group .panel + .panel {\n  margin-top: 5px;\n}\n.panel-group .panel-heading {\n  border-bottom: 0;\n}\n.panel-group .panel-heading + .panel-collapse > .panel-body,\n.panel-group .panel-heading + .panel-collapse > .list-group {\n  border-top: 1px solid #ddd;\n}\n.panel-group .panel-footer {\n  border-top: 0;\n}\n.panel-group .panel-footer + .panel-collapse .panel-body {\n  border-bottom: 1px solid #ddd;\n}\n.panel-default {\n  border-color: #ddd;\n}\n.panel-default > .panel-heading {\n  color: #333;\n  background-color: #f5f5f5;\n  border-color: #ddd;\n}\n.panel-default > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ddd;\n}\n.panel-default > .panel-heading .badge {\n  color: #f5f5f5;\n  background-color: #333;\n}\n.panel-default > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ddd;\n}\n.panel-primary {\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #337ab7;\n}\n.panel-primary > .panel-heading .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.panel-primary > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #337ab7;\n}\n.panel-success {\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #d6e9c6;\n}\n.panel-success > .panel-heading .badge {\n  color: #dff0d8;\n  background-color: #3c763d;\n}\n.panel-success > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #d6e9c6;\n}\n.panel-info {\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #bce8f1;\n}\n.panel-info > .panel-heading .badge {\n  color: #d9edf7;\n  background-color: #31708f;\n}\n.panel-info > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #bce8f1;\n}\n.panel-warning {\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #faebcc;\n}\n.panel-warning > .panel-heading .badge {\n  color: #fcf8e3;\n  background-color: #8a6d3b;\n}\n.panel-warning > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #faebcc;\n}\n.panel-danger {\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ebccd1;\n}\n.panel-danger > .panel-heading .badge {\n  color: #f2dede;\n  background-color: #a94442;\n}\n.panel-danger > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ebccd1;\n}\n.embed-responsive {\n  position: relative;\n  display: block;\n  height: 0;\n  padding: 0;\n  overflow: hidden;\n}\n.embed-responsive .embed-responsive-item,\n.embed-responsive iframe,\n.embed-responsive embed,\n.embed-responsive object,\n.embed-responsive video {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  border: 0;\n}\n.embed-responsive.embed-responsive-16by9 {\n  padding-bottom: 56.25%;\n}\n.embed-responsive.embed-responsive-4by3 {\n  padding-bottom: 75%;\n}\n.well {\n  min-height: 20px;\n  padding: 19px;\n  margin-bottom: 20px;\n  background-color: #f5f5f5;\n  border: 1px solid #e3e3e3;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n}\n.well blockquote {\n  border-color: #ddd;\n  border-color: rgba(0, 0, 0, .15);\n}\n.well-lg {\n  padding: 24px;\n  border-radius: 6px;\n}\n.well-sm {\n  padding: 9px;\n  border-radius: 3px;\n}\n.close {\n  float: right;\n  font-size: 21px;\n  font-weight: bold;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n}\n.close:hover,\n.close:focus {\n  color: #000;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\nbutton.close {\n  -webkit-appearance: none;\n  padding: 0;\n  cursor: pointer;\n  background: transparent;\n  border: 0;\n}\n.modal-open {\n  overflow: hidden;\n}\n.modal {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1040;\n  display: none;\n  overflow: hidden;\n  -webkit-overflow-scrolling: touch;\n  outline: 0;\n}\n.modal.fade .modal-dialog {\n  -webkit-transition: -webkit-transform .3s ease-out;\n       -o-transition:      -o-transform .3s ease-out;\n          transition:         transform .3s ease-out;\n  -webkit-transform: translate(0, -25%);\n      -ms-transform: translate(0, -25%);\n       -o-transform: translate(0, -25%);\n          transform: translate(0, -25%);\n}\n.modal.in .modal-dialog {\n  -webkit-transform: translate(0, 0);\n      -ms-transform: translate(0, 0);\n       -o-transform: translate(0, 0);\n          transform: translate(0, 0);\n}\n.modal-open .modal {\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.modal-dialog {\n  position: relative;\n  width: auto;\n  margin: 10px;\n}\n.modal-content {\n  position: relative;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #999;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  outline: 0;\n  -webkit-box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n          box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n}\n.modal-backdrop {\n  position: absolute;\n  top: 0;\n  right: 0;\n  left: 0;\n  background-color: #000;\n}\n.modal-backdrop.fade {\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.modal-backdrop.in {\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.modal-header {\n  min-height: 16.42857143px;\n  padding: 15px;\n  border-bottom: 1px solid #e5e5e5;\n}\n.modal-header .close {\n  margin-top: -2px;\n}\n.modal-title {\n  margin: 0;\n  line-height: 1.42857143;\n}\n.modal-body {\n  position: relative;\n  padding: 15px;\n}\n.modal-footer {\n  padding: 15px;\n  text-align: right;\n  border-top: 1px solid #e5e5e5;\n}\n.modal-footer .btn + .btn {\n  margin-bottom: 0;\n  margin-left: 5px;\n}\n.modal-footer .btn-group .btn + .btn {\n  margin-left: -1px;\n}\n.modal-footer .btn-block + .btn-block {\n  margin-left: 0;\n}\n.modal-scrollbar-measure {\n  position: absolute;\n  top: -9999px;\n  width: 50px;\n  height: 50px;\n  overflow: scroll;\n}\n@media (min-width: 768px) {\n  .modal-dialog {\n    width: 600px;\n    margin: 30px auto;\n  }\n  .modal-content {\n    -webkit-box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n            box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n  }\n  .modal-sm {\n    width: 300px;\n  }\n}\n@media (min-width: 992px) {\n  .modal-lg {\n    width: 900px;\n  }\n}\n.tooltip {\n  position: absolute;\n  z-index: 1070;\n  display: block;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  font-weight: normal;\n  line-height: 1.4;\n  visibility: visible;\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.tooltip.in {\n  filter: alpha(opacity=90);\n  opacity: .9;\n}\n.tooltip.top {\n  padding: 5px 0;\n  margin-top: -3px;\n}\n.tooltip.right {\n  padding: 0 5px;\n  margin-left: 3px;\n}\n.tooltip.bottom {\n  padding: 5px 0;\n  margin-top: 3px;\n}\n.tooltip.left {\n  padding: 0 5px;\n  margin-left: -3px;\n}\n.tooltip-inner {\n  max-width: 200px;\n  padding: 3px 8px;\n  color: #fff;\n  text-align: center;\n  text-decoration: none;\n  background-color: #000;\n  border-radius: 4px;\n}\n.tooltip-arrow {\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.tooltip.top .tooltip-arrow {\n  bottom: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-left .tooltip-arrow {\n  right: 5px;\n  bottom: 0;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-right .tooltip-arrow {\n  bottom: 0;\n  left: 5px;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.right .tooltip-arrow {\n  top: 50%;\n  left: 0;\n  margin-top: -5px;\n  border-width: 5px 5px 5px 0;\n  border-right-color: #000;\n}\n.tooltip.left .tooltip-arrow {\n  top: 50%;\n  right: 0;\n  margin-top: -5px;\n  border-width: 5px 0 5px 5px;\n  border-left-color: #000;\n}\n.tooltip.bottom .tooltip-arrow {\n  top: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-left .tooltip-arrow {\n  top: 0;\n  right: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-right .tooltip-arrow {\n  top: 0;\n  left: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 1060;\n  display: none;\n  max-width: 276px;\n  padding: 1px;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  white-space: normal;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n          box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n}\n.popover.top {\n  margin-top: -10px;\n}\n.popover.right {\n  margin-left: 10px;\n}\n.popover.bottom {\n  margin-top: 10px;\n}\n.popover.left {\n  margin-left: -10px;\n}\n.popover-title {\n  padding: 8px 14px;\n  margin: 0;\n  font-size: 14px;\n  background-color: #f7f7f7;\n  border-bottom: 1px solid #ebebeb;\n  border-radius: 5px 5px 0 0;\n}\n.popover-content {\n  padding: 9px 14px;\n}\n.popover > .arrow,\n.popover > .arrow:after {\n  position: absolute;\n  display: block;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.popover > .arrow {\n  border-width: 11px;\n}\n.popover > .arrow:after {\n  content: \"\";\n  border-width: 10px;\n}\n.popover.top > .arrow {\n  bottom: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-color: #999;\n  border-top-color: rgba(0, 0, 0, .25);\n  border-bottom-width: 0;\n}\n.popover.top > .arrow:after {\n  bottom: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-color: #fff;\n  border-bottom-width: 0;\n}\n.popover.right > .arrow {\n  top: 50%;\n  left: -11px;\n  margin-top: -11px;\n  border-right-color: #999;\n  border-right-color: rgba(0, 0, 0, .25);\n  border-left-width: 0;\n}\n.popover.right > .arrow:after {\n  bottom: -10px;\n  left: 1px;\n  content: \" \";\n  border-right-color: #fff;\n  border-left-width: 0;\n}\n.popover.bottom > .arrow {\n  top: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-width: 0;\n  border-bottom-color: #999;\n  border-bottom-color: rgba(0, 0, 0, .25);\n}\n.popover.bottom > .arrow:after {\n  top: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-width: 0;\n  border-bottom-color: #fff;\n}\n.popover.left > .arrow {\n  top: 50%;\n  right: -11px;\n  margin-top: -11px;\n  border-right-width: 0;\n  border-left-color: #999;\n  border-left-color: rgba(0, 0, 0, .25);\n}\n.popover.left > .arrow:after {\n  right: 1px;\n  bottom: -10px;\n  content: \" \";\n  border-right-width: 0;\n  border-left-color: #fff;\n}\n.carousel {\n  position: relative;\n}\n.carousel-inner {\n  position: relative;\n  width: 100%;\n  overflow: hidden;\n}\n.carousel-inner > .item {\n  position: relative;\n  display: none;\n  -webkit-transition: .6s ease-in-out left;\n       -o-transition: .6s ease-in-out left;\n          transition: .6s ease-in-out left;\n}\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  line-height: 1;\n}\n@media all and (transform-3d), (-webkit-transform-3d) {\n  .carousel-inner > .item {\n    -webkit-transition: -webkit-transform .6s ease-in-out;\n         -o-transition:      -o-transform .6s ease-in-out;\n            transition:         transform .6s ease-in-out;\n\n    -webkit-backface-visibility: hidden;\n            backface-visibility: hidden;\n    -webkit-perspective: 1000;\n            perspective: 1000;\n  }\n  .carousel-inner > .item.next,\n  .carousel-inner > .item.active.right {\n    left: 0;\n    -webkit-transform: translate3d(100%, 0, 0);\n            transform: translate3d(100%, 0, 0);\n  }\n  .carousel-inner > .item.prev,\n  .carousel-inner > .item.active.left {\n    left: 0;\n    -webkit-transform: translate3d(-100%, 0, 0);\n            transform: translate3d(-100%, 0, 0);\n  }\n  .carousel-inner > .item.next.left,\n  .carousel-inner > .item.prev.right,\n  .carousel-inner > .item.active {\n    left: 0;\n    -webkit-transform: translate3d(0, 0, 0);\n            transform: translate3d(0, 0, 0);\n  }\n}\n.carousel-inner > .active,\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  display: block;\n}\n.carousel-inner > .active {\n  left: 0;\n}\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  position: absolute;\n  top: 0;\n  width: 100%;\n}\n.carousel-inner > .next {\n  left: 100%;\n}\n.carousel-inner > .prev {\n  left: -100%;\n}\n.carousel-inner > .next.left,\n.carousel-inner > .prev.right {\n  left: 0;\n}\n.carousel-inner > .active.left {\n  left: -100%;\n}\n.carousel-inner > .active.right {\n  left: 100%;\n}\n.carousel-control {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 15%;\n  font-size: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.carousel-control.left {\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .5)), to(rgba(0, 0, 0, .0001)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#80000000', endColorstr='#00000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control.right {\n  right: 0;\n  left: auto;\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .0001)), to(rgba(0, 0, 0, .5)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#80000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control:hover,\n.carousel-control:focus {\n  color: #fff;\n  text-decoration: none;\n  filter: alpha(opacity=90);\n  outline: 0;\n  opacity: .9;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-left,\n.carousel-control .glyphicon-chevron-right {\n  position: absolute;\n  top: 50%;\n  z-index: 5;\n  display: inline-block;\n}\n.carousel-control .icon-prev,\n.carousel-control .glyphicon-chevron-left {\n  left: 50%;\n  margin-left: -10px;\n}\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-right {\n  right: 50%;\n  margin-right: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next {\n  width: 20px;\n  height: 20px;\n  margin-top: -10px;\n  font-family: serif;\n  line-height: 1;\n}\n.carousel-control .icon-prev:before {\n  content: '\\2039';\n}\n.carousel-control .icon-next:before {\n  content: '\\203a';\n}\n.carousel-indicators {\n  position: absolute;\n  bottom: 10px;\n  left: 50%;\n  z-index: 15;\n  width: 60%;\n  padding-left: 0;\n  margin-left: -30%;\n  text-align: center;\n  list-style: none;\n}\n.carousel-indicators li {\n  display: inline-block;\n  width: 10px;\n  height: 10px;\n  margin: 1px;\n  text-indent: -999px;\n  cursor: pointer;\n  background-color: #000 \\9;\n  background-color: rgba(0, 0, 0, 0);\n  border: 1px solid #fff;\n  border-radius: 10px;\n}\n.carousel-indicators .active {\n  width: 12px;\n  height: 12px;\n  margin: 0;\n  background-color: #fff;\n}\n.carousel-caption {\n  position: absolute;\n  right: 15%;\n  bottom: 20px;\n  left: 15%;\n  z-index: 10;\n  padding-top: 20px;\n  padding-bottom: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n}\n.carousel-caption .btn {\n  text-shadow: none;\n}\n@media screen and (min-width: 768px) {\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-prev,\n  .carousel-control .icon-next {\n    width: 30px;\n    height: 30px;\n    margin-top: -15px;\n    font-size: 30px;\n  }\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .icon-prev {\n    margin-left: -15px;\n  }\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-next {\n    margin-right: -15px;\n  }\n  .carousel-caption {\n    right: 20%;\n    left: 20%;\n    padding-bottom: 30px;\n  }\n  .carousel-indicators {\n    bottom: 20px;\n  }\n}\n.clearfix:before,\n.clearfix:after,\n.dl-horizontal dd:before,\n.dl-horizontal dd:after,\n.container:before,\n.container:after,\n.container-fluid:before,\n.container-fluid:after,\n.row:before,\n.row:after,\n.form-horizontal .form-group:before,\n.form-horizontal .form-group:after,\n.btn-toolbar:before,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:before,\n.btn-group-vertical > .btn-group:after,\n.nav:before,\n.nav:after,\n.navbar:before,\n.navbar:after,\n.navbar-header:before,\n.navbar-header:after,\n.navbar-collapse:before,\n.navbar-collapse:after,\n.pager:before,\n.pager:after,\n.panel-body:before,\n.panel-body:after,\n.modal-footer:before,\n.modal-footer:after {\n  display: table;\n  content: \" \";\n}\n.clearfix:after,\n.dl-horizontal dd:after,\n.container:after,\n.container-fluid:after,\n.row:after,\n.form-horizontal .form-group:after,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:after,\n.nav:after,\n.navbar:after,\n.navbar-header:after,\n.navbar-collapse:after,\n.pager:after,\n.panel-body:after,\n.modal-footer:after {\n  clear: both;\n}\n.center-block {\n  display: block;\n  margin-right: auto;\n  margin-left: auto;\n}\n.pull-right {\n  float: right !important;\n}\n.pull-left {\n  float: left !important;\n}\n.hide {\n  display: none !important;\n}\n.show {\n  display: block !important;\n}\n.invisible {\n  visibility: hidden;\n}\n.text-hide {\n  font: 0/0 a;\n  color: transparent;\n  text-shadow: none;\n  background-color: transparent;\n  border: 0;\n}\n.hidden {\n  display: none !important;\n  visibility: hidden !important;\n}\n.affix {\n  position: fixed;\n}\n@-ms-viewport {\n  width: device-width;\n}\n.visible-xs,\n.visible-sm,\n.visible-md,\n.visible-lg {\n  display: none !important;\n}\n.visible-xs-block,\n.visible-xs-inline,\n.visible-xs-inline-block,\n.visible-sm-block,\n.visible-sm-inline,\n.visible-sm-inline-block,\n.visible-md-block,\n.visible-md-inline,\n.visible-md-inline-block,\n.visible-lg-block,\n.visible-lg-inline,\n.visible-lg-inline-block {\n  display: none !important;\n}\n@media (max-width: 767px) {\n  .visible-xs {\n    display: block !important;\n  }\n  table.visible-xs {\n    display: table;\n  }\n  tr.visible-xs {\n    display: table-row !important;\n  }\n  th.visible-xs,\n  td.visible-xs {\n    display: table-cell !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-block {\n    display: block !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline {\n    display: inline !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm {\n    display: block !important;\n  }\n  table.visible-sm {\n    display: table;\n  }\n  tr.visible-sm {\n    display: table-row !important;\n  }\n  th.visible-sm,\n  td.visible-sm {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-block {\n    display: block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md {\n    display: block !important;\n  }\n  table.visible-md {\n    display: table;\n  }\n  tr.visible-md {\n    display: table-row !important;\n  }\n  th.visible-md,\n  td.visible-md {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-block {\n    display: block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg {\n    display: block !important;\n  }\n  table.visible-lg {\n    display: table;\n  }\n  tr.visible-lg {\n    display: table-row !important;\n  }\n  th.visible-lg,\n  td.visible-lg {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-block {\n    display: block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (max-width: 767px) {\n  .hidden-xs {\n    display: none !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .hidden-sm {\n    display: none !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .hidden-md {\n    display: none !important;\n  }\n}\n@media (min-width: 1200px) {\n  .hidden-lg {\n    display: none !important;\n  }\n}\n.visible-print {\n  display: none !important;\n}\n@media print {\n  .visible-print {\n    display: block !important;\n  }\n  table.visible-print {\n    display: table;\n  }\n  tr.visible-print {\n    display: table-row !important;\n  }\n  th.visible-print,\n  td.visible-print {\n    display: table-cell !important;\n  }\n}\n.visible-print-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-block {\n    display: block !important;\n  }\n}\n.visible-print-inline {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline {\n    display: inline !important;\n  }\n}\n.visible-print-inline-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline-block {\n    display: inline-block !important;\n  }\n}\n@media print {\n  .hidden-print {\n    display: none !important;\n  }\n}\n/*# sourceMappingURL=bootstrap.css.map */\n", ""]);
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function() {
@@ -14479,3099 +17541,37 @@
 	}
 
 /***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(28);
-
-/***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.eot"
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.svg"
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.ttf"
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.woff"
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "0e024b89dd03d68f931ae1e4f6c02931.jpg"
 
 /***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {//! moment.js
-	//! version : 2.9.0
-	//! authors : Tim Wood, Iskren Chernev, Moment.js contributors
-	//! license : MIT
-	//! momentjs.com
-
-	(function (undefined) {
-	    /************************************
-	        Constants
-	    ************************************/
-
-	    var moment,
-	        VERSION = '2.9.0',
-	        // the global-scope this is NOT the global object in Node.js
-	        globalScope = (typeof global !== 'undefined' && (typeof window === 'undefined' || window === global.window)) ? global : this,
-	        oldGlobalMoment,
-	        round = Math.round,
-	        hasOwnProperty = Object.prototype.hasOwnProperty,
-	        i,
-
-	        YEAR = 0,
-	        MONTH = 1,
-	        DATE = 2,
-	        HOUR = 3,
-	        MINUTE = 4,
-	        SECOND = 5,
-	        MILLISECOND = 6,
-
-	        // internal storage for locale config files
-	        locales = {},
-
-	        // extra moment internal properties (plugins register props here)
-	        momentProperties = [],
-
-	        // check for nodeJS
-	        hasModule = (typeof module !== 'undefined' && module && module.exports),
-
-	        // ASP.NET json date format regex
-	        aspNetJsonRegex = /^\/?Date\((\-?\d+)/i,
-	        aspNetTimeSpanJsonRegex = /(\-)?(?:(\d*)\.)?(\d+)\:(\d+)(?:\:(\d+)\.?(\d{3})?)?/,
-
-	        // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
-	        // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
-	        isoDurationRegex = /^(-)?P(?:(?:([0-9,.]*)Y)?(?:([0-9,.]*)M)?(?:([0-9,.]*)D)?(?:T(?:([0-9,.]*)H)?(?:([0-9,.]*)M)?(?:([0-9,.]*)S)?)?|([0-9,.]*)W)$/,
-
-	        // format tokens
-	        formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Q|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|mm?|ss?|S{1,4}|x|X|zz?|ZZ?|.)/g,
-	        localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,
-
-	        // parsing token regexes
-	        parseTokenOneOrTwoDigits = /\d\d?/, // 0 - 99
-	        parseTokenOneToThreeDigits = /\d{1,3}/, // 0 - 999
-	        parseTokenOneToFourDigits = /\d{1,4}/, // 0 - 9999
-	        parseTokenOneToSixDigits = /[+\-]?\d{1,6}/, // -999,999 - 999,999
-	        parseTokenDigits = /\d+/, // nonzero number of digits
-	        parseTokenWord = /[0-9]*['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+|[\u0600-\u06FF\/]+(\s*?[\u0600-\u06FF]+){1,2}/i, // any word (or two) characters or numbers including two/three word month in arabic.
-	        parseTokenTimezone = /Z|[\+\-]\d\d:?\d\d/gi, // +00:00 -00:00 +0000 -0000 or Z
-	        parseTokenT = /T/i, // T (ISO separator)
-	        parseTokenOffsetMs = /[\+\-]?\d+/, // 1234567890123
-	        parseTokenTimestampMs = /[\+\-]?\d+(\.\d{1,3})?/, // 123456789 123456789.123
-
-	        //strict parsing regexes
-	        parseTokenOneDigit = /\d/, // 0 - 9
-	        parseTokenTwoDigits = /\d\d/, // 00 - 99
-	        parseTokenThreeDigits = /\d{3}/, // 000 - 999
-	        parseTokenFourDigits = /\d{4}/, // 0000 - 9999
-	        parseTokenSixDigits = /[+-]?\d{6}/, // -999,999 - 999,999
-	        parseTokenSignedNumber = /[+-]?\d+/, // -inf - inf
-
-	        // iso 8601 regex
-	        // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
-	        isoRegex = /^\s*(?:[+-]\d{6}|\d{4})-(?:(\d\d-\d\d)|(W\d\d$)|(W\d\d-\d)|(\d\d\d))((T| )(\d\d(:\d\d(:\d\d(\.\d+)?)?)?)?([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
-
-	        isoFormat = 'YYYY-MM-DDTHH:mm:ssZ',
-
-	        isoDates = [
-	            ['YYYYYY-MM-DD', /[+-]\d{6}-\d{2}-\d{2}/],
-	            ['YYYY-MM-DD', /\d{4}-\d{2}-\d{2}/],
-	            ['GGGG-[W]WW-E', /\d{4}-W\d{2}-\d/],
-	            ['GGGG-[W]WW', /\d{4}-W\d{2}/],
-	            ['YYYY-DDD', /\d{4}-\d{3}/]
-	        ],
-
-	        // iso time formats and regexes
-	        isoTimes = [
-	            ['HH:mm:ss.SSSS', /(T| )\d\d:\d\d:\d\d\.\d+/],
-	            ['HH:mm:ss', /(T| )\d\d:\d\d:\d\d/],
-	            ['HH:mm', /(T| )\d\d:\d\d/],
-	            ['HH', /(T| )\d\d/]
-	        ],
-
-	        // timezone chunker '+10:00' > ['10', '00'] or '-1530' > ['-', '15', '30']
-	        parseTimezoneChunker = /([\+\-]|\d\d)/gi,
-
-	        // getter and setter names
-	        proxyGettersAndSetters = 'Date|Hours|Minutes|Seconds|Milliseconds'.split('|'),
-	        unitMillisecondFactors = {
-	            'Milliseconds' : 1,
-	            'Seconds' : 1e3,
-	            'Minutes' : 6e4,
-	            'Hours' : 36e5,
-	            'Days' : 864e5,
-	            'Months' : 2592e6,
-	            'Years' : 31536e6
-	        },
-
-	        unitAliases = {
-	            ms : 'millisecond',
-	            s : 'second',
-	            m : 'minute',
-	            h : 'hour',
-	            d : 'day',
-	            D : 'date',
-	            w : 'week',
-	            W : 'isoWeek',
-	            M : 'month',
-	            Q : 'quarter',
-	            y : 'year',
-	            DDD : 'dayOfYear',
-	            e : 'weekday',
-	            E : 'isoWeekday',
-	            gg: 'weekYear',
-	            GG: 'isoWeekYear'
-	        },
-
-	        camelFunctions = {
-	            dayofyear : 'dayOfYear',
-	            isoweekday : 'isoWeekday',
-	            isoweek : 'isoWeek',
-	            weekyear : 'weekYear',
-	            isoweekyear : 'isoWeekYear'
-	        },
-
-	        // format function strings
-	        formatFunctions = {},
-
-	        // default relative time thresholds
-	        relativeTimeThresholds = {
-	            s: 45,  // seconds to minute
-	            m: 45,  // minutes to hour
-	            h: 22,  // hours to day
-	            d: 26,  // days to month
-	            M: 11   // months to year
-	        },
-
-	        // tokens to ordinalize and pad
-	        ordinalizeTokens = 'DDD w W M D d'.split(' '),
-	        paddedTokens = 'M D H h m s w W'.split(' '),
-
-	        formatTokenFunctions = {
-	            M    : function () {
-	                return this.month() + 1;
-	            },
-	            MMM  : function (format) {
-	                return this.localeData().monthsShort(this, format);
-	            },
-	            MMMM : function (format) {
-	                return this.localeData().months(this, format);
-	            },
-	            D    : function () {
-	                return this.date();
-	            },
-	            DDD  : function () {
-	                return this.dayOfYear();
-	            },
-	            d    : function () {
-	                return this.day();
-	            },
-	            dd   : function (format) {
-	                return this.localeData().weekdaysMin(this, format);
-	            },
-	            ddd  : function (format) {
-	                return this.localeData().weekdaysShort(this, format);
-	            },
-	            dddd : function (format) {
-	                return this.localeData().weekdays(this, format);
-	            },
-	            w    : function () {
-	                return this.week();
-	            },
-	            W    : function () {
-	                return this.isoWeek();
-	            },
-	            YY   : function () {
-	                return leftZeroFill(this.year() % 100, 2);
-	            },
-	            YYYY : function () {
-	                return leftZeroFill(this.year(), 4);
-	            },
-	            YYYYY : function () {
-	                return leftZeroFill(this.year(), 5);
-	            },
-	            YYYYYY : function () {
-	                var y = this.year(), sign = y >= 0 ? '+' : '-';
-	                return sign + leftZeroFill(Math.abs(y), 6);
-	            },
-	            gg   : function () {
-	                return leftZeroFill(this.weekYear() % 100, 2);
-	            },
-	            gggg : function () {
-	                return leftZeroFill(this.weekYear(), 4);
-	            },
-	            ggggg : function () {
-	                return leftZeroFill(this.weekYear(), 5);
-	            },
-	            GG   : function () {
-	                return leftZeroFill(this.isoWeekYear() % 100, 2);
-	            },
-	            GGGG : function () {
-	                return leftZeroFill(this.isoWeekYear(), 4);
-	            },
-	            GGGGG : function () {
-	                return leftZeroFill(this.isoWeekYear(), 5);
-	            },
-	            e : function () {
-	                return this.weekday();
-	            },
-	            E : function () {
-	                return this.isoWeekday();
-	            },
-	            a    : function () {
-	                return this.localeData().meridiem(this.hours(), this.minutes(), true);
-	            },
-	            A    : function () {
-	                return this.localeData().meridiem(this.hours(), this.minutes(), false);
-	            },
-	            H    : function () {
-	                return this.hours();
-	            },
-	            h    : function () {
-	                return this.hours() % 12 || 12;
-	            },
-	            m    : function () {
-	                return this.minutes();
-	            },
-	            s    : function () {
-	                return this.seconds();
-	            },
-	            S    : function () {
-	                return toInt(this.milliseconds() / 100);
-	            },
-	            SS   : function () {
-	                return leftZeroFill(toInt(this.milliseconds() / 10), 2);
-	            },
-	            SSS  : function () {
-	                return leftZeroFill(this.milliseconds(), 3);
-	            },
-	            SSSS : function () {
-	                return leftZeroFill(this.milliseconds(), 3);
-	            },
-	            Z    : function () {
-	                var a = this.utcOffset(),
-	                    b = '+';
-	                if (a < 0) {
-	                    a = -a;
-	                    b = '-';
-	                }
-	                return b + leftZeroFill(toInt(a / 60), 2) + ':' + leftZeroFill(toInt(a) % 60, 2);
-	            },
-	            ZZ   : function () {
-	                var a = this.utcOffset(),
-	                    b = '+';
-	                if (a < 0) {
-	                    a = -a;
-	                    b = '-';
-	                }
-	                return b + leftZeroFill(toInt(a / 60), 2) + leftZeroFill(toInt(a) % 60, 2);
-	            },
-	            z : function () {
-	                return this.zoneAbbr();
-	            },
-	            zz : function () {
-	                return this.zoneName();
-	            },
-	            x    : function () {
-	                return this.valueOf();
-	            },
-	            X    : function () {
-	                return this.unix();
-	            },
-	            Q : function () {
-	                return this.quarter();
-	            }
-	        },
-
-	        deprecations = {},
-
-	        lists = ['months', 'monthsShort', 'weekdays', 'weekdaysShort', 'weekdaysMin'],
-
-	        updateInProgress = false;
-
-	    // Pick the first defined of two or three arguments. dfl comes from
-	    // default.
-	    function dfl(a, b, c) {
-	        switch (arguments.length) {
-	            case 2: return a != null ? a : b;
-	            case 3: return a != null ? a : b != null ? b : c;
-	            default: throw new Error('Implement me');
-	        }
-	    }
-
-	    function hasOwnProp(a, b) {
-	        return hasOwnProperty.call(a, b);
-	    }
-
-	    function defaultParsingFlags() {
-	        // We need to deep clone this object, and es5 standard is not very
-	        // helpful.
-	        return {
-	            empty : false,
-	            unusedTokens : [],
-	            unusedInput : [],
-	            overflow : -2,
-	            charsLeftOver : 0,
-	            nullInput : false,
-	            invalidMonth : null,
-	            invalidFormat : false,
-	            userInvalidated : false,
-	            iso: false
-	        };
-	    }
-
-	    function printMsg(msg) {
-	        if (moment.suppressDeprecationWarnings === false &&
-	                typeof console !== 'undefined' && console.warn) {
-	            console.warn('Deprecation warning: ' + msg);
-	        }
-	    }
-
-	    function deprecate(msg, fn) {
-	        var firstTime = true;
-	        return extend(function () {
-	            if (firstTime) {
-	                printMsg(msg);
-	                firstTime = false;
-	            }
-	            return fn.apply(this, arguments);
-	        }, fn);
-	    }
-
-	    function deprecateSimple(name, msg) {
-	        if (!deprecations[name]) {
-	            printMsg(msg);
-	            deprecations[name] = true;
-	        }
-	    }
-
-	    function padToken(func, count) {
-	        return function (a) {
-	            return leftZeroFill(func.call(this, a), count);
-	        };
-	    }
-	    function ordinalizeToken(func, period) {
-	        return function (a) {
-	            return this.localeData().ordinal(func.call(this, a), period);
-	        };
-	    }
-
-	    function monthDiff(a, b) {
-	        // difference in months
-	        var wholeMonthDiff = ((b.year() - a.year()) * 12) + (b.month() - a.month()),
-	            // b is in (anchor - 1 month, anchor + 1 month)
-	            anchor = a.clone().add(wholeMonthDiff, 'months'),
-	            anchor2, adjust;
-
-	        if (b - anchor < 0) {
-	            anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
-	            // linear across the month
-	            adjust = (b - anchor) / (anchor - anchor2);
-	        } else {
-	            anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
-	            // linear across the month
-	            adjust = (b - anchor) / (anchor2 - anchor);
-	        }
-
-	        return -(wholeMonthDiff + adjust);
-	    }
-
-	    while (ordinalizeTokens.length) {
-	        i = ordinalizeTokens.pop();
-	        formatTokenFunctions[i + 'o'] = ordinalizeToken(formatTokenFunctions[i], i);
-	    }
-	    while (paddedTokens.length) {
-	        i = paddedTokens.pop();
-	        formatTokenFunctions[i + i] = padToken(formatTokenFunctions[i], 2);
-	    }
-	    formatTokenFunctions.DDDD = padToken(formatTokenFunctions.DDD, 3);
-
-
-	    function meridiemFixWrap(locale, hour, meridiem) {
-	        var isPm;
-
-	        if (meridiem == null) {
-	            // nothing to do
-	            return hour;
-	        }
-	        if (locale.meridiemHour != null) {
-	            return locale.meridiemHour(hour, meridiem);
-	        } else if (locale.isPM != null) {
-	            // Fallback
-	            isPm = locale.isPM(meridiem);
-	            if (isPm && hour < 12) {
-	                hour += 12;
-	            }
-	            if (!isPm && hour === 12) {
-	                hour = 0;
-	            }
-	            return hour;
-	        } else {
-	            // thie is not supposed to happen
-	            return hour;
-	        }
-	    }
-
-	    /************************************
-	        Constructors
-	    ************************************/
-
-	    function Locale() {
-	    }
-
-	    // Moment prototype object
-	    function Moment(config, skipOverflow) {
-	        if (skipOverflow !== false) {
-	            checkOverflow(config);
-	        }
-	        copyConfig(this, config);
-	        this._d = new Date(+config._d);
-	        // Prevent infinite loop in case updateOffset creates new moment
-	        // objects.
-	        if (updateInProgress === false) {
-	            updateInProgress = true;
-	            moment.updateOffset(this);
-	            updateInProgress = false;
-	        }
-	    }
-
-	    // Duration Constructor
-	    function Duration(duration) {
-	        var normalizedInput = normalizeObjectUnits(duration),
-	            years = normalizedInput.year || 0,
-	            quarters = normalizedInput.quarter || 0,
-	            months = normalizedInput.month || 0,
-	            weeks = normalizedInput.week || 0,
-	            days = normalizedInput.day || 0,
-	            hours = normalizedInput.hour || 0,
-	            minutes = normalizedInput.minute || 0,
-	            seconds = normalizedInput.second || 0,
-	            milliseconds = normalizedInput.millisecond || 0;
-
-	        // representation for dateAddRemove
-	        this._milliseconds = +milliseconds +
-	            seconds * 1e3 + // 1000
-	            minutes * 6e4 + // 1000 * 60
-	            hours * 36e5; // 1000 * 60 * 60
-	        // Because of dateAddRemove treats 24 hours as different from a
-	        // day when working around DST, we need to store them separately
-	        this._days = +days +
-	            weeks * 7;
-	        // It is impossible translate months into days without knowing
-	        // which months you are are talking about, so we have to store
-	        // it separately.
-	        this._months = +months +
-	            quarters * 3 +
-	            years * 12;
-
-	        this._data = {};
-
-	        this._locale = moment.localeData();
-
-	        this._bubble();
-	    }
-
-	    /************************************
-	        Helpers
-	    ************************************/
-
-
-	    function extend(a, b) {
-	        for (var i in b) {
-	            if (hasOwnProp(b, i)) {
-	                a[i] = b[i];
-	            }
-	        }
-
-	        if (hasOwnProp(b, 'toString')) {
-	            a.toString = b.toString;
-	        }
-
-	        if (hasOwnProp(b, 'valueOf')) {
-	            a.valueOf = b.valueOf;
-	        }
-
-	        return a;
-	    }
-
-	    function copyConfig(to, from) {
-	        var i, prop, val;
-
-	        if (typeof from._isAMomentObject !== 'undefined') {
-	            to._isAMomentObject = from._isAMomentObject;
-	        }
-	        if (typeof from._i !== 'undefined') {
-	            to._i = from._i;
-	        }
-	        if (typeof from._f !== 'undefined') {
-	            to._f = from._f;
-	        }
-	        if (typeof from._l !== 'undefined') {
-	            to._l = from._l;
-	        }
-	        if (typeof from._strict !== 'undefined') {
-	            to._strict = from._strict;
-	        }
-	        if (typeof from._tzm !== 'undefined') {
-	            to._tzm = from._tzm;
-	        }
-	        if (typeof from._isUTC !== 'undefined') {
-	            to._isUTC = from._isUTC;
-	        }
-	        if (typeof from._offset !== 'undefined') {
-	            to._offset = from._offset;
-	        }
-	        if (typeof from._pf !== 'undefined') {
-	            to._pf = from._pf;
-	        }
-	        if (typeof from._locale !== 'undefined') {
-	            to._locale = from._locale;
-	        }
-
-	        if (momentProperties.length > 0) {
-	            for (i in momentProperties) {
-	                prop = momentProperties[i];
-	                val = from[prop];
-	                if (typeof val !== 'undefined') {
-	                    to[prop] = val;
-	                }
-	            }
-	        }
-
-	        return to;
-	    }
-
-	    function absRound(number) {
-	        if (number < 0) {
-	            return Math.ceil(number);
-	        } else {
-	            return Math.floor(number);
-	        }
-	    }
-
-	    // left zero fill a number
-	    // see http://jsperf.com/left-zero-filling for performance comparison
-	    function leftZeroFill(number, targetLength, forceSign) {
-	        var output = '' + Math.abs(number),
-	            sign = number >= 0;
-
-	        while (output.length < targetLength) {
-	            output = '0' + output;
-	        }
-	        return (sign ? (forceSign ? '+' : '') : '-') + output;
-	    }
-
-	    function positiveMomentsDifference(base, other) {
-	        var res = {milliseconds: 0, months: 0};
-
-	        res.months = other.month() - base.month() +
-	            (other.year() - base.year()) * 12;
-	        if (base.clone().add(res.months, 'M').isAfter(other)) {
-	            --res.months;
-	        }
-
-	        res.milliseconds = +other - +(base.clone().add(res.months, 'M'));
-
-	        return res;
-	    }
-
-	    function momentsDifference(base, other) {
-	        var res;
-	        other = makeAs(other, base);
-	        if (base.isBefore(other)) {
-	            res = positiveMomentsDifference(base, other);
-	        } else {
-	            res = positiveMomentsDifference(other, base);
-	            res.milliseconds = -res.milliseconds;
-	            res.months = -res.months;
-	        }
-
-	        return res;
-	    }
-
-	    // TODO: remove 'name' arg after deprecation is removed
-	    function createAdder(direction, name) {
-	        return function (val, period) {
-	            var dur, tmp;
-	            //invert the arguments, but complain about it
-	            if (period !== null && !isNaN(+period)) {
-	                deprecateSimple(name, 'moment().' + name  + '(period, number) is deprecated. Please use moment().' + name + '(number, period).');
-	                tmp = val; val = period; period = tmp;
-	            }
-
-	            val = typeof val === 'string' ? +val : val;
-	            dur = moment.duration(val, period);
-	            addOrSubtractDurationFromMoment(this, dur, direction);
-	            return this;
-	        };
-	    }
-
-	    function addOrSubtractDurationFromMoment(mom, duration, isAdding, updateOffset) {
-	        var milliseconds = duration._milliseconds,
-	            days = duration._days,
-	            months = duration._months;
-	        updateOffset = updateOffset == null ? true : updateOffset;
-
-	        if (milliseconds) {
-	            mom._d.setTime(+mom._d + milliseconds * isAdding);
-	        }
-	        if (days) {
-	            rawSetter(mom, 'Date', rawGetter(mom, 'Date') + days * isAdding);
-	        }
-	        if (months) {
-	            rawMonthSetter(mom, rawGetter(mom, 'Month') + months * isAdding);
-	        }
-	        if (updateOffset) {
-	            moment.updateOffset(mom, days || months);
-	        }
-	    }
-
-	    // check if is an array
-	    function isArray(input) {
-	        return Object.prototype.toString.call(input) === '[object Array]';
-	    }
-
-	    function isDate(input) {
-	        return Object.prototype.toString.call(input) === '[object Date]' ||
-	            input instanceof Date;
-	    }
-
-	    // compare two arrays, return the number of differences
-	    function compareArrays(array1, array2, dontConvert) {
-	        var len = Math.min(array1.length, array2.length),
-	            lengthDiff = Math.abs(array1.length - array2.length),
-	            diffs = 0,
-	            i;
-	        for (i = 0; i < len; i++) {
-	            if ((dontConvert && array1[i] !== array2[i]) ||
-	                (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))) {
-	                diffs++;
-	            }
-	        }
-	        return diffs + lengthDiff;
-	    }
-
-	    function normalizeUnits(units) {
-	        if (units) {
-	            var lowered = units.toLowerCase().replace(/(.)s$/, '$1');
-	            units = unitAliases[units] || camelFunctions[lowered] || lowered;
-	        }
-	        return units;
-	    }
-
-	    function normalizeObjectUnits(inputObject) {
-	        var normalizedInput = {},
-	            normalizedProp,
-	            prop;
-
-	        for (prop in inputObject) {
-	            if (hasOwnProp(inputObject, prop)) {
-	                normalizedProp = normalizeUnits(prop);
-	                if (normalizedProp) {
-	                    normalizedInput[normalizedProp] = inputObject[prop];
-	                }
-	            }
-	        }
-
-	        return normalizedInput;
-	    }
-
-	    function makeList(field) {
-	        var count, setter;
-
-	        if (field.indexOf('week') === 0) {
-	            count = 7;
-	            setter = 'day';
-	        }
-	        else if (field.indexOf('month') === 0) {
-	            count = 12;
-	            setter = 'month';
-	        }
-	        else {
-	            return;
-	        }
-
-	        moment[field] = function (format, index) {
-	            var i, getter,
-	                method = moment._locale[field],
-	                results = [];
-
-	            if (typeof format === 'number') {
-	                index = format;
-	                format = undefined;
-	            }
-
-	            getter = function (i) {
-	                var m = moment().utc().set(setter, i);
-	                return method.call(moment._locale, m, format || '');
-	            };
-
-	            if (index != null) {
-	                return getter(index);
-	            }
-	            else {
-	                for (i = 0; i < count; i++) {
-	                    results.push(getter(i));
-	                }
-	                return results;
-	            }
-	        };
-	    }
-
-	    function toInt(argumentForCoercion) {
-	        var coercedNumber = +argumentForCoercion,
-	            value = 0;
-
-	        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
-	            if (coercedNumber >= 0) {
-	                value = Math.floor(coercedNumber);
-	            } else {
-	                value = Math.ceil(coercedNumber);
-	            }
-	        }
-
-	        return value;
-	    }
-
-	    function daysInMonth(year, month) {
-	        return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-	    }
-
-	    function weeksInYear(year, dow, doy) {
-	        return weekOfYear(moment([year, 11, 31 + dow - doy]), dow, doy).week;
-	    }
-
-	    function daysInYear(year) {
-	        return isLeapYear(year) ? 366 : 365;
-	    }
-
-	    function isLeapYear(year) {
-	        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-	    }
-
-	    function checkOverflow(m) {
-	        var overflow;
-	        if (m._a && m._pf.overflow === -2) {
-	            overflow =
-	                m._a[MONTH] < 0 || m._a[MONTH] > 11 ? MONTH :
-	                m._a[DATE] < 1 || m._a[DATE] > daysInMonth(m._a[YEAR], m._a[MONTH]) ? DATE :
-	                m._a[HOUR] < 0 || m._a[HOUR] > 24 ||
-	                    (m._a[HOUR] === 24 && (m._a[MINUTE] !== 0 ||
-	                                           m._a[SECOND] !== 0 ||
-	                                           m._a[MILLISECOND] !== 0)) ? HOUR :
-	                m._a[MINUTE] < 0 || m._a[MINUTE] > 59 ? MINUTE :
-	                m._a[SECOND] < 0 || m._a[SECOND] > 59 ? SECOND :
-	                m._a[MILLISECOND] < 0 || m._a[MILLISECOND] > 999 ? MILLISECOND :
-	                -1;
-
-	            if (m._pf._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
-	                overflow = DATE;
-	            }
-
-	            m._pf.overflow = overflow;
-	        }
-	    }
-
-	    function isValid(m) {
-	        if (m._isValid == null) {
-	            m._isValid = !isNaN(m._d.getTime()) &&
-	                m._pf.overflow < 0 &&
-	                !m._pf.empty &&
-	                !m._pf.invalidMonth &&
-	                !m._pf.nullInput &&
-	                !m._pf.invalidFormat &&
-	                !m._pf.userInvalidated;
-
-	            if (m._strict) {
-	                m._isValid = m._isValid &&
-	                    m._pf.charsLeftOver === 0 &&
-	                    m._pf.unusedTokens.length === 0 &&
-	                    m._pf.bigHour === undefined;
-	            }
-	        }
-	        return m._isValid;
-	    }
-
-	    function normalizeLocale(key) {
-	        return key ? key.toLowerCase().replace('_', '-') : key;
-	    }
-
-	    // pick the locale from the array
-	    // try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
-	    // substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
-	    function chooseLocale(names) {
-	        var i = 0, j, next, locale, split;
-
-	        while (i < names.length) {
-	            split = normalizeLocale(names[i]).split('-');
-	            j = split.length;
-	            next = normalizeLocale(names[i + 1]);
-	            next = next ? next.split('-') : null;
-	            while (j > 0) {
-	                locale = loadLocale(split.slice(0, j).join('-'));
-	                if (locale) {
-	                    return locale;
-	                }
-	                if (next && next.length >= j && compareArrays(split, next, true) >= j - 1) {
-	                    //the next array item is better than a shallower substring of this one
-	                    break;
-	                }
-	                j--;
-	            }
-	            i++;
-	        }
-	        return null;
-	    }
-
-	    function loadLocale(name) {
-	        var oldLocale = null;
-	        if (!locales[name] && hasModule) {
-	            try {
-	                oldLocale = moment.locale();
-	                __webpack_require__(30)("./" + name);
-	                // because defineLocale currently also sets the global locale, we want to undo that for lazy loaded locales
-	                moment.locale(oldLocale);
-	            } catch (e) { }
-	        }
-	        return locales[name];
-	    }
-
-	    // Return a moment from input, that is local/utc/utcOffset equivalent to
-	    // model.
-	    function makeAs(input, model) {
-	        var res, diff;
-	        if (model._isUTC) {
-	            res = model.clone();
-	            diff = (moment.isMoment(input) || isDate(input) ?
-	                    +input : +moment(input)) - (+res);
-	            // Use low-level api, because this fn is low-level api.
-	            res._d.setTime(+res._d + diff);
-	            moment.updateOffset(res, false);
-	            return res;
-	        } else {
-	            return moment(input).local();
-	        }
-	    }
-
-	    /************************************
-	        Locale
-	    ************************************/
-
-
-	    extend(Locale.prototype, {
-
-	        set : function (config) {
-	            var prop, i;
-	            for (i in config) {
-	                prop = config[i];
-	                if (typeof prop === 'function') {
-	                    this[i] = prop;
-	                } else {
-	                    this['_' + i] = prop;
-	                }
-	            }
-	            // Lenient ordinal parsing accepts just a number in addition to
-	            // number + (possibly) stuff coming from _ordinalParseLenient.
-	            this._ordinalParseLenient = new RegExp(this._ordinalParse.source + '|' + /\d{1,2}/.source);
-	        },
-
-	        _months : 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_'),
-	        months : function (m) {
-	            return this._months[m.month()];
-	        },
-
-	        _monthsShort : 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
-	        monthsShort : function (m) {
-	            return this._monthsShort[m.month()];
-	        },
-
-	        monthsParse : function (monthName, format, strict) {
-	            var i, mom, regex;
-
-	            if (!this._monthsParse) {
-	                this._monthsParse = [];
-	                this._longMonthsParse = [];
-	                this._shortMonthsParse = [];
-	            }
-
-	            for (i = 0; i < 12; i++) {
-	                // make the regex if we don't have it already
-	                mom = moment.utc([2000, i]);
-	                if (strict && !this._longMonthsParse[i]) {
-	                    this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
-	                    this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
-	                }
-	                if (!strict && !this._monthsParse[i]) {
-	                    regex = '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
-	                    this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
-	                }
-	                // test the regex
-	                if (strict && format === 'MMMM' && this._longMonthsParse[i].test(monthName)) {
-	                    return i;
-	                } else if (strict && format === 'MMM' && this._shortMonthsParse[i].test(monthName)) {
-	                    return i;
-	                } else if (!strict && this._monthsParse[i].test(monthName)) {
-	                    return i;
-	                }
-	            }
-	        },
-
-	        _weekdays : 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
-	        weekdays : function (m) {
-	            return this._weekdays[m.day()];
-	        },
-
-	        _weekdaysShort : 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
-	        weekdaysShort : function (m) {
-	            return this._weekdaysShort[m.day()];
-	        },
-
-	        _weekdaysMin : 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
-	        weekdaysMin : function (m) {
-	            return this._weekdaysMin[m.day()];
-	        },
-
-	        weekdaysParse : function (weekdayName) {
-	            var i, mom, regex;
-
-	            if (!this._weekdaysParse) {
-	                this._weekdaysParse = [];
-	            }
-
-	            for (i = 0; i < 7; i++) {
-	                // make the regex if we don't have it already
-	                if (!this._weekdaysParse[i]) {
-	                    mom = moment([2000, 1]).day(i);
-	                    regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
-	                    this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
-	                }
-	                // test the regex
-	                if (this._weekdaysParse[i].test(weekdayName)) {
-	                    return i;
-	                }
-	            }
-	        },
-
-	        _longDateFormat : {
-	            LTS : 'h:mm:ss A',
-	            LT : 'h:mm A',
-	            L : 'MM/DD/YYYY',
-	            LL : 'MMMM D, YYYY',
-	            LLL : 'MMMM D, YYYY LT',
-	            LLLL : 'dddd, MMMM D, YYYY LT'
-	        },
-	        longDateFormat : function (key) {
-	            var output = this._longDateFormat[key];
-	            if (!output && this._longDateFormat[key.toUpperCase()]) {
-	                output = this._longDateFormat[key.toUpperCase()].replace(/MMMM|MM|DD|dddd/g, function (val) {
-	                    return val.slice(1);
-	                });
-	                this._longDateFormat[key] = output;
-	            }
-	            return output;
-	        },
-
-	        isPM : function (input) {
-	            // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
-	            // Using charAt should be more compatible.
-	            return ((input + '').toLowerCase().charAt(0) === 'p');
-	        },
-
-	        _meridiemParse : /[ap]\.?m?\.?/i,
-	        meridiem : function (hours, minutes, isLower) {
-	            if (hours > 11) {
-	                return isLower ? 'pm' : 'PM';
-	            } else {
-	                return isLower ? 'am' : 'AM';
-	            }
-	        },
-
-
-	        _calendar : {
-	            sameDay : '[Today at] LT',
-	            nextDay : '[Tomorrow at] LT',
-	            nextWeek : 'dddd [at] LT',
-	            lastDay : '[Yesterday at] LT',
-	            lastWeek : '[Last] dddd [at] LT',
-	            sameElse : 'L'
-	        },
-	        calendar : function (key, mom, now) {
-	            var output = this._calendar[key];
-	            return typeof output === 'function' ? output.apply(mom, [now]) : output;
-	        },
-
-	        _relativeTime : {
-	            future : 'in %s',
-	            past : '%s ago',
-	            s : 'a few seconds',
-	            m : 'a minute',
-	            mm : '%d minutes',
-	            h : 'an hour',
-	            hh : '%d hours',
-	            d : 'a day',
-	            dd : '%d days',
-	            M : 'a month',
-	            MM : '%d months',
-	            y : 'a year',
-	            yy : '%d years'
-	        },
-
-	        relativeTime : function (number, withoutSuffix, string, isFuture) {
-	            var output = this._relativeTime[string];
-	            return (typeof output === 'function') ?
-	                output(number, withoutSuffix, string, isFuture) :
-	                output.replace(/%d/i, number);
-	        },
-
-	        pastFuture : function (diff, output) {
-	            var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
-	            return typeof format === 'function' ? format(output) : format.replace(/%s/i, output);
-	        },
-
-	        ordinal : function (number) {
-	            return this._ordinal.replace('%d', number);
-	        },
-	        _ordinal : '%d',
-	        _ordinalParse : /\d{1,2}/,
-
-	        preparse : function (string) {
-	            return string;
-	        },
-
-	        postformat : function (string) {
-	            return string;
-	        },
-
-	        week : function (mom) {
-	            return weekOfYear(mom, this._week.dow, this._week.doy).week;
-	        },
-
-	        _week : {
-	            dow : 0, // Sunday is the first day of the week.
-	            doy : 6  // The week that contains Jan 1st is the first week of the year.
-	        },
-
-	        firstDayOfWeek : function () {
-	            return this._week.dow;
-	        },
-
-	        firstDayOfYear : function () {
-	            return this._week.doy;
-	        },
-
-	        _invalidDate: 'Invalid date',
-	        invalidDate: function () {
-	            return this._invalidDate;
-	        }
-	    });
-
-	    /************************************
-	        Formatting
-	    ************************************/
-
-
-	    function removeFormattingTokens(input) {
-	        if (input.match(/\[[\s\S]/)) {
-	            return input.replace(/^\[|\]$/g, '');
-	        }
-	        return input.replace(/\\/g, '');
-	    }
-
-	    function makeFormatFunction(format) {
-	        var array = format.match(formattingTokens), i, length;
-
-	        for (i = 0, length = array.length; i < length; i++) {
-	            if (formatTokenFunctions[array[i]]) {
-	                array[i] = formatTokenFunctions[array[i]];
-	            } else {
-	                array[i] = removeFormattingTokens(array[i]);
-	            }
-	        }
-
-	        return function (mom) {
-	            var output = '';
-	            for (i = 0; i < length; i++) {
-	                output += array[i] instanceof Function ? array[i].call(mom, format) : array[i];
-	            }
-	            return output;
-	        };
-	    }
-
-	    // format date using native date object
-	    function formatMoment(m, format) {
-	        if (!m.isValid()) {
-	            return m.localeData().invalidDate();
-	        }
-
-	        format = expandFormat(format, m.localeData());
-
-	        if (!formatFunctions[format]) {
-	            formatFunctions[format] = makeFormatFunction(format);
-	        }
-
-	        return formatFunctions[format](m);
-	    }
-
-	    function expandFormat(format, locale) {
-	        var i = 5;
-
-	        function replaceLongDateFormatTokens(input) {
-	            return locale.longDateFormat(input) || input;
-	        }
-
-	        localFormattingTokens.lastIndex = 0;
-	        while (i >= 0 && localFormattingTokens.test(format)) {
-	            format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
-	            localFormattingTokens.lastIndex = 0;
-	            i -= 1;
-	        }
-
-	        return format;
-	    }
-
-
-	    /************************************
-	        Parsing
-	    ************************************/
-
-
-	    // get the regex to find the next token
-	    function getParseRegexForToken(token, config) {
-	        var a, strict = config._strict;
-	        switch (token) {
-	        case 'Q':
-	            return parseTokenOneDigit;
-	        case 'DDDD':
-	            return parseTokenThreeDigits;
-	        case 'YYYY':
-	        case 'GGGG':
-	        case 'gggg':
-	            return strict ? parseTokenFourDigits : parseTokenOneToFourDigits;
-	        case 'Y':
-	        case 'G':
-	        case 'g':
-	            return parseTokenSignedNumber;
-	        case 'YYYYYY':
-	        case 'YYYYY':
-	        case 'GGGGG':
-	        case 'ggggg':
-	            return strict ? parseTokenSixDigits : parseTokenOneToSixDigits;
-	        case 'S':
-	            if (strict) {
-	                return parseTokenOneDigit;
-	            }
-	            /* falls through */
-	        case 'SS':
-	            if (strict) {
-	                return parseTokenTwoDigits;
-	            }
-	            /* falls through */
-	        case 'SSS':
-	            if (strict) {
-	                return parseTokenThreeDigits;
-	            }
-	            /* falls through */
-	        case 'DDD':
-	            return parseTokenOneToThreeDigits;
-	        case 'MMM':
-	        case 'MMMM':
-	        case 'dd':
-	        case 'ddd':
-	        case 'dddd':
-	            return parseTokenWord;
-	        case 'a':
-	        case 'A':
-	            return config._locale._meridiemParse;
-	        case 'x':
-	            return parseTokenOffsetMs;
-	        case 'X':
-	            return parseTokenTimestampMs;
-	        case 'Z':
-	        case 'ZZ':
-	            return parseTokenTimezone;
-	        case 'T':
-	            return parseTokenT;
-	        case 'SSSS':
-	            return parseTokenDigits;
-	        case 'MM':
-	        case 'DD':
-	        case 'YY':
-	        case 'GG':
-	        case 'gg':
-	        case 'HH':
-	        case 'hh':
-	        case 'mm':
-	        case 'ss':
-	        case 'ww':
-	        case 'WW':
-	            return strict ? parseTokenTwoDigits : parseTokenOneOrTwoDigits;
-	        case 'M':
-	        case 'D':
-	        case 'd':
-	        case 'H':
-	        case 'h':
-	        case 'm':
-	        case 's':
-	        case 'w':
-	        case 'W':
-	        case 'e':
-	        case 'E':
-	            return parseTokenOneOrTwoDigits;
-	        case 'Do':
-	            return strict ? config._locale._ordinalParse : config._locale._ordinalParseLenient;
-	        default :
-	            a = new RegExp(regexpEscape(unescapeFormat(token.replace('\\', '')), 'i'));
-	            return a;
-	        }
-	    }
-
-	    function utcOffsetFromString(string) {
-	        string = string || '';
-	        var possibleTzMatches = (string.match(parseTokenTimezone) || []),
-	            tzChunk = possibleTzMatches[possibleTzMatches.length - 1] || [],
-	            parts = (tzChunk + '').match(parseTimezoneChunker) || ['-', 0, 0],
-	            minutes = +(parts[1] * 60) + toInt(parts[2]);
-
-	        return parts[0] === '+' ? minutes : -minutes;
-	    }
-
-	    // function to convert string input to date
-	    function addTimeToArrayFromToken(token, input, config) {
-	        var a, datePartArray = config._a;
-
-	        switch (token) {
-	        // QUARTER
-	        case 'Q':
-	            if (input != null) {
-	                datePartArray[MONTH] = (toInt(input) - 1) * 3;
-	            }
-	            break;
-	        // MONTH
-	        case 'M' : // fall through to MM
-	        case 'MM' :
-	            if (input != null) {
-	                datePartArray[MONTH] = toInt(input) - 1;
-	            }
-	            break;
-	        case 'MMM' : // fall through to MMMM
-	        case 'MMMM' :
-	            a = config._locale.monthsParse(input, token, config._strict);
-	            // if we didn't find a month name, mark the date as invalid.
-	            if (a != null) {
-	                datePartArray[MONTH] = a;
-	            } else {
-	                config._pf.invalidMonth = input;
-	            }
-	            break;
-	        // DAY OF MONTH
-	        case 'D' : // fall through to DD
-	        case 'DD' :
-	            if (input != null) {
-	                datePartArray[DATE] = toInt(input);
-	            }
-	            break;
-	        case 'Do' :
-	            if (input != null) {
-	                datePartArray[DATE] = toInt(parseInt(
-	                            input.match(/\d{1,2}/)[0], 10));
-	            }
-	            break;
-	        // DAY OF YEAR
-	        case 'DDD' : // fall through to DDDD
-	        case 'DDDD' :
-	            if (input != null) {
-	                config._dayOfYear = toInt(input);
-	            }
-
-	            break;
-	        // YEAR
-	        case 'YY' :
-	            datePartArray[YEAR] = moment.parseTwoDigitYear(input);
-	            break;
-	        case 'YYYY' :
-	        case 'YYYYY' :
-	        case 'YYYYYY' :
-	            datePartArray[YEAR] = toInt(input);
-	            break;
-	        // AM / PM
-	        case 'a' : // fall through to A
-	        case 'A' :
-	            config._meridiem = input;
-	            // config._isPm = config._locale.isPM(input);
-	            break;
-	        // HOUR
-	        case 'h' : // fall through to hh
-	        case 'hh' :
-	            config._pf.bigHour = true;
-	            /* falls through */
-	        case 'H' : // fall through to HH
-	        case 'HH' :
-	            datePartArray[HOUR] = toInt(input);
-	            break;
-	        // MINUTE
-	        case 'm' : // fall through to mm
-	        case 'mm' :
-	            datePartArray[MINUTE] = toInt(input);
-	            break;
-	        // SECOND
-	        case 's' : // fall through to ss
-	        case 'ss' :
-	            datePartArray[SECOND] = toInt(input);
-	            break;
-	        // MILLISECOND
-	        case 'S' :
-	        case 'SS' :
-	        case 'SSS' :
-	        case 'SSSS' :
-	            datePartArray[MILLISECOND] = toInt(('0.' + input) * 1000);
-	            break;
-	        // UNIX OFFSET (MILLISECONDS)
-	        case 'x':
-	            config._d = new Date(toInt(input));
-	            break;
-	        // UNIX TIMESTAMP WITH MS
-	        case 'X':
-	            config._d = new Date(parseFloat(input) * 1000);
-	            break;
-	        // TIMEZONE
-	        case 'Z' : // fall through to ZZ
-	        case 'ZZ' :
-	            config._useUTC = true;
-	            config._tzm = utcOffsetFromString(input);
-	            break;
-	        // WEEKDAY - human
-	        case 'dd':
-	        case 'ddd':
-	        case 'dddd':
-	            a = config._locale.weekdaysParse(input);
-	            // if we didn't get a weekday name, mark the date as invalid
-	            if (a != null) {
-	                config._w = config._w || {};
-	                config._w['d'] = a;
-	            } else {
-	                config._pf.invalidWeekday = input;
-	            }
-	            break;
-	        // WEEK, WEEK DAY - numeric
-	        case 'w':
-	        case 'ww':
-	        case 'W':
-	        case 'WW':
-	        case 'd':
-	        case 'e':
-	        case 'E':
-	            token = token.substr(0, 1);
-	            /* falls through */
-	        case 'gggg':
-	        case 'GGGG':
-	        case 'GGGGG':
-	            token = token.substr(0, 2);
-	            if (input) {
-	                config._w = config._w || {};
-	                config._w[token] = toInt(input);
-	            }
-	            break;
-	        case 'gg':
-	        case 'GG':
-	            config._w = config._w || {};
-	            config._w[token] = moment.parseTwoDigitYear(input);
-	        }
-	    }
-
-	    function dayOfYearFromWeekInfo(config) {
-	        var w, weekYear, week, weekday, dow, doy, temp;
-
-	        w = config._w;
-	        if (w.GG != null || w.W != null || w.E != null) {
-	            dow = 1;
-	            doy = 4;
-
-	            // TODO: We need to take the current isoWeekYear, but that depends on
-	            // how we interpret now (local, utc, fixed offset). So create
-	            // a now version of current config (take local/utc/offset flags, and
-	            // create now).
-	            weekYear = dfl(w.GG, config._a[YEAR], weekOfYear(moment(), 1, 4).year);
-	            week = dfl(w.W, 1);
-	            weekday = dfl(w.E, 1);
-	        } else {
-	            dow = config._locale._week.dow;
-	            doy = config._locale._week.doy;
-
-	            weekYear = dfl(w.gg, config._a[YEAR], weekOfYear(moment(), dow, doy).year);
-	            week = dfl(w.w, 1);
-
-	            if (w.d != null) {
-	                // weekday -- low day numbers are considered next week
-	                weekday = w.d;
-	                if (weekday < dow) {
-	                    ++week;
-	                }
-	            } else if (w.e != null) {
-	                // local weekday -- counting starts from begining of week
-	                weekday = w.e + dow;
-	            } else {
-	                // default to begining of week
-	                weekday = dow;
-	            }
-	        }
-	        temp = dayOfYearFromWeeks(weekYear, week, weekday, doy, dow);
-
-	        config._a[YEAR] = temp.year;
-	        config._dayOfYear = temp.dayOfYear;
-	    }
-
-	    // convert an array to a date.
-	    // the array should mirror the parameters below
-	    // note: all values past the year are optional and will default to the lowest possible value.
-	    // [year, month, day , hour, minute, second, millisecond]
-	    function dateFromConfig(config) {
-	        var i, date, input = [], currentDate, yearToUse;
-
-	        if (config._d) {
-	            return;
-	        }
-
-	        currentDate = currentDateArray(config);
-
-	        //compute day of the year from weeks and weekdays
-	        if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
-	            dayOfYearFromWeekInfo(config);
-	        }
-
-	        //if the day of the year is set, figure out what it is
-	        if (config._dayOfYear) {
-	            yearToUse = dfl(config._a[YEAR], currentDate[YEAR]);
-
-	            if (config._dayOfYear > daysInYear(yearToUse)) {
-	                config._pf._overflowDayOfYear = true;
-	            }
-
-	            date = makeUTCDate(yearToUse, 0, config._dayOfYear);
-	            config._a[MONTH] = date.getUTCMonth();
-	            config._a[DATE] = date.getUTCDate();
-	        }
-
-	        // Default to current date.
-	        // * if no year, month, day of month are given, default to today
-	        // * if day of month is given, default month and year
-	        // * if month is given, default only year
-	        // * if year is given, don't default anything
-	        for (i = 0; i < 3 && config._a[i] == null; ++i) {
-	            config._a[i] = input[i] = currentDate[i];
-	        }
-
-	        // Zero out whatever was not defaulted, including time
-	        for (; i < 7; i++) {
-	            config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
-	        }
-
-	        // Check for 24:00:00.000
-	        if (config._a[HOUR] === 24 &&
-	                config._a[MINUTE] === 0 &&
-	                config._a[SECOND] === 0 &&
-	                config._a[MILLISECOND] === 0) {
-	            config._nextDay = true;
-	            config._a[HOUR] = 0;
-	        }
-
-	        config._d = (config._useUTC ? makeUTCDate : makeDate).apply(null, input);
-	        // Apply timezone offset from input. The actual utcOffset can be changed
-	        // with parseZone.
-	        if (config._tzm != null) {
-	            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-	        }
-
-	        if (config._nextDay) {
-	            config._a[HOUR] = 24;
-	        }
-	    }
-
-	    function dateFromObject(config) {
-	        var normalizedInput;
-
-	        if (config._d) {
-	            return;
-	        }
-
-	        normalizedInput = normalizeObjectUnits(config._i);
-	        config._a = [
-	            normalizedInput.year,
-	            normalizedInput.month,
-	            normalizedInput.day || normalizedInput.date,
-	            normalizedInput.hour,
-	            normalizedInput.minute,
-	            normalizedInput.second,
-	            normalizedInput.millisecond
-	        ];
-
-	        dateFromConfig(config);
-	    }
-
-	    function currentDateArray(config) {
-	        var now = new Date();
-	        if (config._useUTC) {
-	            return [
-	                now.getUTCFullYear(),
-	                now.getUTCMonth(),
-	                now.getUTCDate()
-	            ];
-	        } else {
-	            return [now.getFullYear(), now.getMonth(), now.getDate()];
-	        }
-	    }
-
-	    // date from string and format string
-	    function makeDateFromStringAndFormat(config) {
-	        if (config._f === moment.ISO_8601) {
-	            parseISO(config);
-	            return;
-	        }
-
-	        config._a = [];
-	        config._pf.empty = true;
-
-	        // This array is used to make a Date, either with `new Date` or `Date.UTC`
-	        var string = '' + config._i,
-	            i, parsedInput, tokens, token, skipped,
-	            stringLength = string.length,
-	            totalParsedInputLength = 0;
-
-	        tokens = expandFormat(config._f, config._locale).match(formattingTokens) || [];
-
-	        for (i = 0; i < tokens.length; i++) {
-	            token = tokens[i];
-	            parsedInput = (string.match(getParseRegexForToken(token, config)) || [])[0];
-	            if (parsedInput) {
-	                skipped = string.substr(0, string.indexOf(parsedInput));
-	                if (skipped.length > 0) {
-	                    config._pf.unusedInput.push(skipped);
-	                }
-	                string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
-	                totalParsedInputLength += parsedInput.length;
-	            }
-	            // don't parse if it's not a known token
-	            if (formatTokenFunctions[token]) {
-	                if (parsedInput) {
-	                    config._pf.empty = false;
-	                }
-	                else {
-	                    config._pf.unusedTokens.push(token);
-	                }
-	                addTimeToArrayFromToken(token, parsedInput, config);
-	            }
-	            else if (config._strict && !parsedInput) {
-	                config._pf.unusedTokens.push(token);
-	            }
-	        }
-
-	        // add remaining unparsed input length to the string
-	        config._pf.charsLeftOver = stringLength - totalParsedInputLength;
-	        if (string.length > 0) {
-	            config._pf.unusedInput.push(string);
-	        }
-
-	        // clear _12h flag if hour is <= 12
-	        if (config._pf.bigHour === true && config._a[HOUR] <= 12) {
-	            config._pf.bigHour = undefined;
-	        }
-	        // handle meridiem
-	        config._a[HOUR] = meridiemFixWrap(config._locale, config._a[HOUR],
-	                config._meridiem);
-	        dateFromConfig(config);
-	        checkOverflow(config);
-	    }
-
-	    function unescapeFormat(s) {
-	        return s.replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (matched, p1, p2, p3, p4) {
-	            return p1 || p2 || p3 || p4;
-	        });
-	    }
-
-	    // Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
-	    function regexpEscape(s) {
-	        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-	    }
-
-	    // date from string and array of format strings
-	    function makeDateFromStringAndArray(config) {
-	        var tempConfig,
-	            bestMoment,
-
-	            scoreToBeat,
-	            i,
-	            currentScore;
-
-	        if (config._f.length === 0) {
-	            config._pf.invalidFormat = true;
-	            config._d = new Date(NaN);
-	            return;
-	        }
-
-	        for (i = 0; i < config._f.length; i++) {
-	            currentScore = 0;
-	            tempConfig = copyConfig({}, config);
-	            if (config._useUTC != null) {
-	                tempConfig._useUTC = config._useUTC;
-	            }
-	            tempConfig._pf = defaultParsingFlags();
-	            tempConfig._f = config._f[i];
-	            makeDateFromStringAndFormat(tempConfig);
-
-	            if (!isValid(tempConfig)) {
-	                continue;
-	            }
-
-	            // if there is any input that was not parsed add a penalty for that format
-	            currentScore += tempConfig._pf.charsLeftOver;
-
-	            //or tokens
-	            currentScore += tempConfig._pf.unusedTokens.length * 10;
-
-	            tempConfig._pf.score = currentScore;
-
-	            if (scoreToBeat == null || currentScore < scoreToBeat) {
-	                scoreToBeat = currentScore;
-	                bestMoment = tempConfig;
-	            }
-	        }
-
-	        extend(config, bestMoment || tempConfig);
-	    }
-
-	    // date from iso format
-	    function parseISO(config) {
-	        var i, l,
-	            string = config._i,
-	            match = isoRegex.exec(string);
-
-	        if (match) {
-	            config._pf.iso = true;
-	            for (i = 0, l = isoDates.length; i < l; i++) {
-	                if (isoDates[i][1].exec(string)) {
-	                    // match[5] should be 'T' or undefined
-	                    config._f = isoDates[i][0] + (match[6] || ' ');
-	                    break;
-	                }
-	            }
-	            for (i = 0, l = isoTimes.length; i < l; i++) {
-	                if (isoTimes[i][1].exec(string)) {
-	                    config._f += isoTimes[i][0];
-	                    break;
-	                }
-	            }
-	            if (string.match(parseTokenTimezone)) {
-	                config._f += 'Z';
-	            }
-	            makeDateFromStringAndFormat(config);
-	        } else {
-	            config._isValid = false;
-	        }
-	    }
-
-	    // date from iso format or fallback
-	    function makeDateFromString(config) {
-	        parseISO(config);
-	        if (config._isValid === false) {
-	            delete config._isValid;
-	            moment.createFromInputFallback(config);
-	        }
-	    }
-
-	    function map(arr, fn) {
-	        var res = [], i;
-	        for (i = 0; i < arr.length; ++i) {
-	            res.push(fn(arr[i], i));
-	        }
-	        return res;
-	    }
-
-	    function makeDateFromInput(config) {
-	        var input = config._i, matched;
-	        if (input === undefined) {
-	            config._d = new Date();
-	        } else if (isDate(input)) {
-	            config._d = new Date(+input);
-	        } else if ((matched = aspNetJsonRegex.exec(input)) !== null) {
-	            config._d = new Date(+matched[1]);
-	        } else if (typeof input === 'string') {
-	            makeDateFromString(config);
-	        } else if (isArray(input)) {
-	            config._a = map(input.slice(0), function (obj) {
-	                return parseInt(obj, 10);
-	            });
-	            dateFromConfig(config);
-	        } else if (typeof(input) === 'object') {
-	            dateFromObject(config);
-	        } else if (typeof(input) === 'number') {
-	            // from milliseconds
-	            config._d = new Date(input);
-	        } else {
-	            moment.createFromInputFallback(config);
-	        }
-	    }
-
-	    function makeDate(y, m, d, h, M, s, ms) {
-	        //can't just apply() to create a date:
-	        //http://stackoverflow.com/questions/181348/instantiating-a-javascript-object-by-calling-prototype-constructor-apply
-	        var date = new Date(y, m, d, h, M, s, ms);
-
-	        //the date constructor doesn't accept years < 1970
-	        if (y < 1970) {
-	            date.setFullYear(y);
-	        }
-	        return date;
-	    }
-
-	    function makeUTCDate(y) {
-	        var date = new Date(Date.UTC.apply(null, arguments));
-	        if (y < 1970) {
-	            date.setUTCFullYear(y);
-	        }
-	        return date;
-	    }
-
-	    function parseWeekday(input, locale) {
-	        if (typeof input === 'string') {
-	            if (!isNaN(input)) {
-	                input = parseInt(input, 10);
-	            }
-	            else {
-	                input = locale.weekdaysParse(input);
-	                if (typeof input !== 'number') {
-	                    return null;
-	                }
-	            }
-	        }
-	        return input;
-	    }
-
-	    /************************************
-	        Relative Time
-	    ************************************/
-
-
-	    // helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
-	    function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
-	        return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
-	    }
-
-	    function relativeTime(posNegDuration, withoutSuffix, locale) {
-	        var duration = moment.duration(posNegDuration).abs(),
-	            seconds = round(duration.as('s')),
-	            minutes = round(duration.as('m')),
-	            hours = round(duration.as('h')),
-	            days = round(duration.as('d')),
-	            months = round(duration.as('M')),
-	            years = round(duration.as('y')),
-
-	            args = seconds < relativeTimeThresholds.s && ['s', seconds] ||
-	                minutes === 1 && ['m'] ||
-	                minutes < relativeTimeThresholds.m && ['mm', minutes] ||
-	                hours === 1 && ['h'] ||
-	                hours < relativeTimeThresholds.h && ['hh', hours] ||
-	                days === 1 && ['d'] ||
-	                days < relativeTimeThresholds.d && ['dd', days] ||
-	                months === 1 && ['M'] ||
-	                months < relativeTimeThresholds.M && ['MM', months] ||
-	                years === 1 && ['y'] || ['yy', years];
-
-	        args[2] = withoutSuffix;
-	        args[3] = +posNegDuration > 0;
-	        args[4] = locale;
-	        return substituteTimeAgo.apply({}, args);
-	    }
-
-
-	    /************************************
-	        Week of Year
-	    ************************************/
-
-
-	    // firstDayOfWeek       0 = sun, 6 = sat
-	    //                      the day of the week that starts the week
-	    //                      (usually sunday or monday)
-	    // firstDayOfWeekOfYear 0 = sun, 6 = sat
-	    //                      the first week is the week that contains the first
-	    //                      of this day of the week
-	    //                      (eg. ISO weeks use thursday (4))
-	    function weekOfYear(mom, firstDayOfWeek, firstDayOfWeekOfYear) {
-	        var end = firstDayOfWeekOfYear - firstDayOfWeek,
-	            daysToDayOfWeek = firstDayOfWeekOfYear - mom.day(),
-	            adjustedMoment;
-
-
-	        if (daysToDayOfWeek > end) {
-	            daysToDayOfWeek -= 7;
-	        }
-
-	        if (daysToDayOfWeek < end - 7) {
-	            daysToDayOfWeek += 7;
-	        }
-
-	        adjustedMoment = moment(mom).add(daysToDayOfWeek, 'd');
-	        return {
-	            week: Math.ceil(adjustedMoment.dayOfYear() / 7),
-	            year: adjustedMoment.year()
-	        };
-	    }
-
-	    //http://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
-	    function dayOfYearFromWeeks(year, week, weekday, firstDayOfWeekOfYear, firstDayOfWeek) {
-	        var d = makeUTCDate(year, 0, 1).getUTCDay(), daysToAdd, dayOfYear;
-
-	        d = d === 0 ? 7 : d;
-	        weekday = weekday != null ? weekday : firstDayOfWeek;
-	        daysToAdd = firstDayOfWeek - d + (d > firstDayOfWeekOfYear ? 7 : 0) - (d < firstDayOfWeek ? 7 : 0);
-	        dayOfYear = 7 * (week - 1) + (weekday - firstDayOfWeek) + daysToAdd + 1;
-
-	        return {
-	            year: dayOfYear > 0 ? year : year - 1,
-	            dayOfYear: dayOfYear > 0 ?  dayOfYear : daysInYear(year - 1) + dayOfYear
-	        };
-	    }
-
-	    /************************************
-	        Top Level Functions
-	    ************************************/
-
-	    function makeMoment(config) {
-	        var input = config._i,
-	            format = config._f,
-	            res;
-
-	        config._locale = config._locale || moment.localeData(config._l);
-
-	        if (input === null || (format === undefined && input === '')) {
-	            return moment.invalid({nullInput: true});
-	        }
-
-	        if (typeof input === 'string') {
-	            config._i = input = config._locale.preparse(input);
-	        }
-
-	        if (moment.isMoment(input)) {
-	            return new Moment(input, true);
-	        } else if (format) {
-	            if (isArray(format)) {
-	                makeDateFromStringAndArray(config);
-	            } else {
-	                makeDateFromStringAndFormat(config);
-	            }
-	        } else {
-	            makeDateFromInput(config);
-	        }
-
-	        res = new Moment(config);
-	        if (res._nextDay) {
-	            // Adding is smart enough around DST
-	            res.add(1, 'd');
-	            res._nextDay = undefined;
-	        }
-
-	        return res;
-	    }
-
-	    moment = function (input, format, locale, strict) {
-	        var c;
-
-	        if (typeof(locale) === 'boolean') {
-	            strict = locale;
-	            locale = undefined;
-	        }
-	        // object construction must be done this way.
-	        // https://github.com/moment/moment/issues/1423
-	        c = {};
-	        c._isAMomentObject = true;
-	        c._i = input;
-	        c._f = format;
-	        c._l = locale;
-	        c._strict = strict;
-	        c._isUTC = false;
-	        c._pf = defaultParsingFlags();
-
-	        return makeMoment(c);
-	    };
-
-	    moment.suppressDeprecationWarnings = false;
-
-	    moment.createFromInputFallback = deprecate(
-	        'moment construction falls back to js Date. This is ' +
-	        'discouraged and will be removed in upcoming major ' +
-	        'release. Please refer to ' +
-	        'https://github.com/moment/moment/issues/1407 for more info.',
-	        function (config) {
-	            config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
-	        }
-	    );
-
-	    // Pick a moment m from moments so that m[fn](other) is true for all
-	    // other. This relies on the function fn to be transitive.
-	    //
-	    // moments should either be an array of moment objects or an array, whose
-	    // first element is an array of moment objects.
-	    function pickBy(fn, moments) {
-	        var res, i;
-	        if (moments.length === 1 && isArray(moments[0])) {
-	            moments = moments[0];
-	        }
-	        if (!moments.length) {
-	            return moment();
-	        }
-	        res = moments[0];
-	        for (i = 1; i < moments.length; ++i) {
-	            if (moments[i][fn](res)) {
-	                res = moments[i];
-	            }
-	        }
-	        return res;
-	    }
-
-	    moment.min = function () {
-	        var args = [].slice.call(arguments, 0);
-
-	        return pickBy('isBefore', args);
-	    };
-
-	    moment.max = function () {
-	        var args = [].slice.call(arguments, 0);
-
-	        return pickBy('isAfter', args);
-	    };
-
-	    // creating with utc
-	    moment.utc = function (input, format, locale, strict) {
-	        var c;
-
-	        if (typeof(locale) === 'boolean') {
-	            strict = locale;
-	            locale = undefined;
-	        }
-	        // object construction must be done this way.
-	        // https://github.com/moment/moment/issues/1423
-	        c = {};
-	        c._isAMomentObject = true;
-	        c._useUTC = true;
-	        c._isUTC = true;
-	        c._l = locale;
-	        c._i = input;
-	        c._f = format;
-	        c._strict = strict;
-	        c._pf = defaultParsingFlags();
-
-	        return makeMoment(c).utc();
-	    };
-
-	    // creating with unix timestamp (in seconds)
-	    moment.unix = function (input) {
-	        return moment(input * 1000);
-	    };
-
-	    // duration
-	    moment.duration = function (input, key) {
-	        var duration = input,
-	            // matching against regexp is expensive, do it on demand
-	            match = null,
-	            sign,
-	            ret,
-	            parseIso,
-	            diffRes;
-
-	        if (moment.isDuration(input)) {
-	            duration = {
-	                ms: input._milliseconds,
-	                d: input._days,
-	                M: input._months
-	            };
-	        } else if (typeof input === 'number') {
-	            duration = {};
-	            if (key) {
-	                duration[key] = input;
-	            } else {
-	                duration.milliseconds = input;
-	            }
-	        } else if (!!(match = aspNetTimeSpanJsonRegex.exec(input))) {
-	            sign = (match[1] === '-') ? -1 : 1;
-	            duration = {
-	                y: 0,
-	                d: toInt(match[DATE]) * sign,
-	                h: toInt(match[HOUR]) * sign,
-	                m: toInt(match[MINUTE]) * sign,
-	                s: toInt(match[SECOND]) * sign,
-	                ms: toInt(match[MILLISECOND]) * sign
-	            };
-	        } else if (!!(match = isoDurationRegex.exec(input))) {
-	            sign = (match[1] === '-') ? -1 : 1;
-	            parseIso = function (inp) {
-	                // We'd normally use ~~inp for this, but unfortunately it also
-	                // converts floats to ints.
-	                // inp may be undefined, so careful calling replace on it.
-	                var res = inp && parseFloat(inp.replace(',', '.'));
-	                // apply sign while we're at it
-	                return (isNaN(res) ? 0 : res) * sign;
-	            };
-	            duration = {
-	                y: parseIso(match[2]),
-	                M: parseIso(match[3]),
-	                d: parseIso(match[4]),
-	                h: parseIso(match[5]),
-	                m: parseIso(match[6]),
-	                s: parseIso(match[7]),
-	                w: parseIso(match[8])
-	            };
-	        } else if (duration == null) {// checks for null or undefined
-	            duration = {};
-	        } else if (typeof duration === 'object' &&
-	                ('from' in duration || 'to' in duration)) {
-	            diffRes = momentsDifference(moment(duration.from), moment(duration.to));
-
-	            duration = {};
-	            duration.ms = diffRes.milliseconds;
-	            duration.M = diffRes.months;
-	        }
-
-	        ret = new Duration(duration);
-
-	        if (moment.isDuration(input) && hasOwnProp(input, '_locale')) {
-	            ret._locale = input._locale;
-	        }
-
-	        return ret;
-	    };
-
-	    // version number
-	    moment.version = VERSION;
-
-	    // default format
-	    moment.defaultFormat = isoFormat;
-
-	    // constant that refers to the ISO standard
-	    moment.ISO_8601 = function () {};
-
-	    // Plugins that add properties should also add the key here (null value),
-	    // so we can properly clone ourselves.
-	    moment.momentProperties = momentProperties;
-
-	    // This function will be called whenever a moment is mutated.
-	    // It is intended to keep the offset in sync with the timezone.
-	    moment.updateOffset = function () {};
-
-	    // This function allows you to set a threshold for relative time strings
-	    moment.relativeTimeThreshold = function (threshold, limit) {
-	        if (relativeTimeThresholds[threshold] === undefined) {
-	            return false;
-	        }
-	        if (limit === undefined) {
-	            return relativeTimeThresholds[threshold];
-	        }
-	        relativeTimeThresholds[threshold] = limit;
-	        return true;
-	    };
-
-	    moment.lang = deprecate(
-	        'moment.lang is deprecated. Use moment.locale instead.',
-	        function (key, value) {
-	            return moment.locale(key, value);
-	        }
-	    );
-
-	    // This function will load locale and then set the global locale.  If
-	    // no arguments are passed in, it will simply return the current global
-	    // locale key.
-	    moment.locale = function (key, values) {
-	        var data;
-	        if (key) {
-	            if (typeof(values) !== 'undefined') {
-	                data = moment.defineLocale(key, values);
-	            }
-	            else {
-	                data = moment.localeData(key);
-	            }
-
-	            if (data) {
-	                moment.duration._locale = moment._locale = data;
-	            }
-	        }
-
-	        return moment._locale._abbr;
-	    };
-
-	    moment.defineLocale = function (name, values) {
-	        if (values !== null) {
-	            values.abbr = name;
-	            if (!locales[name]) {
-	                locales[name] = new Locale();
-	            }
-	            locales[name].set(values);
-
-	            // backwards compat for now: also set the locale
-	            moment.locale(name);
-
-	            return locales[name];
-	        } else {
-	            // useful for testing
-	            delete locales[name];
-	            return null;
-	        }
-	    };
-
-	    moment.langData = deprecate(
-	        'moment.langData is deprecated. Use moment.localeData instead.',
-	        function (key) {
-	            return moment.localeData(key);
-	        }
-	    );
-
-	    // returns locale data
-	    moment.localeData = function (key) {
-	        var locale;
-
-	        if (key && key._locale && key._locale._abbr) {
-	            key = key._locale._abbr;
-	        }
-
-	        if (!key) {
-	            return moment._locale;
-	        }
-
-	        if (!isArray(key)) {
-	            //short-circuit everything else
-	            locale = loadLocale(key);
-	            if (locale) {
-	                return locale;
-	            }
-	            key = [key];
-	        }
-
-	        return chooseLocale(key);
-	    };
-
-	    // compare moment object
-	    moment.isMoment = function (obj) {
-	        return obj instanceof Moment ||
-	            (obj != null && hasOwnProp(obj, '_isAMomentObject'));
-	    };
-
-	    // for typechecking Duration objects
-	    moment.isDuration = function (obj) {
-	        return obj instanceof Duration;
-	    };
-
-	    for (i = lists.length - 1; i >= 0; --i) {
-	        makeList(lists[i]);
-	    }
-
-	    moment.normalizeUnits = function (units) {
-	        return normalizeUnits(units);
-	    };
-
-	    moment.invalid = function (flags) {
-	        var m = moment.utc(NaN);
-	        if (flags != null) {
-	            extend(m._pf, flags);
-	        }
-	        else {
-	            m._pf.userInvalidated = true;
-	        }
-
-	        return m;
-	    };
-
-	    moment.parseZone = function () {
-	        return moment.apply(null, arguments).parseZone();
-	    };
-
-	    moment.parseTwoDigitYear = function (input) {
-	        return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
-	    };
-
-	    moment.isDate = isDate;
-
-	    /************************************
-	        Moment Prototype
-	    ************************************/
-
-
-	    extend(moment.fn = Moment.prototype, {
-
-	        clone : function () {
-	            return moment(this);
-	        },
-
-	        valueOf : function () {
-	            return +this._d - ((this._offset || 0) * 60000);
-	        },
-
-	        unix : function () {
-	            return Math.floor(+this / 1000);
-	        },
-
-	        toString : function () {
-	            return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
-	        },
-
-	        toDate : function () {
-	            return this._offset ? new Date(+this) : this._d;
-	        },
-
-	        toISOString : function () {
-	            var m = moment(this).utc();
-	            if (0 < m.year() && m.year() <= 9999) {
-	                if ('function' === typeof Date.prototype.toISOString) {
-	                    // native implementation is ~50x faster, use it when we can
-	                    return this.toDate().toISOString();
-	                } else {
-	                    return formatMoment(m, 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
-	                }
-	            } else {
-	                return formatMoment(m, 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
-	            }
-	        },
-
-	        toArray : function () {
-	            var m = this;
-	            return [
-	                m.year(),
-	                m.month(),
-	                m.date(),
-	                m.hours(),
-	                m.minutes(),
-	                m.seconds(),
-	                m.milliseconds()
-	            ];
-	        },
-
-	        isValid : function () {
-	            return isValid(this);
-	        },
-
-	        isDSTShifted : function () {
-	            if (this._a) {
-	                return this.isValid() && compareArrays(this._a, (this._isUTC ? moment.utc(this._a) : moment(this._a)).toArray()) > 0;
-	            }
-
-	            return false;
-	        },
-
-	        parsingFlags : function () {
-	            return extend({}, this._pf);
-	        },
-
-	        invalidAt: function () {
-	            return this._pf.overflow;
-	        },
-
-	        utc : function (keepLocalTime) {
-	            return this.utcOffset(0, keepLocalTime);
-	        },
-
-	        local : function (keepLocalTime) {
-	            if (this._isUTC) {
-	                this.utcOffset(0, keepLocalTime);
-	                this._isUTC = false;
-
-	                if (keepLocalTime) {
-	                    this.subtract(this._dateUtcOffset(), 'm');
-	                }
-	            }
-	            return this;
-	        },
-
-	        format : function (inputString) {
-	            var output = formatMoment(this, inputString || moment.defaultFormat);
-	            return this.localeData().postformat(output);
-	        },
-
-	        add : createAdder(1, 'add'),
-
-	        subtract : createAdder(-1, 'subtract'),
-
-	        diff : function (input, units, asFloat) {
-	            var that = makeAs(input, this),
-	                zoneDiff = (that.utcOffset() - this.utcOffset()) * 6e4,
-	                anchor, diff, output, daysAdjust;
-
-	            units = normalizeUnits(units);
-
-	            if (units === 'year' || units === 'month' || units === 'quarter') {
-	                output = monthDiff(this, that);
-	                if (units === 'quarter') {
-	                    output = output / 3;
-	                } else if (units === 'year') {
-	                    output = output / 12;
-	                }
-	            } else {
-	                diff = this - that;
-	                output = units === 'second' ? diff / 1e3 : // 1000
-	                    units === 'minute' ? diff / 6e4 : // 1000 * 60
-	                    units === 'hour' ? diff / 36e5 : // 1000 * 60 * 60
-	                    units === 'day' ? (diff - zoneDiff) / 864e5 : // 1000 * 60 * 60 * 24, negate dst
-	                    units === 'week' ? (diff - zoneDiff) / 6048e5 : // 1000 * 60 * 60 * 24 * 7, negate dst
-	                    diff;
-	            }
-	            return asFloat ? output : absRound(output);
-	        },
-
-	        from : function (time, withoutSuffix) {
-	            return moment.duration({to: this, from: time}).locale(this.locale()).humanize(!withoutSuffix);
-	        },
-
-	        fromNow : function (withoutSuffix) {
-	            return this.from(moment(), withoutSuffix);
-	        },
-
-	        calendar : function (time) {
-	            // We want to compare the start of today, vs this.
-	            // Getting start-of-today depends on whether we're locat/utc/offset
-	            // or not.
-	            var now = time || moment(),
-	                sod = makeAs(now, this).startOf('day'),
-	                diff = this.diff(sod, 'days', true),
-	                format = diff < -6 ? 'sameElse' :
-	                    diff < -1 ? 'lastWeek' :
-	                    diff < 0 ? 'lastDay' :
-	                    diff < 1 ? 'sameDay' :
-	                    diff < 2 ? 'nextDay' :
-	                    diff < 7 ? 'nextWeek' : 'sameElse';
-	            return this.format(this.localeData().calendar(format, this, moment(now)));
-	        },
-
-	        isLeapYear : function () {
-	            return isLeapYear(this.year());
-	        },
-
-	        isDST : function () {
-	            return (this.utcOffset() > this.clone().month(0).utcOffset() ||
-	                this.utcOffset() > this.clone().month(5).utcOffset());
-	        },
-
-	        day : function (input) {
-	            var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
-	            if (input != null) {
-	                input = parseWeekday(input, this.localeData());
-	                return this.add(input - day, 'd');
-	            } else {
-	                return day;
-	            }
-	        },
-
-	        month : makeAccessor('Month', true),
-
-	        startOf : function (units) {
-	            units = normalizeUnits(units);
-	            // the following switch intentionally omits break keywords
-	            // to utilize falling through the cases.
-	            switch (units) {
-	            case 'year':
-	                this.month(0);
-	                /* falls through */
-	            case 'quarter':
-	            case 'month':
-	                this.date(1);
-	                /* falls through */
-	            case 'week':
-	            case 'isoWeek':
-	            case 'day':
-	                this.hours(0);
-	                /* falls through */
-	            case 'hour':
-	                this.minutes(0);
-	                /* falls through */
-	            case 'minute':
-	                this.seconds(0);
-	                /* falls through */
-	            case 'second':
-	                this.milliseconds(0);
-	                /* falls through */
-	            }
-
-	            // weeks are a special case
-	            if (units === 'week') {
-	                this.weekday(0);
-	            } else if (units === 'isoWeek') {
-	                this.isoWeekday(1);
-	            }
-
-	            // quarters are also special
-	            if (units === 'quarter') {
-	                this.month(Math.floor(this.month() / 3) * 3);
-	            }
-
-	            return this;
-	        },
-
-	        endOf: function (units) {
-	            units = normalizeUnits(units);
-	            if (units === undefined || units === 'millisecond') {
-	                return this;
-	            }
-	            return this.startOf(units).add(1, (units === 'isoWeek' ? 'week' : units)).subtract(1, 'ms');
-	        },
-
-	        isAfter: function (input, units) {
-	            var inputMs;
-	            units = normalizeUnits(typeof units !== 'undefined' ? units : 'millisecond');
-	            if (units === 'millisecond') {
-	                input = moment.isMoment(input) ? input : moment(input);
-	                return +this > +input;
-	            } else {
-	                inputMs = moment.isMoment(input) ? +input : +moment(input);
-	                return inputMs < +this.clone().startOf(units);
-	            }
-	        },
-
-	        isBefore: function (input, units) {
-	            var inputMs;
-	            units = normalizeUnits(typeof units !== 'undefined' ? units : 'millisecond');
-	            if (units === 'millisecond') {
-	                input = moment.isMoment(input) ? input : moment(input);
-	                return +this < +input;
-	            } else {
-	                inputMs = moment.isMoment(input) ? +input : +moment(input);
-	                return +this.clone().endOf(units) < inputMs;
-	            }
-	        },
-
-	        isBetween: function (from, to, units) {
-	            return this.isAfter(from, units) && this.isBefore(to, units);
-	        },
-
-	        isSame: function (input, units) {
-	            var inputMs;
-	            units = normalizeUnits(units || 'millisecond');
-	            if (units === 'millisecond') {
-	                input = moment.isMoment(input) ? input : moment(input);
-	                return +this === +input;
-	            } else {
-	                inputMs = +moment(input);
-	                return +(this.clone().startOf(units)) <= inputMs && inputMs <= +(this.clone().endOf(units));
-	            }
-	        },
-
-	        min: deprecate(
-	                 'moment().min is deprecated, use moment.min instead. https://github.com/moment/moment/issues/1548',
-	                 function (other) {
-	                     other = moment.apply(null, arguments);
-	                     return other < this ? this : other;
-	                 }
-	         ),
-
-	        max: deprecate(
-	                'moment().max is deprecated, use moment.max instead. https://github.com/moment/moment/issues/1548',
-	                function (other) {
-	                    other = moment.apply(null, arguments);
-	                    return other > this ? this : other;
-	                }
-	        ),
-
-	        zone : deprecate(
-	                'moment().zone is deprecated, use moment().utcOffset instead. ' +
-	                'https://github.com/moment/moment/issues/1779',
-	                function (input, keepLocalTime) {
-	                    if (input != null) {
-	                        if (typeof input !== 'string') {
-	                            input = -input;
-	                        }
-
-	                        this.utcOffset(input, keepLocalTime);
-
-	                        return this;
-	                    } else {
-	                        return -this.utcOffset();
-	                    }
-	                }
-	        ),
-
-	        // keepLocalTime = true means only change the timezone, without
-	        // affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
-	        // 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
-	        // +0200, so we adjust the time as needed, to be valid.
-	        //
-	        // Keeping the time actually adds/subtracts (one hour)
-	        // from the actual represented time. That is why we call updateOffset
-	        // a second time. In case it wants us to change the offset again
-	        // _changeInProgress == true case, then we have to adjust, because
-	        // there is no such time in the given timezone.
-	        utcOffset : function (input, keepLocalTime) {
-	            var offset = this._offset || 0,
-	                localAdjust;
-	            if (input != null) {
-	                if (typeof input === 'string') {
-	                    input = utcOffsetFromString(input);
-	                }
-	                if (Math.abs(input) < 16) {
-	                    input = input * 60;
-	                }
-	                if (!this._isUTC && keepLocalTime) {
-	                    localAdjust = this._dateUtcOffset();
-	                }
-	                this._offset = input;
-	                this._isUTC = true;
-	                if (localAdjust != null) {
-	                    this.add(localAdjust, 'm');
-	                }
-	                if (offset !== input) {
-	                    if (!keepLocalTime || this._changeInProgress) {
-	                        addOrSubtractDurationFromMoment(this,
-	                                moment.duration(input - offset, 'm'), 1, false);
-	                    } else if (!this._changeInProgress) {
-	                        this._changeInProgress = true;
-	                        moment.updateOffset(this, true);
-	                        this._changeInProgress = null;
-	                    }
-	                }
-
-	                return this;
-	            } else {
-	                return this._isUTC ? offset : this._dateUtcOffset();
-	            }
-	        },
-
-	        isLocal : function () {
-	            return !this._isUTC;
-	        },
-
-	        isUtcOffset : function () {
-	            return this._isUTC;
-	        },
-
-	        isUtc : function () {
-	            return this._isUTC && this._offset === 0;
-	        },
-
-	        zoneAbbr : function () {
-	            return this._isUTC ? 'UTC' : '';
-	        },
-
-	        zoneName : function () {
-	            return this._isUTC ? 'Coordinated Universal Time' : '';
-	        },
-
-	        parseZone : function () {
-	            if (this._tzm) {
-	                this.utcOffset(this._tzm);
-	            } else if (typeof this._i === 'string') {
-	                this.utcOffset(utcOffsetFromString(this._i));
-	            }
-	            return this;
-	        },
-
-	        hasAlignedHourOffset : function (input) {
-	            if (!input) {
-	                input = 0;
-	            }
-	            else {
-	                input = moment(input).utcOffset();
-	            }
-
-	            return (this.utcOffset() - input) % 60 === 0;
-	        },
-
-	        daysInMonth : function () {
-	            return daysInMonth(this.year(), this.month());
-	        },
-
-	        dayOfYear : function (input) {
-	            var dayOfYear = round((moment(this).startOf('day') - moment(this).startOf('year')) / 864e5) + 1;
-	            return input == null ? dayOfYear : this.add((input - dayOfYear), 'd');
-	        },
-
-	        quarter : function (input) {
-	            return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
-	        },
-
-	        weekYear : function (input) {
-	            var year = weekOfYear(this, this.localeData()._week.dow, this.localeData()._week.doy).year;
-	            return input == null ? year : this.add((input - year), 'y');
-	        },
-
-	        isoWeekYear : function (input) {
-	            var year = weekOfYear(this, 1, 4).year;
-	            return input == null ? year : this.add((input - year), 'y');
-	        },
-
-	        week : function (input) {
-	            var week = this.localeData().week(this);
-	            return input == null ? week : this.add((input - week) * 7, 'd');
-	        },
-
-	        isoWeek : function (input) {
-	            var week = weekOfYear(this, 1, 4).week;
-	            return input == null ? week : this.add((input - week) * 7, 'd');
-	        },
-
-	        weekday : function (input) {
-	            var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
-	            return input == null ? weekday : this.add(input - weekday, 'd');
-	        },
-
-	        isoWeekday : function (input) {
-	            // behaves the same as moment#day except
-	            // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
-	            // as a setter, sunday should belong to the previous week.
-	            return input == null ? this.day() || 7 : this.day(this.day() % 7 ? input : input - 7);
-	        },
-
-	        isoWeeksInYear : function () {
-	            return weeksInYear(this.year(), 1, 4);
-	        },
-
-	        weeksInYear : function () {
-	            var weekInfo = this.localeData()._week;
-	            return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
-	        },
-
-	        get : function (units) {
-	            units = normalizeUnits(units);
-	            return this[units]();
-	        },
-
-	        set : function (units, value) {
-	            var unit;
-	            if (typeof units === 'object') {
-	                for (unit in units) {
-	                    this.set(unit, units[unit]);
-	                }
-	            }
-	            else {
-	                units = normalizeUnits(units);
-	                if (typeof this[units] === 'function') {
-	                    this[units](value);
-	                }
-	            }
-	            return this;
-	        },
-
-	        // If passed a locale key, it will set the locale for this
-	        // instance.  Otherwise, it will return the locale configuration
-	        // variables for this instance.
-	        locale : function (key) {
-	            var newLocaleData;
-
-	            if (key === undefined) {
-	                return this._locale._abbr;
-	            } else {
-	                newLocaleData = moment.localeData(key);
-	                if (newLocaleData != null) {
-	                    this._locale = newLocaleData;
-	                }
-	                return this;
-	            }
-	        },
-
-	        lang : deprecate(
-	            'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
-	            function (key) {
-	                if (key === undefined) {
-	                    return this.localeData();
-	                } else {
-	                    return this.locale(key);
-	                }
-	            }
-	        ),
-
-	        localeData : function () {
-	            return this._locale;
-	        },
-
-	        _dateUtcOffset : function () {
-	            // On Firefox.24 Date#getTimezoneOffset returns a floating point.
-	            // https://github.com/moment/moment/pull/1871
-	            return -Math.round(this._d.getTimezoneOffset() / 15) * 15;
-	        }
-
-	    });
-
-	    function rawMonthSetter(mom, value) {
-	        var dayOfMonth;
-
-	        // TODO: Move this out of here!
-	        if (typeof value === 'string') {
-	            value = mom.localeData().monthsParse(value);
-	            // TODO: Another silent failure?
-	            if (typeof value !== 'number') {
-	                return mom;
-	            }
-	        }
-
-	        dayOfMonth = Math.min(mom.date(),
-	                daysInMonth(mom.year(), value));
-	        mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
-	        return mom;
-	    }
-
-	    function rawGetter(mom, unit) {
-	        return mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]();
-	    }
-
-	    function rawSetter(mom, unit, value) {
-	        if (unit === 'Month') {
-	            return rawMonthSetter(mom, value);
-	        } else {
-	            return mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
-	        }
-	    }
-
-	    function makeAccessor(unit, keepTime) {
-	        return function (value) {
-	            if (value != null) {
-	                rawSetter(this, unit, value);
-	                moment.updateOffset(this, keepTime);
-	                return this;
-	            } else {
-	                return rawGetter(this, unit);
-	            }
-	        };
-	    }
-
-	    moment.fn.millisecond = moment.fn.milliseconds = makeAccessor('Milliseconds', false);
-	    moment.fn.second = moment.fn.seconds = makeAccessor('Seconds', false);
-	    moment.fn.minute = moment.fn.minutes = makeAccessor('Minutes', false);
-	    // Setting the hour should keep the time, because the user explicitly
-	    // specified which hour he wants. So trying to maintain the same hour (in
-	    // a new timezone) makes sense. Adding/subtracting hours does not follow
-	    // this rule.
-	    moment.fn.hour = moment.fn.hours = makeAccessor('Hours', true);
-	    // moment.fn.month is defined separately
-	    moment.fn.date = makeAccessor('Date', true);
-	    moment.fn.dates = deprecate('dates accessor is deprecated. Use date instead.', makeAccessor('Date', true));
-	    moment.fn.year = makeAccessor('FullYear', true);
-	    moment.fn.years = deprecate('years accessor is deprecated. Use year instead.', makeAccessor('FullYear', true));
-
-	    // add plural methods
-	    moment.fn.days = moment.fn.day;
-	    moment.fn.months = moment.fn.month;
-	    moment.fn.weeks = moment.fn.week;
-	    moment.fn.isoWeeks = moment.fn.isoWeek;
-	    moment.fn.quarters = moment.fn.quarter;
-
-	    // add aliased format methods
-	    moment.fn.toJSON = moment.fn.toISOString;
-
-	    // alias isUtc for dev-friendliness
-	    moment.fn.isUTC = moment.fn.isUtc;
-
-	    /************************************
-	        Duration Prototype
-	    ************************************/
-
-
-	    function daysToYears (days) {
-	        // 400 years have 146097 days (taking into account leap year rules)
-	        return days * 400 / 146097;
-	    }
-
-	    function yearsToDays (years) {
-	        // years * 365 + absRound(years / 4) -
-	        //     absRound(years / 100) + absRound(years / 400);
-	        return years * 146097 / 400;
-	    }
-
-	    extend(moment.duration.fn = Duration.prototype, {
-
-	        _bubble : function () {
-	            var milliseconds = this._milliseconds,
-	                days = this._days,
-	                months = this._months,
-	                data = this._data,
-	                seconds, minutes, hours, years = 0;
-
-	            // The following code bubbles up values, see the tests for
-	            // examples of what that means.
-	            data.milliseconds = milliseconds % 1000;
-
-	            seconds = absRound(milliseconds / 1000);
-	            data.seconds = seconds % 60;
-
-	            minutes = absRound(seconds / 60);
-	            data.minutes = minutes % 60;
-
-	            hours = absRound(minutes / 60);
-	            data.hours = hours % 24;
-
-	            days += absRound(hours / 24);
-
-	            // Accurately convert days to years, assume start from year 0.
-	            years = absRound(daysToYears(days));
-	            days -= absRound(yearsToDays(years));
-
-	            // 30 days to a month
-	            // TODO (iskren): Use anchor date (like 1st Jan) to compute this.
-	            months += absRound(days / 30);
-	            days %= 30;
-
-	            // 12 months -> 1 year
-	            years += absRound(months / 12);
-	            months %= 12;
-
-	            data.days = days;
-	            data.months = months;
-	            data.years = years;
-	        },
-
-	        abs : function () {
-	            this._milliseconds = Math.abs(this._milliseconds);
-	            this._days = Math.abs(this._days);
-	            this._months = Math.abs(this._months);
-
-	            this._data.milliseconds = Math.abs(this._data.milliseconds);
-	            this._data.seconds = Math.abs(this._data.seconds);
-	            this._data.minutes = Math.abs(this._data.minutes);
-	            this._data.hours = Math.abs(this._data.hours);
-	            this._data.months = Math.abs(this._data.months);
-	            this._data.years = Math.abs(this._data.years);
-
-	            return this;
-	        },
-
-	        weeks : function () {
-	            return absRound(this.days() / 7);
-	        },
-
-	        valueOf : function () {
-	            return this._milliseconds +
-	              this._days * 864e5 +
-	              (this._months % 12) * 2592e6 +
-	              toInt(this._months / 12) * 31536e6;
-	        },
-
-	        humanize : function (withSuffix) {
-	            var output = relativeTime(this, !withSuffix, this.localeData());
-
-	            if (withSuffix) {
-	                output = this.localeData().pastFuture(+this, output);
-	            }
-
-	            return this.localeData().postformat(output);
-	        },
-
-	        add : function (input, val) {
-	            // supports only 2.0-style add(1, 's') or add(moment)
-	            var dur = moment.duration(input, val);
-
-	            this._milliseconds += dur._milliseconds;
-	            this._days += dur._days;
-	            this._months += dur._months;
-
-	            this._bubble();
-
-	            return this;
-	        },
-
-	        subtract : function (input, val) {
-	            var dur = moment.duration(input, val);
-
-	            this._milliseconds -= dur._milliseconds;
-	            this._days -= dur._days;
-	            this._months -= dur._months;
-
-	            this._bubble();
-
-	            return this;
-	        },
-
-	        get : function (units) {
-	            units = normalizeUnits(units);
-	            return this[units.toLowerCase() + 's']();
-	        },
-
-	        as : function (units) {
-	            var days, months;
-	            units = normalizeUnits(units);
-
-	            if (units === 'month' || units === 'year') {
-	                days = this._days + this._milliseconds / 864e5;
-	                months = this._months + daysToYears(days) * 12;
-	                return units === 'month' ? months : months / 12;
-	            } else {
-	                // handle milliseconds separately because of floating point math errors (issue #1867)
-	                days = this._days + Math.round(yearsToDays(this._months / 12));
-	                switch (units) {
-	                    case 'week': return days / 7 + this._milliseconds / 6048e5;
-	                    case 'day': return days + this._milliseconds / 864e5;
-	                    case 'hour': return days * 24 + this._milliseconds / 36e5;
-	                    case 'minute': return days * 24 * 60 + this._milliseconds / 6e4;
-	                    case 'second': return days * 24 * 60 * 60 + this._milliseconds / 1000;
-	                    // Math.floor prevents floating point math errors here
-	                    case 'millisecond': return Math.floor(days * 24 * 60 * 60 * 1000) + this._milliseconds;
-	                    default: throw new Error('Unknown unit ' + units);
-	                }
-	            }
-	        },
-
-	        lang : moment.fn.lang,
-	        locale : moment.fn.locale,
-
-	        toIsoString : deprecate(
-	            'toIsoString() is deprecated. Please use toISOString() instead ' +
-	            '(notice the capitals)',
-	            function () {
-	                return this.toISOString();
-	            }
-	        ),
-
-	        toISOString : function () {
-	            // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
-	            var years = Math.abs(this.years()),
-	                months = Math.abs(this.months()),
-	                days = Math.abs(this.days()),
-	                hours = Math.abs(this.hours()),
-	                minutes = Math.abs(this.minutes()),
-	                seconds = Math.abs(this.seconds() + this.milliseconds() / 1000);
-
-	            if (!this.asSeconds()) {
-	                // this is the same as C#'s (Noda) and python (isodate)...
-	                // but not other JS (goog.date)
-	                return 'P0D';
-	            }
-
-	            return (this.asSeconds() < 0 ? '-' : '') +
-	                'P' +
-	                (years ? years + 'Y' : '') +
-	                (months ? months + 'M' : '') +
-	                (days ? days + 'D' : '') +
-	                ((hours || minutes || seconds) ? 'T' : '') +
-	                (hours ? hours + 'H' : '') +
-	                (minutes ? minutes + 'M' : '') +
-	                (seconds ? seconds + 'S' : '');
-	        },
-
-	        localeData : function () {
-	            return this._locale;
-	        },
-
-	        toJSON : function () {
-	            return this.toISOString();
-	        }
-	    });
-
-	    moment.duration.fn.toString = moment.duration.fn.toISOString;
-
-	    function makeDurationGetter(name) {
-	        moment.duration.fn[name] = function () {
-	            return this._data[name];
-	        };
-	    }
-
-	    for (i in unitMillisecondFactors) {
-	        if (hasOwnProp(unitMillisecondFactors, i)) {
-	            makeDurationGetter(i.toLowerCase());
-	        }
-	    }
-
-	    moment.duration.fn.asMilliseconds = function () {
-	        return this.as('ms');
-	    };
-	    moment.duration.fn.asSeconds = function () {
-	        return this.as('s');
-	    };
-	    moment.duration.fn.asMinutes = function () {
-	        return this.as('m');
-	    };
-	    moment.duration.fn.asHours = function () {
-	        return this.as('h');
-	    };
-	    moment.duration.fn.asDays = function () {
-	        return this.as('d');
-	    };
-	    moment.duration.fn.asWeeks = function () {
-	        return this.as('weeks');
-	    };
-	    moment.duration.fn.asMonths = function () {
-	        return this.as('M');
-	    };
-	    moment.duration.fn.asYears = function () {
-	        return this.as('y');
-	    };
-
-	    /************************************
-	        Default Locale
-	    ************************************/
-
-
-	    // Set default locale, other locale will inherit from English.
-	    moment.locale('en', {
-	        ordinalParse: /\d{1,2}(th|st|nd|rd)/,
-	        ordinal : function (number) {
-	            var b = number % 10,
-	                output = (toInt(number % 100 / 10) === 1) ? 'th' :
-	                (b === 1) ? 'st' :
-	                (b === 2) ? 'nd' :
-	                (b === 3) ? 'rd' : 'th';
-	            return number + output;
-	        }
-	    });
-
-	    /* EMBED_LOCALES */
-
-	    /************************************
-	        Exposing Moment
-	    ************************************/
-
-	    function makeGlobal(shouldDeprecate) {
-	        /*global ender:false */
-	        if (typeof ender !== 'undefined') {
-	            return;
-	        }
-	        oldGlobalMoment = globalScope.moment;
-	        if (shouldDeprecate) {
-	            globalScope.moment = deprecate(
-	                    'Accessing Moment through the global scope is ' +
-	                    'deprecated, and will be removed in an upcoming ' +
-	                    'release.',
-	                    moment);
-	        } else {
-	            globalScope.moment = moment;
-	        }
-	    }
-
-	    // CommonJS module is defined
-	    if (hasModule) {
-	        module.exports = moment;
-	    } else if (true) {
-	        !(__WEBPACK_AMD_DEFINE_RESULT__ = function (require, exports, module) {
-	            if (module.config && module.config() && module.config().noGlobal === true) {
-	                // release the global variable
-	                globalScope.moment = oldGlobalMoment;
-	            }
-
-	            return moment;
-	        }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	        makeGlobal(true);
-	    } else {
-	        makeGlobal();
-	    }
-	}).call(this);
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(111)(module)))
-
-/***/ },
 /* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.woff2"
-
-/***/ },
-/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
@@ -17747,8 +17747,14 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 30;
+	webpackContext.id = 29;
 
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "glyphicons-halflings-regular.woff2"
 
 /***/ },
 /* 31 */
@@ -17760,7 +17766,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -17838,7 +17844,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -17900,7 +17906,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18006,7 +18012,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18070,7 +18076,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18208,7 +18214,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18323,7 +18329,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18481,7 +18487,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18575,7 +18581,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18692,7 +18698,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18806,7 +18812,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -18922,7 +18928,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19067,7 +19073,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19150,7 +19156,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19313,7 +19319,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19380,7 +19386,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19465,7 +19471,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19531,7 +19537,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19610,7 +19616,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19688,7 +19694,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19787,7 +19793,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19858,7 +19864,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19925,7 +19931,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -19998,7 +20004,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20073,7 +20079,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20157,7 +20163,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20240,7 +20246,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20308,7 +20314,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20417,7 +20423,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20530,7 +20536,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20594,7 +20600,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20656,7 +20662,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20722,7 +20728,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20797,7 +20803,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20878,7 +20884,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -20962,7 +20968,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21091,7 +21097,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21236,7 +21242,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21353,7 +21359,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21478,7 +21484,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21564,7 +21570,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21697,7 +21703,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21770,7 +21776,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21839,7 +21845,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -21954,7 +21960,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22019,7 +22025,7 @@
 	// - Jeeeyul Lee <jeeeyul@gmail.com>
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22091,7 +22097,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22232,7 +22238,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22358,7 +22364,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22443,7 +22449,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22537,7 +22543,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22612,7 +22618,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22738,7 +22744,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22824,7 +22830,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22920,7 +22926,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -22984,7 +22990,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23111,7 +23117,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23186,7 +23192,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23250,7 +23256,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23356,7 +23362,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23420,7 +23426,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23489,7 +23495,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23568,7 +23574,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23750,7 +23756,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -23913,7 +23919,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24067,7 +24073,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24138,7 +24144,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24251,7 +24257,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24364,7 +24370,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24435,7 +24441,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24571,7 +24577,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24640,7 +24646,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24707,7 +24713,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24806,7 +24812,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24868,7 +24874,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -24931,7 +24937,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -25099,7 +25105,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -25161,7 +25167,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -25232,7 +25238,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
@@ -25362,7 +25368,7 @@
 
 	(function (factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(22)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)); // AMD
 	    } else if (typeof exports === 'object') {
 	        module.exports = factory(require('../moment')); // Node
 	    } else {
