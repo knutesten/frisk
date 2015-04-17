@@ -16,6 +16,7 @@ import scala.slick.jdbc.meta.MTable
  * @author Simen Wold Anderson
  */
 object LogDao {
+  implicit def timestampOrdering: Ordering[Timestamp] = Ordering.fromLessThan(_.getTime < _.getTime)
 
   val logs = TableQuery[Logs]
 
@@ -40,7 +41,6 @@ object LogDao {
   }
 
   def all: List[Log] = Db.database.withSession { implicit session =>
-    implicit def timestampOrdering: Ordering[Timestamp] = Ordering.fromLessThan(_.getTime < _.getTime)
     logs.sortBy(_.date.desc).list
   }
 
@@ -58,7 +58,7 @@ object LogDao {
       c <- consumeType if l.consumeTypeId === c.id
     } yield (l.id, u.username, f.flavour, c.name, p.name, l.date)
 
-    q.list.reverse.take(5)
+    q.sortBy(_._6.desc).list.reverse.take(5)
   }
   
   def getFriskCountForProject(projectId: Int): Int = Db.database.withSession { implicit session =>
