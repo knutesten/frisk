@@ -58,7 +58,7 @@ object LogDao {
       c <- consumeType if l.consumeTypeId === c.id
     } yield (l.id, u.username, f.flavour, c.name, p.name, l.date)
 
-    q.sortBy(_._6.desc).list.reverse.take(5)
+    q.sortBy(_._6.desc).list.take(5)
   }
   
   def getFriskCountForProject(projectId: Int): Int = Db.database.withSession { implicit session =>
