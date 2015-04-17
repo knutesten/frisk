@@ -7,6 +7,7 @@ import no.mesan.frisk.model.frisk.flavour.Flavours
 import no.mesan.frisk.model.frisk.log.{Log, Logs}
 import no.mesan.frisk.model.frisk.project.{UserProjects, Projects}
 import no.mesan.frisk.model.user.{User, Users}
+import spray.httpx.marshalling.ToResponseMarshallable
 
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.meta.MTable
@@ -33,13 +34,14 @@ object LogDao {
       logs += log
     }
   }
-  
+
   def deleteById(logId: Int) = Db.database.withSession { implicit session =>
     logs.filter(_.id === logId).delete
   }
 
-  def all: List[Log] = Db.database.withSession { implicit session => 
-    logs.list
+  def all: List[Log] = Db.database.withSession { implicit session =>
+    implicit def timestampOrdering: Ordering[Timestamp] = Ordering.fromLessThan(_.getTime < _.getTime)
+    logs.sortBy(_.date.desc).list
   }
 
   def getFormatedList: List[(Int, String, String, String, String, Timestamp)] = Db.database.withSession { implicit session =>
