@@ -63,19 +63,7 @@
                     <button id="submitLog" class="btn btn-default">Submit</button>
                 </form>
                 <div id="msg"></div>
-            </div>
-            <div class="col-md-5 col-1-offset">
-                <label>Show count for:</label>
-                <select id="projectFriskCountSelect" class="form-control">
-                    <option> -- Project -- </option>
-                </select>
-                <div id="pie" class="ct-chart ct-perfect-fourth">
-                    <div id="friskCount"></div>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-10">
+
             	<h4>Statistics:</h4>
             	<table id="statiticsTable" class="table table-striped">
             		<thead><tr>
@@ -88,9 +76,19 @@
             		</tbody>
             	</table>
             </div>
+            <div class="col-md-7 col-1-offset">
+                <label>Show count for:</label>
+                <select id="projectFriskCountSelect" class="form-control">
+                    <option> -- Project -- </option>
+                </select>
+                <div id="pie" class="ct-chart ct-perfect-fourth">
+                    <div id="friskCount"></div>
+                </div>
+            </div>
         </div>
+
         <div class="row">
-            <div class="col-md-10">
+            <div class="col-md-12">
 	            <h4>Frisk log:</h4>
                 <table id="friskTable" class="table table-striped">
                     <thead><tr>
