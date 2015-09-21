@@ -23,10 +23,28 @@ function fetchFriskCountPerUser() {
     .success(function(data) {
       var labels = [];
       var series = [];
+      var total = 0;
+
       data.forEach(function(obj) {
+        total += obj[1];
         labels.push(obj[0]);
         series.push(obj[1]);
       });
+      
+      var table = document.getElementById('statisticsBody');
+      table.innerHTML = "";
+      var row, i = 0;
+
+      data.sort(function (a, b) {
+        return b[1] - a[1];
+      });
+
+      for (; i < data.length; i++) {
+        row = table.insertRow(i);
+        row.insertCell(0).innerHTML = data[i][0];
+        row.insertCell(1).innerHTML = data[i][1];
+        row.insertCell(2).innerHTML = "" + (data[i][1]/total).toFixed(2) + "%";
+      }
 
       new Chartist.Pie('.ct-chart', {
         labels: labels,
@@ -39,7 +57,8 @@ function fetchFriskCountPerUser() {
 
 function fetchFriskLog() {
   var table = document.getElementById('friskTableBody');
-  $("#friskTableBody > tr").remove();
+  table.innerHTML = "";
+//  $("#friskTableBody > tr").remove();
   api.httpGet(localUrl + '/log/formatted')
     .success(function(data) {
       fillTableWithLogData(data);
