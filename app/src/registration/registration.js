@@ -44,7 +44,7 @@ function fetchFriskCountPerUser() {
         row.insertCell(0).innerHTML = i+1;
         row.insertCell(1).innerHTML = data[i][0];
         row.insertCell(2).innerHTML = data[i][1];
-        row.insertCell(3).innerHTML = "" + (data[i][1]/total).toFixed(2) + "%";
+        row.insertCell(3).innerHTML = "" + (100*data[i][1]/total).toFixed(2) + "%";
       }
 
       new Chartist.Pie('.ct-chart', {
