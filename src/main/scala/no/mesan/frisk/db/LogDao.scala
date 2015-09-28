@@ -58,7 +58,7 @@ object LogDao {
       c <- consumeType if l.consumeTypeId === c.id
     } yield (l.id, u.username, f.flavour, c.name, p.name, l.date)
 
-    q.sortBy(_._6.desc).list.take(10)
+    q.sortBy(_._6.desc).list.take(20)
   }
   
   def getFriskCountForProject(projectId: Int): Int = Db.database.withSession { implicit session =>
@@ -69,7 +69,7 @@ object LogDao {
       c <- consumeTypes if l.consumeTypeId === c.id
     } yield (c.amount)
 
-        q.list.sum//.fold(0) { (sum, i) => sum + i}
+    q.list.sum//.fold(0) { (sum, i) => sum + i}
   }
 
   def getFriskForUserInProject(project: Int): List[(String,Option[Int])] = Db.database.withSession { implicit session =>
