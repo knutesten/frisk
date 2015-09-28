@@ -5,7 +5,7 @@ var Chartist = require("chartist");
 var stock = require("../stock/stock.js");
 
 function deleteLogEntry(id) {
-  api.httpDelete(localUrl + "/log" + "/"  + id)
+  api.httpDelete(localUrl + "/log/" + id)
     .success(function() {
       fetchFriskLog();
     });
