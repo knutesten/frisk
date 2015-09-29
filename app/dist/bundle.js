@@ -20684,7 +20684,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(92)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n#submitLog {\n  width: 100%;\n  background-color: #aaf;\n  color: white;\n  font-weight: bold;\n}\n", ""]);
 
 /***/ },
 /* 97 */
@@ -25384,7 +25384,7 @@
 	var stock = __webpack_require__(94);
 
 	function deleteLogEntry(id) {
-	  api.httpDelete(localUrl + "/log" + "/"  + id)
+	  api.httpDelete(localUrl + "/log/" + id)
 	    .success(function() {
 	      fetchFriskLog();
 	    });
