@@ -1,6 +1,7 @@
 *.class
 *.log
 *~
+DEADJOE
 
 # sbt specific
 .cache/
