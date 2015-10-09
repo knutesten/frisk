@@ -20,7 +20,8 @@ window.localUrl = 'http://' + host + '/api';
 
 
 $(document).ready(function() {
-  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
+  stock.getStock(localUrl + "/stock", "FUNCOM.OL", "stock1");
+  stock.getStock(localUrl + "/stock", "GIG.OL", "stock2");
   reg.fetchFriskLog();
   //
   reg.fetchTotalFriskCount();
