@@ -11,10 +11,10 @@ module.exports = {
       data: { ticker: data }
     }).success(function(data) {
         //console.log(JSON.parse(data));
-        document.getElementById(id).getElementByClassName("stockName").innerHTML = JSON.parse(data).query.results.quote.Name;
-        document.getElementById(id).getElementByClassName("stockValue").innerHTML = JSON.parse(data).query.results.quote.Bid;
-        document.getElementById(id).getElementByClassName("stockChange").innerHTML = JSON.parse(data).query.results.quote.Change;
-        document.getElementById(id).getElementByClassName("stockPercentChange").innerHTML = JSON.parse(data).query.results.quote.PercentChange;
+        document.getElementById(id).getElementsByClassName("stockName")[0].innerHTML = JSON.parse(data).query.results.quote.Name;
+        document.getElementById(id).getElementsByClassName("stockValue")[0].innerHTML = JSON.parse(data).query.results.quote.Bid;
+        document.getElementById(id).getElementsByClassName("stockChange")[0].innerHTML = JSON.parse(data).query.results.quote.Change;
+        document.getElementById(id).getElementsByClassName("stockPercentChange")[0].innerHTML = JSON.parse(data).query.results.quote.PercentChange;
       });
   }
 };
