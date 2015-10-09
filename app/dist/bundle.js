@@ -66,7 +66,8 @@
 
 
 	$(document).ready(function() {
-	  stock.getStock(localUrl + "/stock", "FUNCOM.OL");
+	  stock.getStock(localUrl + "/stock", "FUNCOM.OL", "stock1");
+	  stock.getStock(localUrl + "/stock", "GIG.OL", "stock2");
 	  reg.fetchFriskLog();
 	  //
 	  reg.fetchTotalFriskCount();
@@ -20641,16 +20642,16 @@
 	var api = __webpack_require__(3);
 
 	module.exports = {
-	  getStock: function(theUrl, data) {
+	  getStock: function(theUrl, data, id) {
 	    $.ajax({
 	      url: theUrl,
 	      data: { ticker: data }
 	    }).success(function(data) {
 	        //console.log(JSON.parse(data));
-	        document.getElementById("stockName").innerHTML = JSON.parse(data).query.results.quote.Name;
-	        document.getElementById("stockValue").innerHTML = JSON.parse(data).query.results.quote.Bid;
-	        document.getElementById("stockChange").innerHTML = JSON.parse(data).query.results.quote.Change;
-	        document.getElementById("stockPercentChange").innerHTML = JSON.parse(data).query.results.quote.PercentChange;
+	        document.getElementById(id).getElementsByClassName("stockName")[0].innerHTML = JSON.parse(data).query.results.quote.Name;
+	        document.getElementById(id).getElementsByClassName("stockValue")[0].innerHTML = JSON.parse(data).query.results.quote.Bid;
+	        document.getElementById(id).getElementsByClassName("stockChange")[0].innerHTML = JSON.parse(data).query.results.quote.Change;
+	        document.getElementById(id).getElementsByClassName("stockPercentChange")[0].innerHTML = JSON.parse(data).query.results.quote.PercentChange;
 	      });
 	  }
 	};
@@ -20684,7 +20685,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(92)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n#stockName {\n  font-size: 2em;\n}\n#stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n#submitLog {\n  width: 100%;\n  background-color: #aaf;\n  color: white;\n  font-weight: bold;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n.stockName {\n  font-size: 2em;\n}\n.stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n#submitLog {\n  width: 100%;\n  background-color: #aaf;\n  color: white;\n  font-weight: bold;\n}\n", ""]);
 
 /***/ },
 /* 97 */
