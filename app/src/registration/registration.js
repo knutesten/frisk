@@ -51,7 +51,12 @@ function fetchFriskCountPerUser() {
         if (data[i][1] == 1337) {
           countCell.className = 'celebration';
         }
-        row.insertCell(3).innerHTML = "" + (100*data[i][1]/total).toFixed(2) + "%";
+        var percent = "" + (100*data[i][1]/total).toFixed(2) + "%";
+        var percentCell = row.insertCell(3);
+        percentCell.innerHTML = percent;
+        if (percent === '13.37%') {
+          percentCell.className = 'celebration';
+        }
       }
 
       new Chartist.Pie('.ct-chart', {
@@ -82,7 +87,13 @@ function fetchFriskLog() {
       row.insertCell(2).innerHTML = data[i][2];
       row.insertCell(3).innerHTML = data[i][3];
       row.insertCell(4).innerHTML = data[i][4];
-      row.insertCell(5).innerHTML = moment(data[i][5]).format('MMMM Do YYYY, HH:mm:ss');
+      var tid = moment(data[i][5]);
+      var tid_utenDrit = tid.format('HHmmss');
+      var tidCelle = row.insertCell(5);
+      tidCelle.innerHTML = tid.format('MMMM Do YYYY, HH:mm:ss');
+      if (tid_utenDrit == '133700' || tid_utenDrit == '133337' || tid_utenDrit == '001337') {
+        tidCelle.className = 'celebration';
+      }
       button = document.createElement("button");
       button.innerHTML = "Delete";
       button.onclick = function(num) {

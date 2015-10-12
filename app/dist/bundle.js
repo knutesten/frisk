@@ -20686,7 +20686,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(92)();
-	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n.stockName {\n  font-size: 2em;\n}\n.stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n#submitLog {\n  width: 100%;\n  background-color: #aaf;\n  color: white;\n  font-weight: bold;\n}\n@keyframes blinker {\n  0% {\n    visibility: visible;\n  }\n  50% {\n    visibility: hidden;\n  }\n  100% {\n    visibility: visible;\n  }\n}\n.badboy {\n  font-weight: bold;\n}\n.badboy .celebration {\n  color: white;\n  background: red;\n  animation: blinker steps(1) 1s infinite;\n}\n", ""]);
+	exports.push([module.id, "#background {\n  content: \"\";\n  background: url("+__webpack_require__(97)+") no-repeat center;\n  opacity: 0.12;\n  top: 0;\n  left: 0;\n  bottom: 0;\n  right: 0;\n  position: absolute;\n  z-index: -1;\n  background-size: 100%;\n}\n#registration {\n  position: relative;\n}\n.stockName {\n  font-size: 2em;\n}\n.stockValue {\n  font-size: 3em;\n  color: forestgreen;\n}\n#friskCount {\n  position: relative;\n  font-size: 8em;\n  text-align: center;\n  top: 90px;\n}\n#pie {\n  margin-top: 10px;\n}\n#pie path {\n  stroke-width: 70px !important;\n}\n#pie text {\n  font-size: 0.8em;\n}\n#submitLog {\n  width: 100%;\n  background-color: #aaf;\n  color: white;\n  font-weight: bold;\n}\n.badboy {\n  font-weight: bold;\n}\n@keyframes blinker {\n  0% {\n    visibility: visible;\n  }\n  50% {\n    visibility: hidden;\n  }\n  100% {\n    visibility: visible;\n  }\n}\n.celebration {\n  color: white;\n  background: red;\n  animation: blinker steps(1) 1s infinite;\n}\n", ""]);
 
 /***/ },
 /* 97 */
@@ -25426,12 +25426,18 @@
 	        row.insertCell(1).innerHTML = data[i][0];
 	        var countCell = row.insertCell(2);
 	        countCell.innerHTML = data[i][1];
-	        if (data[i][1] > 1337) {
-	          countCell.className = 'badboy';
-	        } else if (data[i][1] == 1337) {
-	          countCell.className = 'badboy celebration';
+	        if (data[i][1] >= 1337) {
+	          row.className = 'badboy';
 	        }
-	        row.insertCell(3).innerHTML = "" + (100*data[i][1]/total).toFixed(2) + "%";
+	        if (data[i][1] == 1337) {
+	          countCell.className = 'celebration';
+	        }
+	        var percent = "" + (100*data[i][1]/total).toFixed(2) + "%";
+	        var percentCell = row.insertCell(3);
+	        percentCell.innerHTML = percent;
+	        if (percent === '13.37%') {
+	          percentCell.className = 'celebration';
+	        }
 	      }
 
 	      new Chartist.Pie('.ct-chart', {
@@ -25462,7 +25468,13 @@
 	      row.insertCell(2).innerHTML = data[i][2];
 	      row.insertCell(3).innerHTML = data[i][3];
 	      row.insertCell(4).innerHTML = data[i][4];
-	      row.insertCell(5).innerHTML = moment(data[i][5]).format('MMMM Do YYYY, HH:mm:ss');
+	      var tid = moment(data[i][5]);
+	      var tid_utenDrit = tid.format('HHmmss');
+	      var tidCelle = row.insertCell(5);
+	      tidCelle.innerHTML = tid.format('MMMM Do YYYY, HH:mm:ss');
+	      if (tid_utenDrit == '133700' || tid_utenDrit == '133337' || tid_utenDrit == '001337') {
+	        tidCelle.className = 'celebration';
+	      }
 	      button = document.createElement("button");
 	      button.innerHTML = "Delete";
 	      button.onclick = function(num) {
