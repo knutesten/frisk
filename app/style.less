@@ -50,3 +50,19 @@ body {
   color: white;
   font-weight: bold;
 }
+
+@keyframes blinker {  
+  0% { visibility: visible; }
+  50% { visibility: hidden; }
+  100% { visibility: visible; }
+}
+
+.badboy {
+  font-weight: bold;
+
+  .celebration {
+    color: white;
+    background: red;
+    animation: blinker steps(1) 1s infinite;
+  }
+}
