@@ -25426,7 +25426,7 @@
 	        row.insertCell(1).innerHTML = data[i][0];
 	        var countCell = row.insertCell(2);
 	        countCell.innerHTML = data[i][1];
-	        if (data[i][1] >= 1337) {
+	        if (data[i][1] >= 1000) {
 	          row.className = 'badboy';
 	        }
 	        if (data[i][1] == 1337) {
