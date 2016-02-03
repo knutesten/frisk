@@ -41,14 +41,14 @@ function fetchFriskCountPerUser() {
 
       for (; i < data.length; i++) {
         row = table.insertRow(i);
+        row.className = data[i][0];
         row.insertCell(0).innerHTML = i+1;
         row.insertCell(1).innerHTML = data[i][0];
         var countCell = row.insertCell(2);
         countCell.innerHTML = data[i][1];
         if (data[i][1] >= 1000) {
-          row.className = 'badboy';
-        }
-        if (data[i][1] == 1337) {
+          row.className += ' badboy';
+        } else if (data[i][1] == 1337) {
           countCell.className = 'celebration';
         }
         var percent = "" + (100*data[i][1]/total).toFixed(2) + "%";
