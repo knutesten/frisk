@@ -25395,7 +25395,13 @@
 	function fetchTotalFriskCount() {
 	  api.httpGet(localUrl + "/log/count/" + 2)
 	    .success(function(data) {
-	      document.getElementById("friskCount").innerHTML = data[1];
+	      var friskCount = document.getElementById("friskCount");
+	      friskCount.innerHTML = data[1];
+	      if (data[1] % 100 === 0) {
+	        friskCount.classList.add("celebrate");
+	      } else {
+	        friskCount.classList.remove("celebrate");
+	      }
 	    });
 	}
 
