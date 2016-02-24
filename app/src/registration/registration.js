@@ -17,9 +17,9 @@ function fetchTotalFriskCount() {
       var friskCount = document.getElementById("friskCount");
       friskCount.innerHTML = data[1];
       if (data[1] % 100 === 0) {
-        friskCount.classList.add("celebrate");
+        friskCount.classList.add("celebration");
       } else {
-        friskCount.classList.remove("celebrate");
+        friskCount.classList.remove("celebration");
       }
     });
 }
